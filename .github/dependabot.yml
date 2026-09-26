@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # GitHub Actions are pinned by full commit SHA; Dependabot proposes new SHAs (with the version in a comment).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  # Base images of harness/Dockerfile are pinned by digest.
+  - package-ecosystem: docker
+    directory: /harness
+    schedule:
+      interval: weekly

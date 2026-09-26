@@ -1,0 +1,221 @@
+name: lab
+
+# Builds the lab image and runs the public scenarios against upstream thunderbird-mcp:
+# - on push, pull request and every week: the latest published upstream release (tag verified below);
+# - on demand (workflow_dispatch): the latest release, upstream main, or a given upstream pull request.
+#
+# Upstream code is never executed on the runner: it is only checked out, then streamed as a tar archive into the lab
+# container (no network, read-only root, no capabilities, unprivileged user). No secret is used; the token is
+# read-only and is not passed to the container.
+#
+# Only the summary table is published (job summary and a small artifact). The logs and result JSON are output of the
+# code under test, which may be an unreviewed pull request: they stay on the runner and are not redistributed. Run the
+# lab locally to get them.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Upstream code to test"
+        type: choice
+        options:
+          - latest-release
+          - pull-request
+          - main
+        default: latest-release
+      pr:
+        description: "Upstream pull request number (only with target = pull-request)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lab-${{ github.ref }}-${{ inputs.target || 'latest-release' }}-${{ inputs.pr || 'none' }}
+  cancel-in-progress: true
+
+env:
+  UPSTREAM_REPO: TKasperczyk/thunderbird-mcp
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  static:
+    name: Static checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the lab
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Harness, launcher and scenarios
+        run: |
+          set -euo pipefail
+          python3 -B -m py_compile harness/lab.py
+          python3 -B harness/lab.py --validate scenarios/*.json selftest/isolation.json
+          bash -n run-lab.sh selftest/run.sh
+          shellcheck run-lab.sh selftest/run.sh
+
+  resolve:
+    name: Resolve upstream code
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+      version: ${{ steps.resolve.outputs.version }}
+      label: ${{ steps.resolve.outputs.label }}
+    steps:
+      - name: Resolve and verify the upstream commit
+        id: resolve
+        env:
+          TARGET: ${{ inputs.target || 'latest-release' }}
+          PR_NUMBER: ${{ inputs.pr }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api() { gh api -H "Accept: application/vnd.github+json" "repos/$UPSTREAM_REPO/$1"; }
+          remote="https://github.com/$UPSTREAM_REPO.git"
+          case "$TARGET" in
+            latest-release)
+              rel="$(api releases/latest)"
+              tag="$(jq -r .tag_name <<<"$rel")"
+              if [ "$(jq -r .draft <<<"$rel")" != false ] || [ "$(jq -r .prerelease <<<"$rel")" != false ]; then
+                echo "::error::the latest release is a draft or a pre-release"; exit 1
+              fi
+              if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::unexpected tag name"; exit 1; fi
+              # The commit behind the tag, as git sees it (peeled for an annotated tag)...
+              sha="$(git ls-remote "$remote" "refs/tags/$tag^{}" | cut -f1)"
+              [ -n "$sha" ] || sha="$(git ls-remote "$remote" "refs/tags/$tag" | cut -f1)"
+              # ...and as the API sees it: both must agree.
+              obj="$(api "git/ref/tags/$tag")"
+              otype="$(jq -r .object.type <<<"$obj")"
+              osha="$(jq -r .object.sha <<<"$obj")"
+              if [ "$otype" = tag ]; then
+                tobj="$(api "git/tags/$osha")"
+                osha="$(jq -r .object.sha <<<"$tobj")"
+                signed="$(jq -r .verification.verified <<<"$tobj")"
+              else
+                signed="$(api "commits/$osha" | jq -r .commit.verification.verified)"
+              fi
+              if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ "$sha" != "$osha" ]; then
+                echo "::error::tag $tag does not resolve to the same commit through git and the API"; exit 1
+              fi
+              version="${tag#v}"
+              label="release $tag"
+              echo "Release $tag -> $sha (GitHub signature verified: $signed)"
+              ;;
+            pull-request)
+              if ! [[ "$PR_NUMBER" =~ ^[1-9][0-9]{0,6}$ ]]; then echo "::error::pr must be a pull request number"; exit 1; fi
+              pr="$(api "pulls/$PR_NUMBER")"
+              sha="$(jq -r .head.sha <<<"$pr")"
+              if [ "$(jq -r .base.repo.full_name <<<"$pr")" != "$UPSTREAM_REPO" ]; then echo "::error::unexpected base repository"; exit 1; fi
+              rsha="$(git ls-remote "$remote" "refs/pull/$PR_NUMBER/head" | cut -f1)"
+              if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ "$sha" != "$rsha" ]; then
+                echo "::error::the pull request head does not resolve consistently"; exit 1
+              fi
+              version=""
+              label="pull request #$PR_NUMBER"
+              ;;
+            main)
+              sha="$(git ls-remote "$remote" refs/heads/main | cut -f1)"
+              if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then echo "::error::cannot resolve main"; exit 1; fi
+              version=""
+              label="main"
+              ;;
+            *)
+              echo "::error::unknown target"; exit 1
+              ;;
+          esac
+          {
+            echo "sha=$sha"
+            echo "version=$version"
+            echo "label=$label"
+          } >> "$GITHUB_OUTPUT"
+
+  lab:
+    name: Lab (${{ needs.resolve.outputs.label }})
+    needs: [static, resolve]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the lab
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check out the upstream code (never executed on the runner)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ needs.resolve.outputs.sha }}
+          path: upstream
+          persist-credentials: false
+
+      - name: Verify the checked-out commit
+        env:
+          EXPECTED_SHA: ${{ needs.resolve.outputs.sha }}
+          EXPECTED_VERSION: ${{ needs.resolve.outputs.version }}
+        run: |
+          set -euo pipefail
+          test "$(git -C upstream rev-parse HEAD)" = "$EXPECTED_SHA"
+          if [ -n "$EXPECTED_VERSION" ]; then
+            test "$(jq -r .version upstream/extension/manifest.json)" = "$EXPECTED_VERSION"
+          fi
+          echo "upstream at $EXPECTED_SHA"
+
+      - name: Build the lab image
+        run: docker build -t thunderbird-mcp-lab:ci harness
+
+      - name: Run the public scenarios
+        run: ./run-lab.sh --image thunderbird-mcp-lab:ci --out lab-results upstream scenarios/*.json
+
+      - name: Isolation self-test
+        if: always()
+        run: selftest/run.sh --image thunderbird-mcp-lab:ci upstream
+
+      - name: Job summary
+        if: always()
+        env:
+          LABEL: ${{ needs.resolve.outputs.label }}
+          SHA: ${{ needs.resolve.outputs.sha }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### thunderbird-mcp lab: $LABEL (\`$SHA\`)"
+            echo
+            echo "| scenario | result | pass | fail | xfail | xpass | errors |"
+            echo "|---|---|---|---|---|---|---|"
+            shopt -s nullglob
+            for f in lab-results/run-*/summary.tsv; do
+              # Only well-formed rows are rendered (scenario file names, fixed words and integers).
+              tail -n +2 "$f" | while IFS=$'\t' read -r name result pass fail xfail xpass errors _; do
+                [[ "$name" =~ ^[A-Za-z0-9._-]{1,80}$ && "$result" =~ ^(PASS|FAIL|UNUSABLE)$ ]] || continue
+                for n in "$pass" "$fail" "$xfail" "$xpass" "$errors"; do [[ "$n" =~ ^[0-9]{0,6}$ ]] || continue 2; done
+                echo "| $name | $result | $pass | $fail | $xfail | $xpass | $errors |"
+              done
+            done
+            echo
+            echo "xfail = known upstream issue (not fatal); xpass = a known issue no longer reproduces."
+            echo "Results are data produced next to the code under test, not proof. Logs and result JSON are not"
+            echo "published: run the lab locally to get them."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the summary table
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lab-summary
+          path: lab-results/run-*/summary.tsv
+          retention-days: 14
+          if-no-files-found: warn
