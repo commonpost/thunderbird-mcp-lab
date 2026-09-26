@@ -21,7 +21,10 @@ public, harness improvements, better documentation, CI fixes.
    protocol, the result block or the output sanitiser must keep `selftest/run.sh` passing, and the pull request must
    explain why they are safe. In particular, do not start the image with `--init`: the harness must be PID 1.
 6. **Pin what you add.** GitHub Actions by full commit SHA (with the version in a comment), base images by digest.
-7. **Be respectful of upstream.** This lab exists to help the thunderbird-mcp project. Findings go to upstream through
+7. **Test what you change.** New functionality in the harness, the launcher or the scenario format comes with a
+   scenario, a self-test check or a validator case that exercises it, in the same pull request; a bug fix comes with
+   a check that fails without the fix whenever that is practical. Say in the pull request which tests you added.
+8. **Be respectful of upstream.** This lab exists to help the thunderbird-mcp project. Findings go to upstream through
    its usual channels; the lab is not a place to criticise upstream work.
 
 ## Working locally
@@ -50,6 +53,13 @@ Tips for scenarios:
 - End scenarios that must not send anything with `{"type": "mailpit_total", "equals": 0}`.
 - Seeded messages need an indexing step before other tools can see them (see `scenarios/attachments.json`).
 - Describe in `description` what the scenario proves and what it does not.
+
+## Reporting bugs and requesting features
+
+Open an [issue](https://github.com/commonpost/thunderbird-mcp-lab/issues): what you ran (lab commit, command,
+scenario), what you expected and what happened, with the `run-lab.sh` summary if relevant. Feature requests are welcome
+the same way. We aim to acknowledge every report within 14 days. Security problems go through [SECURITY.md](SECURITY.md)
+instead, never through a public issue.
 
 ## Pull requests
 

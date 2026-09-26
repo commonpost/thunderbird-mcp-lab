@@ -67,6 +67,12 @@ jobs:
           bash -n run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
           shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
 
+      - name: Python lint (pyflakes)
+        run: |
+          set -euo pipefail
+          sudo apt-get install -y -qq --no-install-recommends pyflakes3 >/dev/null
+          pyflakes3 harness/lab.py fuzz/fuzz_load_scenario.py
+
   resolve:
     name: Resolve upstream code
     runs-on: ubuntu-24.04
@@ -177,6 +183,9 @@ jobs:
       - name: Build the lab image
         run: docker build -t thunderbird-mcp-lab:ci harness
 
+      # The upstream tree (possibly an unreviewed pull request) is never executed on the runner: run-lab.sh only reads
+      # it with tar and streams it into a container started with --network none, --read-only, --cap-drop ALL and an
+      # unprivileged user, so code under test cannot reach the Actions cache service or anything else. No cache is used.
       - name: Run the public scenarios
         run: ./run-lab.sh --image thunderbird-mcp-lab:ci --out lab-results upstream scenarios/*.json
 
