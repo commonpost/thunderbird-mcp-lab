@@ -150,7 +150,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   lab:
-    name: Lab (${{ needs.resolve.outputs.label }})
+    name: Lab # fixed name: required status check (the tested upstream code is shown in the job summary)
     needs: [static, resolve]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
