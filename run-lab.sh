@@ -60,7 +60,7 @@ SRC_ARG="$1"; shift
 [ -d "$SRC_ARG" ] || die "not a directory: $SRC_ARG"
 SRC="$(cd -- "$SRC_ARG" && pwd -P)"
 for f in extension/manifest.json mcp-bridge.cjs package.json; do
-  [ -f "$SRC/$f" ] && [ ! -L "$SRC/$f" ] || die "$SRC_ARG does not look like a thunderbird-mcp tree (missing $f)"
+  if [ ! -f "$SRC/$f" ] || [ -L "$SRC/$f" ]; then die "$SRC_ARG does not look like a thunderbird-mcp tree (missing $f)"; fi
 done
 
 # The results must not land inside the tree under test: a hostile tree could have planted links there (and the
@@ -70,7 +70,7 @@ inside_src "$(realpath -m -- "$OUT_DIR")" && die "--out must not be inside SOURC
 
 WORK="$(mktemp -d)"
 CNAME=""
-# shellcheck disable=SC2329  # invoked through the EXIT trap below
+# shellcheck disable=SC2317,SC2329  # invoked through the EXIT trap below
 cleanup() {
   if [ -n "$CNAME" ]; then docker kill "$CNAME" >/dev/null 2>&1 || true; fi
   rm -rf -- "$WORK"

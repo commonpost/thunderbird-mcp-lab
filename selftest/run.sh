@@ -13,7 +13,7 @@ opts=()
 while [ $# -gt 1 ]; do opts+=("$1"); shift; done
 usage() { echo "usage: $0 [--image IMAGE] UPSTREAM_TREE" >&2; exit 2; }
 [ $# -eq 1 ] || usage
-[ -d "$1/extension" ] && [ ! -L "$1/extension" ] || usage
+if [ ! -d "$1/extension" ] || [ -L "$1/extension" ]; then usage; fi
 tmp="$(mktemp -d)"
 trap 'rm -rf -- "$tmp"' EXIT
 mkdir "$tmp/tree" "$tmp/out"
