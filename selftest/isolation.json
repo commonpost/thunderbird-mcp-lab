@@ -1,0 +1,133 @@
+{
+  "name": "isolation-selftest",
+  "description": "Lab self-test with a stand-in bridge (selftest/stand-in-bridge.cjs, NOT thunderbird-mcp): code running next to the harness must have no network, no capabilities, no way to write the image, and no way to reach the memory, the environment or the file descriptors of the harness or of PID 1 (the two processes that hold the container's input and output); no other reachable process may hold anything but /dev/null or a harness log on 0, 1 or 2. The first check is deliberately marked xfail so that its passing detail (which carries terminal control sequences) is printed by the launcher and exercises the output sanitiser.",
+  "steps": [
+    {
+      "id": "probe",
+      "tool": "selftest",
+      "arguments": {},
+      "timeout": 30
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "probe",
+      "xfail": "self-test: forces an XPASS line whose detail carries control characters"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_is_harness\":\"yes\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_fd0\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_fd1\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_mem\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_environ\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"parent_fd_dir\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_is_harness\":\"yes\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_fd_dir\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_fd0\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_fd1_read\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_fd1_write\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_fd2\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_mem\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"pid1_environ\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"reachable_stdio\":\"none\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"write_harness\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"write_root\":\"denied:"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"uid\":10001"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"cap_eff\":\"0000000000000000\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"no_new_privs\":\"1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"interfaces\":\"lo\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "probe",
+      "contains": "\"internet\":\"denied:"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
