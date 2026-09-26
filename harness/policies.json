@@ -1,0 +1,8 @@
+{
+  "policies": {
+    "DisableAppUpdate": true,
+    "AppAutoUpdate": false,
+    "DisableTelemetry": true,
+    "ExtensionUpdate": false
+  }
+}
