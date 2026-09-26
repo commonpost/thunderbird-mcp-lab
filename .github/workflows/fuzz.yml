@@ -1,0 +1,52 @@
+name: fuzz
+
+# ClusterFuzzLite (https://google.github.io/clusterfuzzlite/) fuzzes the scenario validator (fuzz/, harness/lab.py):
+# scenario files come from contributors, and the validator must reject any malformed one with a clean error.
+# Pull requests that touch it: 5 minutes on the changed code. Every week: a 30-minute batch run.
+# Crashes are reported to code scanning (SARIF). No secret is used; the token can only upload those results.
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "harness/lab.py"
+      - "fuzz/**"
+      - ".clusterfuzzlite/**"
+      - ".github/workflows/fuzz.yml"
+  schedule:
+    - cron: "11 4 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    name: Fuzz the scenario validator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      security-events: write # crash reports as code scanning alerts
+    steps:
+      - name: Build the fuzz targets
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: python
+          sanitizer: address
+          github-token: ${{ github.token }}
+
+      - name: Run the fuzz targets
+        uses: google/clusterfuzzlite/actions/run_fuzzers@884713a6c30a92e5e8544c39945cd7cb630abcd1 # v1
+        with:
+          language: python
+          sanitizer: address
+          mode: ${{ github.event_name == 'pull_request' && 'code-change' || 'batch' }}
+          fuzz-seconds: ${{ github.event_name == 'pull_request' && 300 || 1800 }}
+          github-token: ${{ github.token }}
+          output-sarif: true
