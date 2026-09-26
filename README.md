@@ -1,5 +1,7 @@
 # thunderbird-mcp lab
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/commonpost/thunderbird-mcp-lab/badge)](https://scorecard.dev/viewer/?uri=github.com/commonpost/thunderbird-mcp-lab)
+
 An offline, end-to-end test lab for [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp).
 
 The lab runs the real extension and the real MCP bridge (`mcp-bridge.cjs`) of a thunderbird-mcp source tree inside a
