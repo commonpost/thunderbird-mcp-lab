@@ -62,10 +62,10 @@ jobs:
       - name: Harness, launcher and scenarios
         run: |
           set -euo pipefail
-          python3 -B -m py_compile harness/lab.py
+          python3 -B -m py_compile harness/lab.py fuzz/fuzz_load_scenario.py
           python3 -B harness/lab.py --validate scenarios/*.json selftest/isolation.json
-          bash -n run-lab.sh selftest/run.sh
-          shellcheck run-lab.sh selftest/run.sh
+          bash -n run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
+          shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
 
   resolve:
     name: Resolve upstream code

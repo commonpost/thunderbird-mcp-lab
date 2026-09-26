@@ -10,3 +10,8 @@ updates:
     directory: /harness
     schedule:
       interval: weekly
+  # Base image of the ClusterFuzzLite build (.clusterfuzzlite/Dockerfile) is pinned by digest.
+  - package-ecosystem: docker
+    directory: /.clusterfuzzlite
+    schedule:
+      interval: weekly

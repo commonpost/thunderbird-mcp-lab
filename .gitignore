@@ -1,3 +1,4 @@
 lab-results/
 __pycache__/
 *.pyc
+fuzz/lab.py

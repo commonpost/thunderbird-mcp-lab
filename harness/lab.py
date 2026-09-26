@@ -237,11 +237,11 @@ def wait_for(pred, timeout, step=0.25):
 
 
 # ------------------------------------------------------------------------------------------------ scenario
-NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
-TOOL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,63}$")
-PREF_RE = re.compile(r"^[A-Za-z0-9._@{}-]{1,200}$")
+NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")   # fullmatch
+TOOL_RE = re.compile(r"[A-Za-z][A-Za-z0-9_]{0,63}")   # fullmatch
+PREF_RE = re.compile(r"[A-Za-z0-9._@{}-]{1,200}")   # fullmatch
 # mbox folder to seed, relative to <profile>/Mail: 2 to 4 segments, no leading dot (e.g. "Local Folders/Inbox").
-SEED_FOLDER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}){1,3}$")
+SEED_FOLDER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}){1,3}")   # fullmatch
 # Environment passed to the bridge only: the project's own namespace (no NODE_OPTIONS, LD_*, PATH...).
 BRIDGE_ENV_RE = re.compile(r"THUNDERBIRD_MCP_[A-Z0-9_]{1,64}")   # fullmatch ("$" would accept a trailing \n)
 PRINTABLE_RE = re.compile(r"[ -~]{0,500}")
@@ -282,7 +282,8 @@ def load_scenario(raw):
         raise ValueError("steps: a list of at most 50 items")
     ids = set()
     for st in steps:
-        if not isinstance(st, dict) or not NAME_RE.match(str(st.get("id", ""))) or not TOOL_RE.match(str(st.get("tool", ""))):
+        if not isinstance(st, dict) or not isinstance(st.get("id"), str) or not NAME_RE.fullmatch(st["id"]) \
+                or not isinstance(st.get("tool"), str) or not TOOL_RE.fullmatch(st["tool"]):
             raise ValueError("invalid step (id, tool)")
         if st["id"] in ids:
             raise ValueError("step %s: duplicate id" % st["id"])
@@ -297,7 +298,7 @@ def load_scenario(raw):
             raise ValueError("step %s: timeout 1-180" % st["id"])
         if not isinstance(st.get("force_call", False), bool):
             raise ValueError("step %s: force_call must be a boolean" % st["id"])
-        if "batch" in st and not NAME_RE.match(str(st["batch"])):
+        if "batch" in st and (not isinstance(st["batch"], str) or not NAME_RE.fullmatch(st["batch"])):
             raise ValueError("step %s: batch = a name [A-Za-z0-9._-]" % st["id"])
         w = st.get("wait_after", 0)
         if not isinstance(w, int) or isinstance(w, bool) or not 0 <= w <= 120:
@@ -323,16 +324,16 @@ def load_scenario(raw):
         raise ValueError("bridge_env: at most 10 THUNDERBIRD_MCP_[A-Z0-9_] variables, printable ASCII values <= 500")
     for key in ("tools_dump", "schema_watch"):
         td = sc.get(key, [])
-        if not isinstance(td, list) or len(td) > 20 or not all(isinstance(t, str) and TOOL_RE.match(t) for t in td):
+        if not isinstance(td, list) or len(td) > 20 or not all(isinstance(t, str) and TOOL_RE.fullmatch(t) for t in td):
             raise ValueError("%s: at most 20 tool names" % key)
     prefs = sc.get("prefs", {})
     if not isinstance(prefs, dict):
         raise ValueError("prefs: an object is expected")
     for k, v in prefs.items():
-        if not PREF_RE.match(k) or not isinstance(v, (bool, int, str)) or (isinstance(v, str) and len(v) > 2000):
+        if not PREF_RE.fullmatch(k) or not isinstance(v, (bool, int, str)) or (isinstance(v, str) and len(v) > 2000):
             raise ValueError("preference refused: %r" % k)
     wp = sc.get("watch_prefs", [])
-    if not isinstance(wp, list) or len(wp) > 20 or not all(isinstance(p, str) and PREF_RE.match(p) for p in wp):
+    if not isinstance(wp, list) or len(wp) > 20 or not all(isinstance(p, str) and PREF_RE.fullmatch(p) for p in wp):
         raise ValueError("watch_prefs: at most 20 preference prefixes")
     seed = sc.get("seed", [])
     if not isinstance(seed, list) or len(seed) > 10:
@@ -340,7 +341,7 @@ def load_scenario(raw):
     total = 0
     for s in seed:
         folder = s.get("folder") if isinstance(s, dict) else None
-        if not isinstance(folder, str) or not SEED_FOLDER_RE.match(folder) or ".." in folder:
+        if not isinstance(folder, str) or not SEED_FOLDER_RE.fullmatch(folder) or ".." in folder:
             raise ValueError("seed: folder refused %r (e.g. \"127.0.0.1/Inbox\")" % folder)
         msgs = s.get("messages")
         if not isinstance(msgs, list) or not 1 <= len(msgs) <= 20 or not all(isinstance(m, str) for m in msgs):
@@ -360,7 +361,7 @@ def load_scenario(raw):
     if not isinstance(ins, dict) or set(ins) - {"prefs", "files"}:
         raise ValueError("inspect: an object with \"prefs\" and/or \"files\"")
     ip = ins.get("prefs", [])
-    if not isinstance(ip, list) or len(ip) > 20 or not all(isinstance(p, str) and PREF_RE.match(p) for p in ip):
+    if not isinstance(ip, list) or len(ip) > 20 or not all(isinstance(p, str) and PREF_RE.fullmatch(p) for p in ip):
         raise ValueError("inspect.prefs: at most 20 preference prefixes")
     fi = ins.get("files", [])
     if not isinstance(fi, list) or len(fi) > 10 or not all(
@@ -370,9 +371,9 @@ def load_scenario(raw):
     if not isinstance(checks, list) or not 1 <= len(checks) <= 200:
         raise ValueError("checks: a list of 1 to 200 checks")
     for c in checks:
-        if not isinstance(c, dict) or c.get("type") not in CHECK_TYPES:
+        if not isinstance(c, dict) or not isinstance(c.get("type"), str) or c["type"] not in CHECK_TYPES:
             raise ValueError("unknown check type: %r" % (c.get("type") if isinstance(c, dict) else c))
-        if "step" in c and c["step"] not in ids:
+        if "step" in c and (not isinstance(c["step"], str) or c["step"] not in ids):
             raise ValueError("check %s: unknown step %r" % (c["type"], c["step"]))
         for k in ("xfail", "note"):
             if k in c and (not isinstance(c[k], str) or not 1 <= len(c[k]) <= 500):

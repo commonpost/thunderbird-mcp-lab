@@ -35,6 +35,15 @@ shellcheck run-lab.sh selftest/run.sh                         # shell lint
 docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:latest   # workflow lint
 ```
 
+The scenario validator is fuzzed by ClusterFuzzLite (`fuzz/`, `.clusterfuzzlite/`, workflow `fuzz`): any input must be
+rejected with a clean `ValueError`, never another exception. To fuzz it locally (needs `pip install atheris`):
+
+```sh
+cp harness/lab.py fuzz/ && python3 fuzz/fuzz_load_scenario.py -dict=fuzz/fuzz_load_scenario.dict \
+  -max_total_time=120 corpus/    # corpus/ = a copy of scenarios/*.json; crashes are written as crash-*
+rm fuzz/lab.py
+```
+
 Tips for scenarios:
 
 - Give every draft or message a unique subject marker such as `[x1]`, and match on it.
