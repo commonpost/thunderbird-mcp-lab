@@ -1,0 +1,39 @@
+name: zizmor
+
+# zizmor (https://docs.zizmor.sh): static security analysis of the workflows and of the Dependabot configuration
+# (template injection, unpinned actions, excessive permissions, persisted credentials, cache poisoning...).
+# Pedantic persona; findings go to code scanning. The action maps each zizmor version to a pinned image digest.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    name: Workflow security (zizmor)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write # findings as code scanning alerts
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          version: 1.30.1
+          persona: pedantic

@@ -1,17 +1,25 @@
 version: 2
+# cooldown: a new release is proposed only after 7 days, so that a compromised release is more likely to be
+# caught and withdrawn upstream before it reaches this repository.
 updates:
   # GitHub Actions are pinned by full commit SHA; Dependabot proposes new SHAs (with the version in a comment).
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
   # Base images of harness/Dockerfile are pinned by digest.
   - package-ecosystem: docker
     directory: /harness
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
   # Base image of the ClusterFuzzLite build (.clusterfuzzlite/Dockerfile) is pinned by digest.
   - package-ecosystem: docker
     directory: /.clusterfuzzlite
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
