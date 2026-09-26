@@ -1,5 +1,6 @@
 # thunderbird-mcp lab
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14959/badge)](https://www.bestpractices.dev/projects/14959)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/commonpost/thunderbird-mcp-lab/badge)](https://scorecard.dev/viewer/?uri=github.com/commonpost/thunderbird-mcp-lab)
 
 An offline, end-to-end test lab for [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp).
