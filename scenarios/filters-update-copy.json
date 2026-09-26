@@ -1,0 +1,111 @@
+{
+  "name": "filters-update-copy",
+  "description": "A hand-made rule (seeded msgFilterRules.dat) with 13 OR-ed conditions of varied types (text, date, priority, status, tag, junk score origin, custom header, age, size, attachment, junk status and percent) and two copies of it. updateFilter changes ONLY the action of one copy (to addTag): every condition copied over by the extension must be written back by Thunderbird exactly as in the untouched reference rule. Renaming the reference rule to its own name must not change it either. Nothing is sent. Known upstream issue (value typing when conditions are rebuilt, see TKasperczyk/thunderbird-mcp#175 and #195) is marked xfail.",
+  "startup_timeout": 240,
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed_files": [
+    {
+      "path": "Mail/127.0.0.1/msgFilterRules.dat",
+      "content": "version=\"9\"\nlogging=\"no\"\nname=\"lab-reference\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark read\"\ncondition=\"OR (subject,contains,invoice) OR (from,contains,boss@example.com) OR (date,is before,01-Jan-2026) OR (priority,is higher than,Normal) OR (status,is,replied) OR (tag,contains,$label1) OR (junk score origin,is,plugin) OR (\\\"x-mailer\\\",contains,bulk) OR (age in days,is greater than,30) OR (size,is greater than,1024) OR (has attachment status,is,true) OR (junk status,is,2) OR (junk percent,is greater than,90)\"\nname=\"lab-copy\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark read\"\ncondition=\"OR (subject,contains,invoice) OR (from,contains,boss@example.com) OR (date,is before,01-Jan-2026) OR (priority,is higher than,Normal) OR (status,is,replied) OR (tag,contains,$label1) OR (junk score origin,is,plugin) OR (\\\"x-mailer\\\",contains,bulk) OR (age in days,is greater than,30) OR (size,is greater than,1024) OR (has attachment status,is,true) OR (junk status,is,2) OR (junk percent,is greater than,90)\"\nname=\"lab-copy-flagged\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark flagged\"\ncondition=\"OR (subject,contains,invoice) OR (from,contains,boss@example.com) OR (date,is before,01-Jan-2026) OR (priority,is higher than,Normal) OR (status,is,replied) OR (tag,contains,$label1) OR (junk score origin,is,plugin) OR (\\\"x-mailer\\\",contains,bulk) OR (age in days,is greater than,30) OR (size,is greater than,1024) OR (has attachment status,is,true) OR (junk status,is,2) OR (junk percent,is greater than,90)\"\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "list-before",
+      "tool": "listFilters",
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 30
+    },
+    {
+      "id": "update-action",
+      "tool": "updateFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 1,
+        "actions": [
+          {
+            "type": "addTag",
+            "value": "$label2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "update-reference-name",
+      "tool": "updateFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 0,
+        "name": "lab-reference"
+      }
+    },
+    {
+      "id": "list-after",
+      "tool": "listFilters",
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 30
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/127.0.0.1/msgFilterRules.dat"
+    ]
+  },
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "list-before"
+    },
+    {
+      "type": "tool_ok",
+      "step": "update-action"
+    },
+    {
+      "type": "tool_ok",
+      "step": "update-reference-name"
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-copy",
+      "actions": [
+        "AddTag"
+      ],
+      "action_values": [
+        "$label2"
+      ],
+      "condition_same_as": "lab-reference",
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-reference",
+      "actions": [
+        "Mark read"
+      ],
+      "condition_contains": "age in days,is greater than,30"
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-copy-flagged",
+      "actions": [
+        "Mark flagged"
+      ],
+      "condition_same_as": "lab-reference"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

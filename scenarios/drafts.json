@@ -1,0 +1,186 @@
+{
+  "name": "drafts",
+  "description": "saveDraft variants: plain text with To/Cc/Bcc and several recipients, HTML body, UTF-8 body, explicit sender identity, no recipient at all. Each call must produce exactly one draft in Local Folders/Drafts with the requested headers and body. Nothing is sent.",
+  "schema_watch": [
+    "saveDraft"
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "plain",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "first@example.com, second@example.com",
+        "cc": "copy@example.com",
+        "bcc": "hidden@example.com",
+        "subject": "Lab drafts [plain]",
+        "body": "First line of the plain draft.\nSecond line.\n"
+      },
+      "draft_subject": "Lab drafts [plain]",
+      "probes": [
+        {
+          "header": "To",
+          "needle": "second@example.com"
+        },
+        {
+          "header": "Bcc",
+          "needle": "hidden@example.com"
+        }
+      ]
+    },
+    {
+      "id": "html",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab drafts [html]",
+        "isHtml": true,
+        "body": "<p>Hello <b>lab</b>, this is an HTML draft.</p>"
+      },
+      "draft_subject": "Lab drafts [html]"
+    },
+    {
+      "id": "utf8",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab drafts [utf8]",
+        "body": "Accents: d\u00e9j\u00e0 vu, na\u00efve caf\u00e9. Symbols: \u2713 \u20ac.\n"
+      },
+      "draft_subject": "Lab drafts [utf8]"
+    },
+    {
+      "id": "identity",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "recipient@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab drafts [identity]",
+        "body": "Draft with an explicit sender identity.\n"
+      },
+      "draft_subject": "Lab drafts [identity]"
+    },
+    {
+      "id": "no-recipient",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "subject": "Lab drafts [no-recipient]",
+        "body": "A draft without any recipient.\n"
+      },
+      "draft_subject": "Lab drafts [no-recipient]"
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "plain"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab drafts [plain]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [plain]",
+      "header": "To",
+      "contains": "first@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [plain]",
+      "header": "To",
+      "contains": "second@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [plain]",
+      "header": "Cc",
+      "contains": "copy@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [plain]",
+      "header": "Bcc",
+      "contains": "hidden@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [plain]",
+      "header": "Content-Type",
+      "contains": "text/plain"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab drafts [plain]",
+      "contains": "First line of the plain draft."
+    },
+    {
+      "type": "tool_ok",
+      "step": "html"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab drafts [html]",
+      "equals": 1
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab drafts [html]",
+      "contains": "<b>lab</b>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "utf8"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab drafts [utf8]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [utf8]",
+      "header": "Content-Type",
+      "contains": "UTF-8"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab drafts [utf8]",
+      "contains": "d\u00e9j\u00e0 vu, na\u00efve caf\u00e9. Symbols: \u2713 \u20ac."
+    },
+    {
+      "type": "tool_ok",
+      "step": "identity"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab drafts [identity]",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "no-recipient"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab drafts [no-recipient]",
+      "equals": 1
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

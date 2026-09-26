@@ -1,0 +1,157 @@
+{
+  "name": "thread-headers",
+  "description": "Threading headers of replies. Two messages are seeded in the POP3 inbox (a root message and a follow-up in the same thread). replyToMessage with skipReview is allowed for this scenario only (blockSkipReview = false), so each reply is delivered to the local mailpit sink inside the container, where its raw headers are inspected: In-Reply-To and References must point at the replied message, the subject gets a single Re: prefix, the reply goes to the original sender and quotes the original text.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.thunderbird-mcp.blockSkipReview": false
+  },
+  "schema_watch": [
+    "replyToMessage"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab thread root [t1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <thread-root@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nOriginal line of the root message.\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: Re: Lab thread follow-up [t2]\nDate: Thu, 01 Jan 2026 11:00:00 +0000\nMessage-ID: <thread-follow-up@example.com>\nIn-Reply-To: <thread-root@example.com>\nReferences: <thread-root@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nOriginal line of the follow-up.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "thread-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "reply-root",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "wait_after": 3,
+      "arguments": {
+        "messageId": "thread-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Lab reply to the root message.",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "reply-follow-up",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "wait_after": 3,
+      "arguments": {
+        "messageId": "thread-follow-up@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Lab reply to the follow-up.",
+        "skipReview": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply-root"
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply-follow-up"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 2
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t1]",
+      "header": "In-Reply-To",
+      "contains": "<thread-root@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t1]",
+      "header": "References",
+      "contains": "<thread-root@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t1]",
+      "header": "Subject",
+      "contains": "Re: Lab thread root [t1]"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t1]",
+      "header": "To",
+      "contains": "alice@example.com"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[t1]",
+      "contains": "Lab reply to the root message."
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[t1]",
+      "contains": "> Original line of the root message."
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t2]",
+      "header": "In-Reply-To",
+      "contains": "<thread-follow-up@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t2]",
+      "header": "References",
+      "contains": "<thread-follow-up@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t2]",
+      "header": "Subject",
+      "contains": "Re: Lab thread follow-up [t2]"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[t2]",
+      "header": "To",
+      "contains": "bob@example.com"
+    }
+  ]
+}

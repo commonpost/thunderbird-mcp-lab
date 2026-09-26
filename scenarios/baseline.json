@@ -1,0 +1,87 @@
+{
+  "name": "baseline",
+  "description": "End-to-end reference: listAccounts, then a simple saveDraft. The draft must appear in Local Folders/Drafts (mbox) with its headers. Nothing is sent: mailpit must stay empty.",
+  "schema_watch": [
+    "saveDraft",
+    "listAccounts"
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "draft",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "recipient@example.com",
+        "cc": "copy@example.com",
+        "subject": "Lab baseline 1",
+        "body": "Hello,\nthis is a draft saved by the lab.\n"
+      },
+      "draft_subject": "Lab baseline 1",
+      "draft_wait": 30,
+      "probes": [
+        {
+          "header": "To",
+          "needle": "recipient@example.com"
+        },
+        {
+          "header": "Cc",
+          "needle": "copy@example.com"
+        }
+      ]
+    }
+  ],
+  "inspect": {
+    "prefs": [
+      "extensions.thunderbird-mcp.",
+      "mail.identity.id1.draft_folder",
+      "mail.smtp",
+      "mail.outgoing"
+    ]
+  },
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "saveDraft"
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "draft"
+    },
+    {
+      "type": "draft_exists",
+      "subject": "Lab baseline 1"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab baseline 1",
+      "header": "To",
+      "contains": "recipient@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab baseline 1",
+      "header": "Cc",
+      "contains": "copy@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Lab baseline 1",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

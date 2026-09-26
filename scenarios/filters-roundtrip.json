@@ -1,0 +1,662 @@
+{
+  "name": "filters-roundtrip",
+  "description": "Filter round trip through the tools, for every action type except forward/reply: createFilter, then what listFilters reports must match what was requested (action type, value, condition). Then updateFilter changes the action of an age-based filter and the conditions of another one; listFilters must show the change and keep the untouched parts. Nothing is sent. Known upstream issues (enum/value typing, see TKasperczyk/thunderbird-mcp#175 and #195) are marked xfail.",
+  "startup_timeout": 240,
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "folder",
+      "tool": "createFolder",
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-target"
+      },
+      "timeout": 30,
+      "wait_after": 2
+    },
+    {
+      "id": "create-moveToFolder",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-moveToFolder",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-moveToFolder"
+          }
+        ],
+        "actions": [
+          {
+            "type": "moveToFolder",
+            "value": "mailbox://nobody@Local%20Folders/lab-target"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-copyToFolder",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-copyToFolder",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-copyToFolder"
+          }
+        ],
+        "actions": [
+          {
+            "type": "copyToFolder",
+            "value": "mailbox://nobody@Local%20Folders/lab-target"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-markRead",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-markRead",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-markRead"
+          }
+        ],
+        "actions": [
+          {
+            "type": "markRead"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-markUnread",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-markUnread",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-markUnread"
+          }
+        ],
+        "actions": [
+          {
+            "type": "markUnread"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-markFlagged",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-markFlagged",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-markFlagged"
+          }
+        ],
+        "actions": [
+          {
+            "type": "markFlagged"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-addTag",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-addTag",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-addTag"
+          }
+        ],
+        "actions": [
+          {
+            "type": "addTag",
+            "value": "$label1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-changePriority",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-changePriority",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-changePriority"
+          }
+        ],
+        "actions": [
+          {
+            "type": "changePriority",
+            "value": "6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-delete",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-delete",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-delete"
+          }
+        ],
+        "actions": [
+          {
+            "type": "delete"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-stopExecution",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-stopExecution",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-stopExecution"
+          }
+        ],
+        "actions": [
+          {
+            "type": "stopExecution"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-killThread",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-killThread",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-killThread"
+          }
+        ],
+        "actions": [
+          {
+            "type": "killThread"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-watchThread",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-watchThread",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-watchThread"
+          }
+        ],
+        "actions": [
+          {
+            "type": "watchThread"
+          }
+        ]
+      }
+    },
+    {
+      "id": "create-age",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-age",
+        "conditions": [
+          {
+            "attrib": "ageInDays",
+            "op": "isGreaterThan",
+            "value": "30"
+          }
+        ],
+        "actions": [
+          {
+            "type": "moveToFolder",
+            "value": "mailbox://nobody@Local%20Folders/lab-target"
+          }
+        ]
+      }
+    },
+    {
+      "id": "list1",
+      "tool": "listFilters",
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 30
+    },
+    {
+      "id": "update-age-action",
+      "tool": "updateFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 11,
+        "actions": [
+          {
+            "type": "markRead"
+          }
+        ]
+      }
+    },
+    {
+      "id": "update-move-conditions",
+      "tool": "updateFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 0,
+        "conditions": [
+          {
+            "attrib": "from",
+            "op": "contains",
+            "value": "boss@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "list2",
+      "tool": "listFilters",
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 30
+    }
+  ],
+  "inspect": {
+    "prefs": [
+      "extensions.thunderbird-mcp."
+    ]
+  },
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "folder"
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-moveToFolder"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-moveToFolder",
+      "action_types": [
+        "moveToFolder"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-moveToFolder"
+        }
+      ],
+      "action_values": [
+        "mailbox://nobody@Local%20Folders/lab-target"
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-copyToFolder",
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-copyToFolder",
+      "action_types": [
+        "copyToFolder"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-copyToFolder"
+        }
+      ],
+      "action_values": [
+        "mailbox://nobody@Local%20Folders/lab-target"
+      ],
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-markRead"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-markRead",
+      "action_types": [
+        "markRead"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-markRead"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-markUnread"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-markUnread",
+      "action_types": [
+        "markUnread"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-markUnread"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-markFlagged"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-markFlagged",
+      "action_types": [
+        "markFlagged"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-markFlagged"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-addTag"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-addTag",
+      "action_types": [
+        "addTag"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-addTag"
+        }
+      ],
+      "action_values": [
+        "$label1"
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-changePriority",
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-changePriority",
+      "action_types": [
+        "changePriority"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-changePriority"
+        }
+      ],
+      "action_values": [
+        "6"
+      ],
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-delete"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-delete",
+      "action_types": [
+        "delete"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-delete"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-stopExecution"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-stopExecution",
+      "action_types": [
+        "stopExecution"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-stopExecution"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-killThread"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-killThread",
+      "action_types": [
+        "killThread"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-killThread"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-watchThread"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-watchThread",
+      "action_types": [
+        "watchThread"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "lab-watchThread"
+        }
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-age",
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "tool_ok",
+      "step": "list1"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list1",
+      "account": "account2",
+      "name": "lab-age",
+      "action_types": [
+        "moveToFolder"
+      ],
+      "action_values": [
+        "mailbox://nobody@Local%20Folders/lab-target"
+      ],
+      "terms": [
+        {
+          "attrib": "ageInDays",
+          "op": "isGreaterThan",
+          "value": "30"
+        }
+      ],
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "tool_ok",
+      "step": "update-age-action",
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "tool_ok",
+      "step": "update-move-conditions"
+    },
+    {
+      "type": "tool_ok",
+      "step": "list2"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list2",
+      "account": "account2",
+      "name": "lab-age",
+      "action_types": [
+        "markRead"
+      ],
+      "terms": [
+        {
+          "attrib": "ageInDays",
+          "op": "isGreaterThan",
+          "value": "30"
+        }
+      ],
+      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list2",
+      "account": "account2",
+      "name": "lab-moveToFolder",
+      "action_types": [
+        "moveToFolder"
+      ],
+      "action_values": [
+        "mailbox://nobody@Local%20Folders/lab-target"
+      ],
+      "terms": [
+        {
+          "attrib": "from",
+          "op": "contains",
+          "value": "boss@example.com"
+        }
+      ]
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

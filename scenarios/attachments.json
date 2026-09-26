@@ -1,0 +1,171 @@
+{
+  "name": "attachments",
+  "description": "Inline (base64) attachments on drafts: a generated 64 KiB binary file, a small text file and the backwards-compatible \"content\" alias. Each attachment must come back byte for byte from the saved draft. Then a seeded message with two attachments is read with getMessage: both attachments must be listed. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "schema_watch": [
+    "saveDraft",
+    "getMessage"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Carol Example <carol@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab attachments inbound [a-in]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <attachments-inbound@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"lab-boundary-1\"\n\n--lab-boundary-1\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nTwo attachments follow.\n\n--lab-boundary-1\nContent-Type: text/plain; charset=UTF-8; name=\"inbound-notes.txt\"\nContent-Disposition: attachment; filename=\"inbound-notes.txt\"\nContent-Transfer-Encoding: base64\n\nTGFiIGF0dGFjaG1lbnQ6IHBsYWluIHRleHQgbm90ZXMuCg==\n\n--lab-boundary-1\nContent-Type: application/pdf; name=\"inbound-report.pdf\"\nContent-Disposition: attachment; filename=\"inbound-report.pdf\"\nContent-Transfer-Encoding: base64\n\nJVBERi0xLjQKJSBsYWIKMSAwIG9iaiA8PCAvVHlwZSAvQ2F0YWxvZyA+PiBlbmRvYmoKdHJhaWxlciA8PCAvUm9vdCAxIDAgUiA+PgolJUVPRgo=\n\n--lab-boundary-1--\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "draft-inline",
+      "tool": "saveDraft",
+      "timeout": 120,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab attachments [a-out]",
+        "body": "Draft with inline attachments.\n",
+        "attachments": [
+          {
+            "name": "lab-binary.bin",
+            "contentType": "application/octet-stream",
+            "base64": {
+              "$lab_base64": {
+                "bytes": 65536,
+                "byte": 0
+              }
+            }
+          },
+          {
+            "name": "lab-notes.txt",
+            "contentType": "text/plain",
+            "base64": "TGFiIGF0dGFjaG1lbnQ6IHBsYWluIHRleHQgbm90ZXMuCg=="
+          }
+        ]
+      },
+      "draft_subject": "Lab attachments [a-out]",
+      "draft_wait": 60
+    },
+    {
+      "id": "draft-alias",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab attachments [a-alias]",
+        "body": "Draft with an attachment passed through the content alias.\n",
+        "attachments": [
+          {
+            "name": "lab-alias.bin",
+            "contentType": "application/octet-stream",
+            "content": {
+              "$lab_base64": {
+                "bytes": 1000,
+                "byte": 120
+              }
+            }
+          }
+        ]
+      },
+      "draft_subject": "Lab attachments [a-alias]"
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "attachments-inbound@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "read-inbound",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "attachments-inbound@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "draft-inline"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab attachments [a-out]",
+      "equals": 1
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "Lab attachments [a-out]",
+      "filename": "lab-binary.bin",
+      "bytes": 65536,
+      "byte": 0
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "Lab attachments [a-out]",
+      "filename": "lab-notes.txt",
+      "bytes": 34
+    },
+    {
+      "type": "tool_ok",
+      "step": "draft-alias"
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "Lab attachments [a-alias]",
+      "filename": "lab-alias.bin",
+      "bytes": 1000,
+      "byte": 120
+    },
+    {
+      "type": "tool_ok",
+      "step": "read-inbound"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "read-inbound",
+      "contains": "inbound-notes.txt"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "read-inbound",
+      "contains": "inbound-report.pdf"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
