@@ -3,21 +3,22 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14959/badge)](https://www.bestpractices.dev/projects/14959)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/commonpost/thunderbird-mcp-lab/badge)](https://scorecard.dev/viewer/?uri=github.com/commonpost/thunderbird-mcp-lab)
 
-An offline, end-to-end test lab for [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp).
+An offline, end-to-end test lab for [Commonpost MCP for Thunderbird](https://github.com/commonpost/thunderbird-mcp),
+the continuation of [thunderbird-mcp](https://github.com/TKasperczyk/thunderbird-mcp).
 
-The lab runs the real extension and the real MCP bridge (`mcp-bridge.cjs`) of a thunderbird-mcp source tree inside a
+The lab runs the real extension and the real MCP bridge (`mcp-bridge.cjs`) of a source tree inside a
 real Thunderbird, drives them over MCP the way an AI client would, then checks what Thunderbird actually wrote:
 drafts in the mbox store, filter rules in `msgFilterRules.dat`, preferences in `prefs.js`, and messages delivered to a
 local SMTP sink. Everything runs in a disposable container with no network access.
 
-It is a quality-assurance tool offered to the thunderbird-mcp project. It is **not a fork**, it does not contain or
-redistribute thunderbird-mcp code, and it is not affiliated with the upstream project (see
-[Relationship to upstream](#relationship-to-upstream)).
+It is the end-to-end test suite of Commonpost MCP for Thunderbird, kept in its own repository: it does not contain
+or redistribute the extension's code (see [Relationship to thunderbird-mcp](#relationship-to-thunderbird-mcp)).
 
 ## Why
 
-Unit tests exercise the extension with Thunderbird mocked out, and upstream already runs a Thunderbird compatibility
-smoke test that checks that the extension loads. This lab goes one step further and answers questions such as:
+Unit tests exercise the extension with Thunderbird mocked out, and the Commonpost repository already runs a
+Thunderbird compatibility smoke test that checks that the extension loads. This lab goes one step further and answers
+questions such as:
 
 - does `saveDraft` produce exactly one draft, with the requested `To`, `Cc`, `Bcc`, body and attachments, byte for byte?
 - does a filter created with `createFilter` come back from `listFilters` as it was requested?
@@ -60,17 +61,21 @@ Requirements: a Linux x86_64 host with Docker, bash, perl, python3, GNU tar and 
 # 1. Build the image (the only step that uses the network).
 docker build -t thunderbird-mcp-lab:local harness
 
-# 2. Get the thunderbird-mcp code to test (a release tag, main, or a pull request).
-git clone https://github.com/TKasperczyk/thunderbird-mcp.git
-git -C thunderbird-mcp checkout v0.7.4
+# 2. Get the code to test (a release tag, main, or a pull request).
+git clone https://github.com/commonpost/thunderbird-mcp.git commonpost-mcp
+git -C commonpost-mcp checkout v0.17.0
 
 # 3. Run the reference scenario, then all public scenarios.
-./run-lab.sh thunderbird-mcp scenarios/baseline.json
-./run-lab.sh thunderbird-mcp scenarios/*.json
+./run-lab.sh commonpost-mcp scenarios/baseline.json
+./run-lab.sh commonpost-mcp scenarios/*.json
 ```
 
-To test an upstream pull request, check it out first, for example
-`git -C thunderbird-mcp fetch origin pull/123/head && git -C thunderbird-mcp checkout FETCH_HEAD`.
+To test a pull request, check it out first, for example
+`git -C commonpost-mcp fetch origin pull/123/head && git -C commonpost-mcp checkout FETCH_HEAD`.
+
+The harness recognises the extension id of Commonpost MCP for Thunderbird and that of the original thunderbird-mcp,
+so a thunderbird-mcp tree can still be run locally; the scenarios target Commonpost (its preference names and its
+safety rules, such as explicit recipients for a direct reply), so some of them may not apply to it.
 
 Each scenario runs in a fresh container (typically 20 to 30 seconds once the image is built). Every run of
 `run-lab.sh` writes into a new directory `./lab-results/run-<UTC time>-<random>/`: a sanitised log and the result JSON
@@ -79,8 +84,8 @@ under test; existing files are never written to. Options: `--image IMAGE`, `--ou
 container output). Exit status: `0` every scenario passed, `1` at least one failed, `2` usage error, `3` at least one
 result was unusable (no single nonce-tagged block).
 
-A check can be marked `xfail` when it encodes a known, publicly discussed upstream issue: it is reported but does not
-fail the run, and it shows up as `xpass` once the issue no longer reproduces.
+A check can be marked `xfail` when it encodes a known, publicly tracked issue: it is reported but does not fail the
+run, and it shows up as `xpass` once the issue no longer reproduces.
 
 ## Public scenarios
 
@@ -89,14 +94,14 @@ fail the run, and it shows up as `xpass` once the issue no longer reproduces.
 | `baseline.json` | `listAccounts` + one `saveDraft`: the draft exists with its `To`, `Cc` and `From` headers; nothing is sent. |
 | `drafts.json` | `saveDraft` variants: several recipients, `Cc`/`Bcc`, HTML body, UTF-8 body, explicit sender identity, no recipient. |
 | `attachments.json` | Inline base64 attachments (a generated 64 KiB binary, a text file, the `content` alias) come back byte for byte from the draft; `getMessage` lists the attachments of a seeded message. |
-| `thread-headers.json` | `replyToMessage` on a seeded thread, delivered to the local mailpit sink: `In-Reply-To`, `References`, `Re:` subject, recipient and quoted text. |
+| `thread-headers.json` | `replyToMessage` (mode `send`, explicit `to` and `from`) on a seeded thread, delivered to the local mailpit sink: `In-Reply-To`, `References`, `Re:` subject, recipient and quoted text. |
 | `filters-roundtrip.json` | `createFilter` for every action type except forward/reply, then `listFilters` must report what was requested; `updateFilter` must keep what it was not asked to change. |
 | `filters-update-copy.json` | A hand-made rule with 13 conditions of varied types: changing only its action (to `addTag`) must leave every condition byte-for-byte identical in `msgFilterRules.dat`. |
 
-The filter scenarios mark as `xfail` the checks that fail because of the filter id and value-typing issues discussed
-publicly in upstream pull requests
+The filter scenarios used to mark as `xfail` the checks that failed because of the filter id and value-typing issues
+of the original thunderbird-mcp, discussed publicly in its pull requests
 [#175](https://github.com/TKasperczyk/thunderbird-mcp/pull/175) and
-[#195](https://github.com/TKasperczyk/thunderbird-mcp/pull/195).
+[#195](https://github.com/TKasperczyk/thunderbird-mcp/pull/195). Commonpost fixed them: those checks are strict now.
 
 ## Writing a scenario
 
@@ -174,13 +179,14 @@ and are not pinned.
 
 `.github/workflows/lab.yml` builds the image and runs the public scenarios and the self-test:
 
-- on pushes and pull requests to this repository, and every week, against the **latest published upstream release**:
+- on pushes and pull requests to this repository, and every week, against the **latest published release** of
+  [commonpost/thunderbird-mcp](https://github.com/commonpost/thunderbird-mcp):
   the release must not be a draft or a pre-release, its tag must resolve to the same commit through git and through
   the GitHub API, the checked-out commit must be that one, and the manifest version must match the tag;
-- manually (`workflow_dispatch`) against the latest release, upstream `main`, or a given upstream **pull request**
+- manually (`workflow_dispatch`) against the latest release, its `main` branch, or a given **pull request**
   (the pull request head is resolved through the API and through git, and both must agree).
 
-The upstream code is only checked out and streamed into the lab container: it is never executed on the runner. The
+The code under test is only checked out and streamed into the lab container: it is never executed on the runner. The
 workflow uses no secrets, its token is read-only (`contents: read`) and is not passed to the container, it does not
 use `pull_request_target`, and credentials are not persisted by `actions/checkout`. Only the summary table is published
 (in the job summary, and as a `lab-summary` artifact kept for 14 days): the logs and result JSON are output of the code
@@ -204,18 +210,16 @@ under test, which may be an unreviewed pull request, so they are not redistribut
 - Results are data produced next to the code under test (see above). Output is bounded: result JSON 3 MB, container
   output 20 MiB, mbox files read up to 20 MB.
 
-## Relationship to upstream
+## Relationship to thunderbird-mcp
 
-thunderbird-mcp is written and maintained by Tomasz Kasperczyk and its contributors, under the MIT license. This
-repository is an independent quality-assurance tool maintained by the commonpost organization. It is not affiliated
-with or endorsed by the upstream project, it is not a fork, and it does not ship upstream code: the code under test is
-whatever tree you point the launcher at.
+thunderbird-mcp is written and maintained by Tomasz Kasperczyk and its contributors, under the MIT license.
+[Commonpost MCP for Thunderbird](https://github.com/commonpost/thunderbird-mcp) is an independent continuation of it,
+maintained by the commonpost organization, and this lab is its end-to-end test suite. Neither is affiliated with or
+endorsed by the thunderbird-mcp project. The lab does not ship any extension code: the code under test is whatever
+tree you point the launcher at.
 
-The intent is to be useful to upstream. Findings are shared with the upstream project through its usual channels
-(issues and pull request reviews, or private vulnerability reporting for anything security-relevant). A scenario that
-encodes a known upstream issue links to the public upstream discussion and marks the affected checks `xfail`, rather
-than presenting them as failures. If the upstream maintainers would like the lab, or parts of it, in their own
-repository or CI, we will gladly help adapt it.
+The lab started as a quality-assurance tool offered to thunderbird-mcp; since October 2026 its CI tests Commonpost.
+It remains free to use, under the MIT license, for thunderbird-mcp or any other derivative.
 
 Thunderbird and Mozilla are trademarks of the Mozilla Foundation. This project is not affiliated with Mozilla.
 

@@ -32,9 +32,12 @@ under the same uid as the harness and can influence what the harness observes, s
 
 ## Vulnerabilities in other projects
 
-- **thunderbird-mcp**: report privately to the upstream project, following its
-  [security policy](https://github.com/TKasperczyk/thunderbird-mcp/security/policy). Do not publish a scenario, log or
-  issue that demonstrates an unfixed vulnerability, here or anywhere else.
+- **Commonpost MCP for Thunderbird** (the code this lab tests): report privately, following its
+  [security policy](https://github.com/commonpost/thunderbird-mcp/security/policy).
+- **thunderbird-mcp** (the original project): report privately, following its
+  [security policy](https://github.com/TKasperczyk/thunderbird-mcp/security/policy).
+- For either one, do not publish a scenario, log or issue that demonstrates an unfixed vulnerability, here or anywhere
+  else.
 - **Thunderbird**: report to [Mozilla](https://www.mozilla.org/security/).
 - **Docker, the Linux kernel, mailpit, Debian packages**: report to their respective maintainers.
 

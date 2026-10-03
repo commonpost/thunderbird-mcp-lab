@@ -1,11 +1,12 @@
 name: lab
 
-# Builds the lab image and runs the public scenarios against upstream thunderbird-mcp:
-# - on push, pull request and every week: the latest published upstream release (tag verified below);
-# - on demand (workflow_dispatch): the latest release, upstream main, or a given upstream pull request.
+# Builds the lab image and runs the public scenarios against Commonpost MCP for Thunderbird
+# (commonpost/thunderbird-mcp), the continuation of thunderbird-mcp:
+# - on push, pull request and every week: its latest published release (tag verified below);
+# - on demand (workflow_dispatch): the latest release, its main branch, or a given pull request.
 #
-# Upstream code is never executed on the runner: it is only checked out, then streamed as a tar archive into the lab
-# container (no network, read-only root, no capabilities, unprivileged user). No secret is used; the token is
+# The code under test is never executed on the runner: it is only checked out, then streamed as a tar archive into the
+# lab container (no network, read-only root, no capabilities, unprivileged user). No secret is used; the token is
 # read-only and is not passed to the container.
 #
 # Only the summary table is published (job summary and a small artifact). The logs and result JSON are output of the
@@ -22,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: "Upstream code to test"
+        description: "Code to test (commonpost/thunderbird-mcp)"
         type: choice
         options:
           - latest-release
@@ -30,7 +31,7 @@ on:
           - main
         default: latest-release
       pr:
-        description: "Upstream pull request number (only with target = pull-request)"
+        description: "Pull request number in commonpost/thunderbird-mcp (only with target = pull-request)"
         type: string
         default: ""
 
@@ -42,7 +43,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  UPSTREAM_REPO: TKasperczyk/thunderbird-mcp
+  TARGET_REPO: commonpost/thunderbird-mcp
 
 defaults:
   run:
@@ -74,7 +75,7 @@ jobs:
           pyflakes3 harness/lab.py fuzz/fuzz_load_scenario.py
 
   resolve:
-    name: Resolve upstream code
+    name: Resolve the code under test
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     outputs:
@@ -82,7 +83,7 @@ jobs:
       version: ${{ steps.resolve.outputs.version }}
       label: ${{ steps.resolve.outputs.label }}
     steps:
-      - name: Resolve and verify the upstream commit
+      - name: Resolve and verify the commit under test
         id: resolve
         env:
           TARGET: ${{ inputs.target || 'latest-release' }}
@@ -90,8 +91,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          api() { gh api -H "Accept: application/vnd.github+json" "repos/$UPSTREAM_REPO/$1"; }
-          remote="https://github.com/$UPSTREAM_REPO.git"
+          api() { gh api -H "Accept: application/vnd.github+json" "repos/$TARGET_REPO/$1"; }
+          remote="https://github.com/$TARGET_REPO.git"
           case "$TARGET" in
             latest-release)
               rel="$(api releases/latest)"
@@ -125,7 +126,7 @@ jobs:
               if ! [[ "$PR_NUMBER" =~ ^[1-9][0-9]{0,6}$ ]]; then echo "::error::pr must be a pull request number"; exit 1; fi
               pr="$(api "pulls/$PR_NUMBER")"
               sha="$(jq -r .head.sha <<<"$pr")"
-              if [ "$(jq -r .base.repo.full_name <<<"$pr")" != "$UPSTREAM_REPO" ]; then echo "::error::unexpected base repository"; exit 1; fi
+              if [ "$(jq -r .base.repo.full_name <<<"$pr")" != "$TARGET_REPO" ]; then echo "::error::unexpected base repository"; exit 1; fi
               rsha="$(git ls-remote "$remote" "refs/pull/$PR_NUMBER/head" | cut -f1)"
               if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ "$sha" != "$rsha" ]; then
                 echo "::error::the pull request head does not resolve consistently"; exit 1
@@ -150,7 +151,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   lab:
-    name: Lab # fixed name: required status check (the tested upstream code is shown in the job summary)
+    name: Lab # fixed name: required status check (the tested code is shown in the job summary)
     needs: [static, resolve]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -160,12 +161,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Check out the upstream code (never executed on the runner)
+      - name: Check out the code under test (never executed on the runner)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: ${{ env.UPSTREAM_REPO }}
+          repository: ${{ env.TARGET_REPO }}
           ref: ${{ needs.resolve.outputs.sha }}
-          path: upstream
+          path: target
           persist-credentials: false
 
       - name: Verify the checked-out commit
@@ -174,24 +175,24 @@ jobs:
           EXPECTED_VERSION: ${{ needs.resolve.outputs.version }}
         run: |
           set -euo pipefail
-          test "$(git -C upstream rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git -C target rev-parse HEAD)" = "$EXPECTED_SHA"
           if [ -n "$EXPECTED_VERSION" ]; then
-            test "$(jq -r .version upstream/extension/manifest.json)" = "$EXPECTED_VERSION"
+            test "$(jq -r .version target/extension/manifest.json)" = "$EXPECTED_VERSION"
           fi
-          echo "upstream at $EXPECTED_SHA"
+          echo "code under test at $EXPECTED_SHA"
 
       - name: Build the lab image
         run: docker build -t thunderbird-mcp-lab:ci harness
 
-      # The upstream tree (possibly an unreviewed pull request) is never executed on the runner: run-lab.sh only reads
+      # The tree under test (possibly an unreviewed pull request) is never executed on the runner: run-lab.sh only reads
       # it with tar and streams it into a container started with --network none, --read-only, --cap-drop ALL and an
       # unprivileged user, so code under test cannot reach the Actions cache service or anything else. No cache is used.
       - name: Run the public scenarios
-        run: ./run-lab.sh --image thunderbird-mcp-lab:ci --out lab-results upstream scenarios/*.json
+        run: ./run-lab.sh --image thunderbird-mcp-lab:ci --out lab-results target scenarios/*.json
 
       - name: Isolation self-test
         if: always()
-        run: selftest/run.sh --image thunderbird-mcp-lab:ci upstream
+        run: selftest/run.sh --image thunderbird-mcp-lab:ci target
 
       - name: Job summary
         if: always()
@@ -201,7 +202,7 @@ jobs:
         run: |
           set -euo pipefail
           {
-            echo "### thunderbird-mcp lab: $LABEL (\`$SHA\`)"
+            echo "### Commonpost lab: $LABEL (\`$SHA\`)"
             echo
             echo "| scenario | result | pass | fail | xfail | xpass | errors |"
             echo "|---|---|---|---|---|---|---|"
@@ -215,7 +216,7 @@ jobs:
               done
             done
             echo
-            echo "xfail = known upstream issue (not fatal); xpass = a known issue no longer reproduces."
+            echo "xfail = known, publicly tracked issue (not fatal); xpass = a known issue no longer reproduces."
             echo "Results are data produced next to the code under test, not proof. Logs and result JSON are not"
             echo "published: run the lab locally to get them."
           } >> "$GITHUB_STEP_SUMMARY"

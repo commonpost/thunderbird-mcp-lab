@@ -1,6 +1,6 @@
 {
   "name": "filters-roundtrip",
-  "description": "Filter round trip through the tools, for every action type except forward/reply: createFilter, then what listFilters reports must match what was requested (action type, value, condition). Then updateFilter changes the action of an age-based filter and the conditions of another one; listFilters must show the change and keep the untouched parts. Nothing is sent. Known upstream issues (enum/value typing, see TKasperczyk/thunderbird-mcp#175 and #195) are marked xfail.",
+  "description": "Filter round trip through the tools, for every action type except forward/reply: createFilter, then what listFilters reports must match what was requested (action type, value, condition). Then updateFilter changes the action of an age-based filter and the conditions of another one; listFilters must show the change and keep the untouched parts. Nothing is sent. The enum/value typing checks were xfail while they encoded issues of the original thunderbird-mcp (TKasperczyk/thunderbird-mcp#175 and #195); Commonpost fixed them, so they are strict checks now.",
   "startup_timeout": 240,
   "prefs": {
     "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
@@ -365,8 +365,7 @@
     },
     {
       "type": "tool_ok",
-      "step": "create-copyToFolder",
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      "step": "create-copyToFolder"
     },
     {
       "type": "listed_filter",
@@ -385,8 +384,7 @@
       ],
       "action_values": [
         "mailbox://nobody@Local%20Folders/lab-target"
-      ],
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      ]
     },
     {
       "type": "tool_ok",
@@ -473,8 +471,7 @@
     },
     {
       "type": "tool_ok",
-      "step": "create-changePriority",
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      "step": "create-changePriority"
     },
     {
       "type": "listed_filter",
@@ -493,8 +490,7 @@
       ],
       "action_values": [
         "6"
-      ],
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      ]
     },
     {
       "type": "tool_ok",
@@ -578,8 +574,7 @@
     },
     {
       "type": "tool_ok",
-      "step": "create-age",
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      "step": "create-age"
     },
     {
       "type": "tool_ok",
@@ -602,13 +597,11 @@
           "op": "isGreaterThan",
           "value": "30"
         }
-      ],
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      ]
     },
     {
       "type": "tool_ok",
-      "step": "update-age-action",
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      "step": "update-age-action"
     },
     {
       "type": "tool_ok",
@@ -632,8 +625,7 @@
           "op": "isGreaterThan",
           "value": "30"
         }
-      ],
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      ]
     },
     {
       "type": "listed_filter",

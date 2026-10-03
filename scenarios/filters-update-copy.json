@@ -1,6 +1,6 @@
 {
   "name": "filters-update-copy",
-  "description": "A hand-made rule (seeded msgFilterRules.dat) with 13 OR-ed conditions of varied types (text, date, priority, status, tag, junk score origin, custom header, age, size, attachment, junk status and percent) and two copies of it. updateFilter changes ONLY the action of one copy (to addTag): every condition copied over by the extension must be written back by Thunderbird exactly as in the untouched reference rule. Renaming the reference rule to its own name must not change it either. Nothing is sent. Known upstream issue (value typing when conditions are rebuilt, see TKasperczyk/thunderbird-mcp#175 and #195) is marked xfail.",
+  "description": "A hand-made rule (seeded msgFilterRules.dat) with 13 OR-ed conditions of varied types (text, date, priority, status, tag, junk score origin, custom header, age, size, attachment, junk status and percent) and two copies of it. updateFilter changes ONLY the action of one copy (to addTag): every condition copied over by the extension must be written back by Thunderbird exactly as in the untouched reference rule. Renaming the reference rule to its own name must not change it either. Nothing is sent. The value-typing check was xfail while it encoded an issue of the original thunderbird-mcp (TKasperczyk/thunderbird-mcp#175 and #195); Commonpost fixed it, so it is a strict check now.",
   "startup_timeout": 240,
   "prefs": {
     "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
@@ -82,8 +82,7 @@
       "action_values": [
         "$label2"
       ],
-      "condition_same_as": "lab-reference",
-      "xfail": "Known upstream issue: filter action/attribute ids and search-value typing (TKasperczyk/thunderbird-mcp#175, #195)"
+      "condition_same_as": "lab-reference"
     },
     {
       "type": "filter_rule",
