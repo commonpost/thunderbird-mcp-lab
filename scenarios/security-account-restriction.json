@@ -1,0 +1,130 @@
+{
+  "name": "security-account-restriction",
+  "description": "Only Local Folders (account1) is allowed (allowedAccounts = [\"account1\"]): the POP3 account (account2) and its identity disappear from listAccounts and listFolders, reading a message, listing filters or saving a draft from its identity is refused, and the content of its seeded message never appears in a response. Local Folders keeps working.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.allowedAccounts": "[\"account1\"]"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab restricted message [r0]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <restricted-root@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nRestricted-account secret line.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "folders",
+      "tool": "listFolders",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "filters-refused",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "draft-refused",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab restricted identity [r4]",
+        "body": "Must not be saved."
+      }
+    },
+    {
+      "id": "filters-control",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1"
+      },
+      "wait_after": 5
+    },
+    {
+      "id": "read-refused",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "restricted-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "note": "Last, after a pause: right after startup the POP3 Inbox may not exist yet, and the refusal would then be \"Folder not found\" instead of the account restriction."
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "account1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "lab@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "folders"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "folders",
+      "contains": "127.0.0.1",
+      "present": false
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "read-refused",
+      "contains": "Account not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "filters-refused",
+      "contains": "Account not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "draft-refused",
+      "contains": "restricted"
+    },
+    {
+      "type": "tool_ok",
+      "step": "filters-control"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[r4]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

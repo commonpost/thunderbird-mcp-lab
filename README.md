@@ -25,6 +25,8 @@ questions such as:
 - does `updateFilter` keep the conditions it was not asked to change, byte for byte, in what Thunderbird writes to
   `msgFilterRules.dat`?
 - do replies carry the right `In-Reply-To` and `References` headers?
+- do the safety settings hold in a real Thunderbird: direct sending off by default, disabled tools, restricted
+  accounts, refused attachment paths, and a fail-closed reading of unreadable settings?
 
 ## How it works
 
@@ -97,6 +99,11 @@ run, and it shows up as `xpass` once the issue no longer reproduces.
 | `thread-headers.json` | `replyToMessage` (mode `send`, explicit `to` and `from`) on a seeded thread, delivered to the local mailpit sink: `In-Reply-To`, `References`, `Re:` subject, recipient and quoted text. |
 | `filters-roundtrip.json` | `createFilter` for every action type except forward/reply, then `listFilters` must report what was requested; `updateFilter` must keep what it was not asked to change. |
 | `filters-update-copy.json` | A hand-made rule with 13 conditions of varied types: changing only its action (to `addTag`) must leave every condition byte-for-byte identical in `msgFilterRules.dat`. |
+| `security-direct-send-blocked.json` | Direct sending is off by default: `sendMail` with `skipReview`, `replyToMessage` and `forwardMessage` with mode `send` are refused and nothing is delivered; `saveDraft` still works. |
+| `security-disabled-tools.json` | Tools turned off in the settings are missing from `tools/list` and refused when called anyway; `listAccounts` cannot be turned off. |
+| `security-account-restriction.json` | With only Local Folders allowed, the other account and its identity are hidden, and reading its messages, listing its filters or writing from its identity is refused. |
+| `security-attachment-paths.json` | Attachments pointing at secrets (the extension's own connection file, system files, `..`, dotfiles, key files) are refused and the message is not saved; a harmless file is still attached. |
+| `security-fail-closed.json` | Unreadable restriction settings fail closed: every tool that can be turned off is off and no account is visible. |
 
 The filter scenarios used to mark as `xfail` the checks that failed because of the filter id and value-typing issues
 of the original thunderbird-mcp, discussed publicly in its pull requests

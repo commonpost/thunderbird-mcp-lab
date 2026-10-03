@@ -91,7 +91,7 @@ fails the run. The run passes when no check has status `fail` and the harness re
 | `tool_ok` | `step` | the step succeeded |
 | `tool_error_contains` | `step`, `contains` | the step failed and its error or text contains the text |
 | `tool_result_contains` | `step`, `contains`, `present` (default true) | the step succeeded and its full response text contains (or does not contain) the text |
-| `tools_list_has` | `tool` | the tool is in `tools/list` |
+| `tools_list_has` | `tool`, `present` (default true) | the tool is in `tools/list` (or, with `present: false`, is not) |
 | `schema_has` | `tool`, `property` | the property is in the tool's `inputSchema` (tool listed in `schema_watch`) |
 | `tool_json_equals` / `tool_json_contains` | `tool`, `path` (dotted, empty = whole tool), `equals` / `contains` | the value at that path of the tool definition equals / contains the value |
 | `draft_exists` | `subject` | a draft's subject contains the text |

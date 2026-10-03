@@ -44,7 +44,7 @@ import time
 import urllib.request
 import zipfile
 
-HARNESS = "thunderbird-mcp-lab harness 1.1"
+HARNESS = "thunderbird-mcp-lab harness 1.2"
 T0 = time.monotonic()
 DEADLINE = T0 + 560                     # seconds; run-lab.sh stops the container after 900 s
 LAB = "/lab"
@@ -1306,7 +1306,8 @@ def evaluate(c, steps):
         ok = bool(e and e.get("ok"))
         return ok, (e or {}).get("text", "") if ok else json.dumps(e, ensure_ascii=True)[:500]
     if typ == "tools_list_has":
-        return c.get("tool") in R.get("tools", []), ""
+        listed = c.get("tool") in R.get("tools", [])
+        return listed == bool(c.get("present", True)), "listed=%s" % listed
     if typ == "draft_exists":
         return any(c.get("subject", "\0") in m["subject"] for m in drafts()), ""
     if typ == "draft_header_contains":
