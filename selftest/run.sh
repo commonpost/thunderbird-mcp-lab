@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # selftest/run.sh - checks the lab's own isolation and output-sanitising claims with a stand-in bridge.
 #
-# Usage: selftest/run.sh [--image IMAGE] UPSTREAM_TREE
+# Usage: selftest/run.sh [--image IMAGE] SOURCE_TREE
 #
-# UPSTREAM_TREE is a thunderbird-mcp checkout: only its extension/ directory is used (the extension is what signals
-# readiness). The self-test tree is built in a temporary directory: extension/ is copied without following any link,
-# package.json is a minimal one written here, and mcp-bridge.cjs is selftest/stand-in-bridge.cjs. Nothing else is read
-# from UPSTREAM_TREE, and it is not modified.
+# SOURCE_TREE is a Commonpost MCP for Thunderbird (or thunderbird-mcp) checkout: only its extension/ directory is used
+# (the extension is what signals readiness). The self-test tree is built in a temporary directory: extension/ is
+# copied without following any link, package.json is a minimal one written here, and mcp-bridge.cjs is
+# selftest/stand-in-bridge.cjs. Nothing else is read from SOURCE_TREE, and it is not modified.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd -P)"
 opts=()
 while [ $# -gt 1 ]; do opts+=("$1"); shift; done
-usage() { echo "usage: $0 [--image IMAGE] UPSTREAM_TREE" >&2; exit 2; }
+usage() { echo "usage: $0 [--image IMAGE] SOURCE_TREE" >&2; exit 2; }
 [ $# -eq 1 ] || usage
 if [ ! -d "$1/extension" ] || [ -L "$1/extension" ]; then usage; fi
 tmp="$(mktemp -d)"

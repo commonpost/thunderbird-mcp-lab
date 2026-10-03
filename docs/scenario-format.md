@@ -82,8 +82,8 @@ length and SHA-256 in `generated_arguments`. This keeps scenarios and results sm
 
 ## Checks
 
-Every check is an object with a `type`, optional `note`, and optional `xfail` (a reason, e.g. a link to a public
-upstream issue). A check marked `xfail` is reported as `xfail` when it fails and as `xpass` when it passes; neither
+Every check is an object with a `type`, optional `note`, and optional `xfail` (a reason, e.g. a link to a publicly
+tracked issue). A check marked `xfail` is reported as `xfail` when it fails and as `xpass` when it passes; neither
 fails the run. The run passes when no check has status `fail` and the harness reported no error.
 
 | Type | Keys | Passes when |

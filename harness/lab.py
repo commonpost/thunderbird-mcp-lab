@@ -44,7 +44,7 @@ import time
 import urllib.request
 import zipfile
 
-HARNESS = "thunderbird-mcp-lab harness 1.0"
+HARNESS = "thunderbird-mcp-lab harness 1.1"
 T0 = time.monotonic()
 DEADLINE = T0 + 560                     # seconds; run-lab.sh stops the container after 900 s
 LAB = "/lab"
@@ -53,13 +53,18 @@ PROF = LAB + "/profile"
 LOGS = "/tmp/lab-logs"
 USERJS_BASE = "/opt/tblab/user.js"
 TB_DIR = "/opt/thunderbird"
-CONN = "/tmp/thunderbird-mcp/connection.json"   # written by the extension once its MCP server listens
+# Connection file the extension writes once its MCP server listens, by extension id: Commonpost MCP for Thunderbird
+# (the code this lab tests) and the original thunderbird-mcp it continues. CONN follows the id of the installed XPI.
+CONN_BY_ID = {
+    "commonpost-mcp@commonpost.github.io": "/tmp/commonpost-mcp/connection.json",
+    "thunderbird-mcp@tkasperczyk.dev": "/tmp/thunderbird-mcp/connection.json",
+}
+CONN = CONN_BY_ID["commonpost-mcp@commonpost.github.io"]
 API = "http://127.0.0.1:8025/api/v1"
 POP3_USER = "lab"
 MAX_TEXT = 20000
 MAX_OUT = 3_000_000
 MAX_SCENARIO = 1_000_000
-EXPECTED_ID = "thunderbird-mcp@tkasperczyk.dev"
 MARK_BEGIN = "===== THUNDERBIRD-MCP-LAB RESULT JSON %s ====="
 MARK_END = "===== THUNDERBIRD-MCP-LAB END %s ====="
 NONCE = ""          # read from the first input line; authenticates the result block
@@ -740,8 +745,12 @@ def _gecko(mf):
     gid = str(gecko.get("id", ""))
     if not re.match(r"^[A-Za-z0-9._@{}-]{3,100}$", gid) or ".." in gid:
         raise RuntimeError("invalid gecko id in the manifest: %r" % gid)
-    if gid != EXPECTED_ID:
-        fail("unexpected gecko id: %s (expected %s); installed under the manifest's id" % (gid, EXPECTED_ID))
+    global CONN
+    if gid in CONN_BY_ID:
+        CONN = CONN_BY_ID[gid]
+    else:
+        fail("unexpected gecko id: %s (expected one of %s); installed under the manifest's id" % (
+            gid, ", ".join(CONN_BY_ID)))
     return gecko, gid
 
 
@@ -1371,7 +1380,7 @@ def run_checks(sc):
             ok, detail = False, "exception: %s" % ex
         ok = bool(ok)
         if c.get("xfail"):
-            status = "xpass" if ok else "xfail"   # known failure (e.g. an open upstream issue): reported, not fatal
+            status = "xpass" if ok else "xfail"   # known failure (e.g. a publicly tracked issue): reported, not fatal
         else:
             status = "pass" if ok else "fail"
         counts[status] += 1

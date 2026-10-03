@@ -1,9 +1,9 @@
 {
   "name": "thread-headers",
-  "description": "Threading headers of replies. Two messages are seeded in the POP3 inbox (a root message and a follow-up in the same thread). replyToMessage with skipReview is allowed for this scenario only (blockSkipReview = false), so each reply is delivered to the local mailpit sink inside the container, where its raw headers are inspected: In-Reply-To and References must point at the replied message, the subject gets a single Re: prefix, the reply goes to the original sender and quotes the original text.",
+  "description": "Threading headers of replies. Two messages are seeded in the POP3 inbox (a root message and a follow-up in the same thread). Direct sending (replyToMessage mode \"send\") is allowed for this scenario only (blockSkipReview = false), so each reply is delivered to the local mailpit sink inside the container, where its raw headers are inspected: In-Reply-To and References must point at the replied message, the subject gets a single Re: prefix, the reply goes to the requested recipient and quotes the original text. A direct reply takes its sender and recipients from the caller only (never from the original message), so each step passes them explicitly.",
   "prefs": {
     "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
-    "extensions.thunderbird-mcp.blockSkipReview": false
+    "extensions.commonpost-mcp.blockSkipReview": false
   },
   "schema_watch": [
     "replyToMessage"
@@ -62,7 +62,9 @@
         "messageId": "thread-root@example.com",
         "folderPath": "mailbox://lab@127.0.0.1/Inbox",
         "body": "Lab reply to the root message.",
-        "skipReview": true
+        "mode": "send",
+        "to": "alice@example.com",
+        "from": "lab@example.test"
       }
     },
     {
@@ -74,7 +76,9 @@
         "messageId": "thread-follow-up@example.com",
         "folderPath": "mailbox://lab@127.0.0.1/Inbox",
         "body": "Lab reply to the follow-up.",
-        "skipReview": true
+        "mode": "send",
+        "to": "bob@example.com",
+        "from": "lab@example.test"
       }
     }
   ],
