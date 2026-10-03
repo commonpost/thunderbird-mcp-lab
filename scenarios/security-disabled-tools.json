@@ -1,0 +1,99 @@
+{
+  "name": "security-disabled-tools",
+  "description": "Tools turned off in the add-on settings (disabledTools = saveDraft, sendMail, and listAccounts, which cannot be turned off) are missing from tools/list and refused when called anyway; the tools that cannot be turned off stay available, and the other tools keep working. Nothing is saved or sent.",
+  "prefs": {
+    "extensions.commonpost-mcp.disabledTools": "[\"saveDraft\",\"sendMail\",\"listAccounts\"]"
+  },
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "draft-refused",
+      "tool": "saveDraft",
+      "force_call": true,
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab disabled draft [d1]",
+        "body": "Must not be saved."
+      }
+    },
+    {
+      "id": "send-refused",
+      "tool": "sendMail",
+      "force_call": true,
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab disabled send [d2]",
+        "body": "Must not be sent.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "filters-control",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "saveDraft",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "sendMail",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listAccounts",
+      "note": "Cannot be turned off."
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "replyToMessage"
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "draft-refused",
+      "contains": "is disabled in the add-on settings"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-refused",
+      "contains": "is disabled in the add-on settings"
+    },
+    {
+      "type": "tool_ok",
+      "step": "filters-control"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[d1]",
+      "equals": 0
+    },
+    {
+      "type": "draft_count",
+      "subject": "[d2]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

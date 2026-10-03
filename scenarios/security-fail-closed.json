@@ -1,0 +1,78 @@
+{
+  "name": "security-fail-closed",
+  "description": "Unreadable restriction settings fail closed: with a disabledTools and an allowedAccounts preference that are not JSON lists, every tool that can be turned off is off (only listAccounts, listFolders and getAccountAccess remain), saveDraft is refused when called anyway, and listAccounts shows no account at all.",
+  "prefs": {
+    "extensions.commonpost-mcp.disabledTools": "not a JSON list",
+    "extensions.commonpost-mcp.allowedAccounts": "not a JSON list"
+  },
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "draft-refused",
+      "tool": "saveDraft",
+      "force_call": true,
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab fail closed [f1]",
+        "body": "Must not be saved."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "listAccounts"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "saveDraft",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "getMessage",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "sendMail",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "account1",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "draft-refused",
+      "contains": "is disabled in the add-on settings"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[f1]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

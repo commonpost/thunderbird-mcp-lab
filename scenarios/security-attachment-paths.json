@@ -1,0 +1,154 @@
+{
+  "name": "security-attachment-paths",
+  "description": "File-path attachments that point at secrets are refused before the file is read (by the bridge, and again by the extension: either refusal counts), and a message with a refused attachment is not saved at all: the extension's own connection file (a bearer token for the whole mailbox), a system file, the same reached through \"..\", a dotfile and a key file. A harmless file is still attached, so the refusals are the deny-list at work.",
+  "steps": [
+    {
+      "id": "connection-file",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p1]",
+        "body": "x",
+        "attachments": [
+          "/tmp/commonpost-mcp/connection.json"
+        ]
+      }
+    },
+    {
+      "id": "system-file",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p2]",
+        "body": "x",
+        "attachments": [
+          "/etc/passwd"
+        ]
+      }
+    },
+    {
+      "id": "traversal",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p3]",
+        "body": "x",
+        "attachments": [
+          "/tmp/../etc/hostname"
+        ]
+      }
+    },
+    {
+      "id": "dotfile",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p4]",
+        "body": "x",
+        "attachments": [
+          "/tmp/.env"
+        ]
+      }
+    },
+    {
+      "id": "key-file",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p5]",
+        "body": "x",
+        "attachments": [
+          "/tmp/lab-key.pem"
+        ]
+      }
+    },
+    {
+      "id": "mixed",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p6]",
+        "body": "x",
+        "attachments": [
+          "/opt/tblab/user.js",
+          "/etc/passwd"
+        ]
+      }
+    },
+    {
+      "id": "harmless",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab attach [p7]",
+        "body": "x",
+        "attachments": [
+          "/opt/tblab/user.js"
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_error_contains",
+      "step": "connection-file",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "system-file",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "traversal",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "dotfile",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "key-file",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "mixed",
+      "contains": "path blocked"
+    },
+    {
+      "type": "tool_ok",
+      "step": "harmless"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[p7]",
+      "equals": 1
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[p7]",
+      "contains": "user.js"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab attach [p",
+      "equals": 1,
+      "note": "Only [p7]: every message with a refused attachment is not saved."
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

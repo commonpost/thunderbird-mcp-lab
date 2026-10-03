@@ -1,0 +1,100 @@
+{
+  "name": "security-direct-send-blocked",
+  "description": "Direct sending is blocked by default (blockSkipReview is not set, so it keeps its default, true): sendMail with skipReview, and replyToMessage and forwardMessage with mode \"send\", are all refused, before any message lookup, and nothing reaches the local SMTP sink. A saveDraft in the same session still works, so the refusals are the setting at work, not a broken extension.",
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "send-skipreview",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab blocked send [s2]",
+        "body": "Must not be sent.",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "reply-send",
+      "tool": "replyToMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "absent@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Must not be sent.",
+        "mode": "send",
+        "to": "someone@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "forward-send",
+      "tool": "forwardMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "absent@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "mode": "send"
+      }
+    },
+    {
+      "id": "draft-control",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab control draft [s5]",
+        "body": "Control draft."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-skipreview",
+      "contains": "User preference blocks skipReview"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "reply-send",
+      "contains": "blocks direct sending",
+      "note": "Refused before the message lookup: the message does not exist."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "forward-send",
+      "contains": "blocks direct sending",
+      "note": "Refused before the message lookup: the message does not exist."
+    },
+    {
+      "type": "tool_ok",
+      "step": "draft-control"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[s5]",
+      "equals": 1
+    },
+    {
+      "type": "draft_count",
+      "subject": "[s2]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
