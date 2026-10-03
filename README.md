@@ -104,6 +104,7 @@ run, and it shows up as `xpass` once the issue no longer reproduces.
 | `security-account-restriction.json` | With only Local Folders allowed, the other account and its identity are hidden, and reading its messages, listing its filters or writing from its identity is refused. |
 | `security-attachment-paths.json` | Attachments pointing at secrets (the extension's own connection file, system files, `..`, dotfiles, key files) are refused and the message is not saved; a harmless file is still attached. |
 | `security-fail-closed.json` | Unreadable restriction settings fail closed: every tool that can be turned off is off and no account is visible. |
+| `security-profile-elsewhere.json` | The lab's profile is outside every default location: its files, its mail store and a `..` path into it are refused as attachments; a harmless file is still attached ([GHSA-65cp-vcv7-cf69](https://github.com/commonpost/thunderbird-mcp/security/advisories/GHSA-65cp-vcv7-cf69)). |
 
 The filter scenarios used to mark as `xfail` the checks that failed because of the filter id and value-typing issues
 of the original thunderbird-mcp, discussed publicly in its pull requests

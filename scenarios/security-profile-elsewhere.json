@@ -1,0 +1,89 @@
+{
+  "name": "security-profile-elsewhere",
+  "description": "The lab's Thunderbird profile lives at /lab/profile, outside every default profile location: its files must still be refused as attachments (GHSA-65cp-vcv7-cf69, fixed in 0.17.1). A file of the profile, the Local Folders draft store, and a file of the profile reached through \"..\" are refused and nothing is saved; a harmless file elsewhere is still attached.",
+  "steps": [
+    {
+      "id": "profile-file",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab profile [q1]",
+        "body": "x",
+        "attachments": [
+          "/lab/profile/user.js"
+        ]
+      }
+    },
+    {
+      "id": "mail-store",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab profile [q2]",
+        "body": "x",
+        "attachments": [
+          "/lab/profile/Mail/Local Folders/Drafts"
+        ]
+      }
+    },
+    {
+      "id": "via-dotdot",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab profile [q3]",
+        "body": "x",
+        "attachments": [
+          "/opt/tblab/../../lab/profile/user.js"
+        ]
+      }
+    },
+    {
+      "id": "harmless",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "someone@example.com",
+        "subject": "Lab profile [q4]",
+        "body": "x",
+        "attachments": [
+          "/opt/tblab/user.js"
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_error_contains",
+      "step": "profile-file",
+      "contains": "profile or mail store"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "mail-store",
+      "contains": "profile or mail store"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "via-dotdot",
+      "contains": "profile or mail store"
+    },
+    {
+      "type": "tool_ok",
+      "step": "harmless"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Lab profile [q",
+      "equals": 1,
+      "note": "Only [q4]: a message with a refused attachment is not saved."
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
