@@ -1,6 +1,6 @@
 {
   "name": "security-attachment-paths",
-  "description": "File-path attachments that point at secrets are refused before the file is read (by the bridge, and again by the extension: either refusal counts), and a message with a refused attachment is not saved at all: the extension's own connection file (a bearer token for the whole mailbox), a system file, the same reached through \"..\", a dotfile and a key file. A harmless file is still attached, so the refusals are the deny-list at work.",
+  "description": "File-path attachments that point at secrets are refused before the file is read: the bridge checks the path as given, then its real path, and sends the extension only the content of files it accepts (the extension's own path checks, for clients that talk to it without the bridge, are not exercised here). The test matches either refusal message, and a message with a refused attachment is not saved at all: the extension's own connection file (a bearer token for the whole mailbox), a system file, the same reached through \"..\", a dotfile and a key file. A harmless file is still attached, so the refusals are the deny-list at work.",
   "steps": [
     {
       "id": "connection-file",
