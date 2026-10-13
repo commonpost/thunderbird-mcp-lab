@@ -172,20 +172,17 @@
     {
       "type": "draft_body_contains",
       "subject": "Lab html text [p1]",
-      "contains": "Plain: j'ai le \"droit\" &amp; &lt;b&gt;pas gras&lt;/b&gt;.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Plain: j'ai le \"droit\" &amp; &lt;b&gt;pas gras&lt;/b&gt;."
     },
     {
       "type": "draft_body_contains",
       "subject": "Lab html text [p1]",
-      "contains": "Second: it's fine.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Second: it's fine."
     },
     {
       "type": "draft_body_contains",
       "subject": "Lab html text [p1]",
-      "contains": "Sig: it's (us)\u00a0!",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Sig: it's (us)\u00a0!"
     },
     {
       "type": "tool_ok",
@@ -194,8 +191,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Lab html text [h1]",
-      "contains": "Html: l'eau 'x' 'y' (z) &lt;i&gt;not a tag&lt;/i&gt; end.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Html: l'eau 'x' 'y' (z) &lt;i&gt;not a tag&lt;/i&gt; end."
     },
     {
       "type": "tool_ok",
@@ -214,8 +210,7 @@
     {
       "type": "mailpit_body_contains",
       "subject": "Lab html text [s1]",
-      "contains": "Sent: j'ai fini.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Sent: j'ai fini."
     },
     {
       "type": "tool_ok",
@@ -228,8 +223,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Re: Lab entities original [e1]",
-      "contains": "Reply: c'est vu.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Reply: c'est vu."
     },
     {
       "type": "draft_body_contains",
@@ -239,8 +233,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Re: Lab entities original [e1]",
-      "contains": "Space:\u00a0kept.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Space:\u00a0kept."
     },
     {
       "type": "tool_ok",
@@ -249,8 +242,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Fwd: Lab entities original [e1]",
-      "contains": "Fwd: l'info.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Fwd: l'info."
     },
     {
       "type": "draft_body_contains",
@@ -260,8 +252,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Fwd: Lab entities original [e1]",
-      "contains": "Space:\u00a0kept.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Space:\u00a0kept."
     },
     {
       "type": "tool_ok",
@@ -274,8 +265,7 @@
     {
       "type": "draft_body_contains",
       "subject": "Re: Lab entities guard [e2]",
-      "contains": "Reply: d'accord.",
-      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+      "contains": "Reply: d'accord."
     },
     {
       "type": "draft_body_contains",
