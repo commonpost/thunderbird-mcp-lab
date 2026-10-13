@@ -1,0 +1,292 @@
+{
+  "name": "compose-html-text",
+  "description": "Text of HTML messages built without a compose window (saveDraft, a direct sendMail, a reply saved as a draft) with an identity that composes HTML. Thunderbird's own send path runs the editor's HTML through mozITXTToHTMLConv.scanHTML, which only reads &amp;, &lt;, &gt; and &quot; in text and escapes the & of any other character reference; an apostrophe typed in a plain body, or a reference such as &#39; or &nbsp; in an HTML body, an HTML signature or the quoted message, must reach the message as the character, not as a visible '&#39;'. Direct sending is allowed for this scenario only (blockSkipReview = false); the message goes to the local mailpit sink. A body whose tag scanHTML cuts at a '>' inside a quoted attribute value goes as before, so that decoding never turns a neutralized moz-do-not-send back into an attribute.",
+  "prefs": {
+    "mail.identity.id1.compose_html": true,
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "mail.identity.id1.htmlSigFormat": true,
+    "mail.identity.id1.htmlSigText": "Sig: it&#39;s &lpar;us&rpar;&nbsp;!",
+    "mail.forward_message_mode": 2
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab entities original [e1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <entities-original@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 7bit\n\n<html><body><p>Quoted: it&#39;s here &lpar;ok&rpar; &amp; done.</p><p>Space:&nbsp;kept.</p></body></html>\n",
+        "From: Mallory Example <mallory@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab entities guard [e2]\nDate: Thu, 01 Jan 2026 11:00:00 +0000\nMessage-ID: <entities-guard@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 7bit\n\n<html><body><p>Hostile: it&#39;s</p><img alt=\">\" moz&#45;do-not-send=\"false\" src=\"https://example.com/q.png\"></body></html>\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 30
+    },
+    {
+      "id": "draft-plain",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "first@example.com",
+        "from": "id1",
+        "subject": "Lab html text [p1]",
+        "body": "Plain: j'ai le \"droit\" & <b>pas gras</b>.\nSecond: it's fine.\n"
+      },
+      "draft_subject": "Lab html text [p1]"
+    },
+    {
+      "id": "draft-html",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "first@example.com",
+        "from": "id1",
+        "subject": "Lab html text [h1]",
+        "isHtml": true,
+        "body": "<p>Html: l&#39;eau &#x27;x&#x27; &apos;y&apos; &lpar;z&rpar; &#60;i&#62;not a tag&#60;/i&#62; end.</p>"
+      },
+      "draft_subject": "Lab html text [h1]"
+    },
+    {
+      "id": "draft-guard",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "note": "scanHTML ends the img tag at the '>' inside the quoted alt value, where the parser does not: what follows is text for scanHTML. Decoding it would turn the neutralized moz&#45;do-not-send back into an attribute; the body must then go as before.",
+      "arguments": {
+        "to": "first@example.com",
+        "from": "id1",
+        "subject": "Lab html text [g1]",
+        "isHtml": true,
+        "body": "<p>Guard: it&#39;s</p><img alt=\">\" moz-do-not-send=\"false\" src=\"https://example.com/x.png\">"
+      },
+      "draft_subject": "Lab html text [g1]"
+    },
+    {
+      "id": "send-plain",
+      "tool": "sendMail",
+      "timeout": 90,
+      "wait_after": 3,
+      "arguments": {
+        "to": "second@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab html text [s1]",
+        "body": "Sent: j'ai fini.\n",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "entities-original@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "reply-draft",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "entities-original@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply: c'est vu.",
+        "mode": "draft",
+        "to": "alice@example.com",
+        "from": "lab@example.test"
+      },
+      "draft_subject": "Re: Lab entities original [e1]"
+    },
+    {
+      "id": "index-guard",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "entities-guard@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "forward-draft",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "entities-original@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Fwd: l'info.",
+        "mode": "draft",
+        "to": "carol@example.com",
+        "from": "lab@example.test"
+      },
+      "draft_subject": "Fwd: Lab entities original [e1]"
+    },
+    {
+      "id": "reply-guard",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "note": "The sender writes a '>' inside a quoted attribute value and a moz-do-not-send whose name holds a character reference.",
+      "arguments": {
+        "messageId": "entities-guard@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply: d'accord.",
+        "mode": "draft",
+        "to": "mallory@example.com",
+        "from": "lab@example.test"
+      },
+      "draft_subject": "Re: Lab entities guard [e2]"
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "draft-plain"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab html text [p1]",
+      "contains": "Plain: j'ai le \"droit\" &amp; &lt;b&gt;pas gras&lt;/b&gt;.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab html text [p1]",
+      "contains": "Second: it's fine.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab html text [p1]",
+      "contains": "Sig: it's (us)\u00a0!",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "tool_ok",
+      "step": "draft-html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab html text [h1]",
+      "contains": "Html: l'eau 'x' 'y' (z) &lt;i&gt;not a tag&lt;/i&gt; end.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "tool_ok",
+      "step": "draft-guard"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Lab html text [g1]",
+      "contains": "moz&amp;#45;do-not-send",
+      "note": "still neutralized: never moz-do-not-send=\"false\" on the image"
+    },
+    {
+      "type": "tool_ok",
+      "step": "send-plain"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Lab html text [s1]",
+      "contains": "Sent: j'ai fini.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply-draft"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities original [e1]",
+      "contains": "Reply: c'est vu.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities original [e1]",
+      "contains": "Quoted: it's here (ok) &amp; done."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities original [e1]",
+      "contains": "Space:\u00a0kept.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "tool_ok",
+      "step": "forward-draft"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: Lab entities original [e1]",
+      "contains": "Fwd: l'info.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: Lab entities original [e1]",
+      "contains": "Quoted: it's here (ok) &amp; done."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: Lab entities original [e1]",
+      "contains": "Space:\u00a0kept.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-guard"
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply-guard"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities guard [e2]",
+      "contains": "Reply: d'accord.",
+      "xfail": "Fixed in commonpost/thunderbird-mcp#76 (0.17.2); fails on 0.17.1. Remove once a release carries the fix."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities guard [e2]",
+      "contains": "Hostile: it's"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: Lab entities guard [e2]",
+      "contains": "src=\"https://example.com/q.png\" moz-do-not-send=\"true\">",
+      "note": "the quoted image keeps the mark that stops Thunderbird from fetching and attaching it"
+    }
+  ]
+}
