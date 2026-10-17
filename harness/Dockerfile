@@ -8,7 +8,7 @@
 FROM axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48 AS mailpit
 
 # --- Stage 2: VERIFIED download of Thunderbird (GPG signature of SHA512SUMS, then SHA512 of the archive).
-FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS tbdl
+FROM debian:13-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f AS tbdl
 ARG TB_VERSION=156.0.1
 ARG TB_BASE=https://archive.mozilla.org/pub/thunderbird/releases
 # PRIMARY key fingerprint of "Mozilla Software Releases <release@mozilla.com>" (the KEY file of the release directory;
@@ -40,7 +40,7 @@ RUN set -eu; \
     echo "Thunderbird $TB_VERSION: GPG signature and SHA512 verified."
 
 # --- Stage 3: runtime image.
-FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+FROM debian:13-slim@sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f
 LABEL org.opencontainers.image.title="thunderbird-mcp-lab" \
       org.opencontainers.image.description="Offline end-to-end lab for thunderbird-mcp (Thunderbird + mailpit + Xvfb)" \
       org.opencontainers.image.licenses="MIT"
