@@ -5,7 +5,7 @@
 # Base images are pinned by digest (update them deliberately, e.g. through Dependabot).
 
 # --- Stage 1: the mailpit binary (SMTP + POP3 + HTTP API), copied from the official image.
-FROM axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48 AS mailpit
+FROM axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498 AS mailpit
 
 # --- Stage 2: VERIFIED download of Thunderbird (GPG signature of SHA512SUMS, then SHA512 of the archive).
 FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS tbdl
