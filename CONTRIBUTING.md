@@ -29,15 +29,20 @@ are already public, harness improvements, better documentation, CI fixes.
    a check that fails without the fix whenever that is practical. Say in the pull request which tests you added.
 8. **Be respectful of other projects.** Findings about thunderbird-mcp, Thunderbird or any other project go to that
    project through its usual channels; the lab is not a place to criticise anyone's work.
+9. **License header in each source file.** A new source file (code, Dockerfile, workflow) starts, after any `#!` line,
+   with the two SPDX lines the other files carry: `SPDX-License-Identifier: MIT` and
+   `SPDX-FileCopyrightText: 2026 Guillaume Laforest`, as comments. The "Static checks" job checks it. Scenario and
+   other JSON files are data and carry no header.
 
 ## Working locally
 
 ```sh
 docker build -t thunderbird-mcp-lab:local harness            # build the image
 python3 harness/lab.py --validate scenarios/*.json            # validate scenarios (no container)
+python3 selftest/validator-cases.py                           # invalid scenarios must be refused
 ./run-lab.sh path/to/commonpost-mcp scenarios/*.json          # run them
 selftest/run.sh path/to/thunderbird-mcp                       # isolation self-test
-shellcheck run-lab.sh selftest/run.sh                         # shell lint
+shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh   # shell lint
 docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:latest   # workflow lint
 ```
 
@@ -56,6 +61,57 @@ Tips for scenarios:
 - End scenarios that must not send anything with `{"type": "mailpit_total", "equals": 0}`.
 - Seeded messages need an indexing step before other tools can see them (see `scenarios/attachments.json`).
 - Describe in `description` what the scenario proves and what it does not.
+
+A change to the validator comes with a case in `selftest/invalid-scenarios/` (a small scenario with one thing wrong)
+and its expected error message in `selftest/invalid-scenarios.json`; `selftest/validator-cases.py` checks both.
+
+## Coding standards
+
+The coding standard of the lab is what these tools accept; contributions must pass them:
+
+- **Shell** (`run-lab.sh`, `selftest/run.sh`, `.clusterfuzzlite/build.sh`): Bash, stopping on errors (`set -euo
+  pipefail`, or `-eu` for the ClusterFuzzLite build script); [ShellCheck](https://www.shellcheck.net/) at its default
+  severity (style) reports nothing. A `# shellcheck disable=` comment must say why.
+- **Python** (`harness/lab.py`, `fuzz/`): standard library only, for the Python 3 of the image (Debian 13);
+  [pyflakes](https://github.com/PyCQA/pyflakes) reports nothing.
+- **Workflows**: actions pinned by full commit SHA, least-privilege `permissions`, `persist-credentials: false`;
+  [zizmor](https://docs.zizmor.sh/) with its pedantic persona reports nothing; actionlint is run locally.
+- **Scenarios**: `python3 harness/lab.py --validate` accepts them.
+- **License headers**: rule 9.
+
+CI enforces ShellCheck, pyflakes, the scenario validation and its negative tests, and the license headers (job
+"Static checks"), and zizmor; both jobs are required checks for merging into `main`.
+
+## Code review
+
+Every change reaches `main` through a pull request, and the
+[required checks](GOVERNANCE.md#how-decisions-are-made) must pass before it is merged. The reviewer checks:
+
+- **Isolation:** the `docker run` options, the process layout of the harness, the input protocol, the result block
+  and the output sanitiser are unchanged, or the pull request explains why the change is safe and `selftest/run.sh`
+  still passes (rule 5). Code under test never runs on the host or the CI runner.
+- **Fail-closed behaviour:** invalid input is refused rather than ignored (validator, paths resolved under the
+  profile, links not followed); a run with an unusable result is reported as unusable, never as a pass.
+- **Scenarios:** they are valid, pass against the latest release of Commonpost MCP for Thunderbird, say in
+  `description` what they prove, and use `xfail` only with a link to a public issue (rules 3 and 4). No scenario
+  demonstrates an undisclosed vulnerability (rule 1).
+- **Tests:** new behaviour of the harness, the launcher or the format comes with a scenario, a self-test check or a
+  validator case (rule 7).
+- **Data:** only synthetic data, in scenarios, fixtures and pull request descriptions (rule 2).
+- **Dependencies:** actions pinned by commit SHA, base images by digest; workflows keep least-privilege permissions
+  (rule 6).
+- **Documentation:** the README (scenario table, security model), `docs/scenario-format.md` and the other documents
+  describe the change in the same pull request.
+
+A pull request is merged when the checks pass and a maintainer approves it. A maintainer's own pull request needs the
+approval of another maintainer; while the lab has a single maintainer ([GOVERNANCE.md](GOVERNANCE.md)), the required
+checks, including the isolation self-test, are the second line of review.
+
+## Small tasks for new contributors
+
+Issues labelled [good first issue](https://github.com/commonpost/thunderbird-mcp-lab/labels/good%20first%20issue) are
+small, self-contained tasks: usually a new scenario or a validator case, which needs no knowledge of Thunderbird's
+internals. Say in the issue that you are taking one, so that two people do not do the same work.
 
 ## Reporting bugs and requesting features
 

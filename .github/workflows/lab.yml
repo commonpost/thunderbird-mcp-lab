@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 name: lab
 
 # Builds the lab image and runs the public scenarios against Commonpost MCP for Thunderbird
@@ -63,8 +65,10 @@ jobs:
       - name: Harness, launcher and scenarios
         run: |
           set -euo pipefail
-          python3 -B -m py_compile harness/lab.py fuzz/fuzz_load_scenario.py
+          python3 -B -m py_compile harness/lab.py fuzz/fuzz_load_scenario.py selftest/validator-cases.py
           python3 -B harness/lab.py --validate scenarios/*.json selftest/isolation.json
+          # Negative tests: every file of selftest/invalid-scenarios/ must be refused with its expected message.
+          python3 -B selftest/validator-cases.py
           bash -n run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
           shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
 
@@ -72,7 +76,23 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get install -y -qq --no-install-recommends pyflakes3 >/dev/null
-          pyflakes3 harness/lab.py fuzz/fuzz_load_scenario.py
+          pyflakes3 harness/lab.py fuzz/fuzz_load_scenario.py selftest/validator-cases.py
+
+      - name: License headers (SPDX)
+        run: |
+          set -euo pipefail
+          # Every tracked source file (code, Dockerfiles, workflows) carries both SPDX tags near the top; scenario and
+          # other JSON files are data and are not checked.
+          missing=0
+          while IFS= read -r f; do
+            top="$(head -n 5 -- "$f")"
+            if ! grep -Eq '^(#|//) SPDX-License-Identifier: MIT$' <<<"$top" \
+                || ! grep -Eq '^(#|//) SPDX-FileCopyrightText: [^ ]' <<<"$top"; then
+              echo "::error file=$f::missing SPDX-License-Identifier or SPDX-FileCopyrightText in the first 5 lines"
+              missing=1
+            fi
+          done < <(git ls-files -- '*.py' '*.sh' '*.js' '*.cjs' '*.yml' '*.yaml' '*Dockerfile')
+          exit "$missing"
 
   resolve:
     name: Resolve the code under test

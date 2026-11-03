@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 name: CodeQL
 
 # Static analysis of the harness, the fuzz target and the workflows themselves.

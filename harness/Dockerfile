@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 # thunderbird-mcp lab image: a real Thunderbird (Linux x86_64) + mailpit + Xvfb + Node.js + the harness.
 # The network is used ONLY during "docker build"; at run time the container runs with --network none (run-lab.sh).
 # Build:  docker build -t thunderbird-mcp-lab:local harness

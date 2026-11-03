@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 # selftest/run.sh - checks the lab's own isolation and output-sanitising claims with a stand-in bridge.
 #
 # Usage: selftest/run.sh [--image IMAGE] SOURCE_TREE

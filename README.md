@@ -65,7 +65,7 @@ docker build -t thunderbird-mcp-lab:local harness
 
 # 2. Get the code to test (a release tag, main, or a pull request).
 git clone https://github.com/commonpost/thunderbird-mcp.git commonpost-mcp
-git -C commonpost-mcp checkout v0.17.0
+git -C commonpost-mcp checkout v0.18.0
 
 # 3. Run the reference scenario, then all public scenarios.
 ./run-lab.sh commonpost-mcp scenarios/baseline.json
@@ -106,6 +106,14 @@ run, and it shows up as `xpass` once the issue no longer reproduces.
 | `security-attachment-paths.json` | Attachments pointing at secrets (the extension's own connection file, system files, `..`, dotfiles, key files) are refused and the message is not saved; a harmless file is still attached. |
 | `security-fail-closed.json` | Unreadable restriction settings fail closed: every tool that can be turned off is off and no account is visible. |
 | `security-profile-elsewhere.json` | The lab's profile is outside every default location: its files, its mail store and a `..` path into it are refused as attachments; a harmless file is still attached ([GHSA-65cp-vcv7-cf69](https://github.com/commonpost/thunderbird-mcp/security/advisories/GHSA-65cp-vcv7-cf69)). |
+| `security-http-idle.json` | A client that opens a connection and never finishes its request is cut off by the extension's HTTP server (the `labHttpIdle` step). |
+| `direct-send-refusals.json` | Direct sends are refused without recipients or above the large-message size; a normal one goes out. |
+| `send-dryrun-refresh-headers.json` | `sendMail` with `dryRun`, `getMessages` with `headersOnly`, `listFolders` with `refresh`. |
+| `headers-unsubscribe.json` | `getMessages` with `headersOnly` returns the parsed `List-Unsubscribe` and `List-Unsubscribe-Post` headers of seeded messages. |
+| `attachment-flags.json` | Which seeded messages Thunderbird flags as having attachments (what attachment search can find), and a message of 40,000 MIME parts, over the part limit. |
+| `attachment-search.json` | `searchMessages` with `attachmentName` and `attachmentType` on seeded local messages; two checks are `xfail` because Thunderbird does not flag a signed message as having attachments. |
+| `attachment-search-encrypted-allowed.json` | Attachment search with encrypted content allowed in the settings. |
+| `calendar-reminders.json` | Reminders set by `createEvent` and `updateEvent` and returned by `listEvents`; seeded alarms that are not display alarms are kept. |
 
 The filter scenarios used to mark as `xfail` the checks that failed because of the filter id and value-typing issues
 of the original thunderbird-mcp, discussed publicly in its pull requests
@@ -232,12 +240,17 @@ It remains free to use, under the MIT license, for thunderbird-mcp or any other 
 
 Thunderbird and Mozilla are trademarks of the Mozilla Foundation. This project is not affiliated with Mozilla.
 
-## Contributing, security, conduct
+## Contributing, security, governance
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to propose scenarios and changes (please read the rule about undisclosed
   vulnerabilities).
-- [SECURITY.md](SECURITY.md): how to report a vulnerability, in this lab or elsewhere.
+- [SECURITY.md](SECURITY.md): how to report a vulnerability, in this lab or elsewhere, and how reports are handled.
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): Contributor Covenant 2.1.
+- [GOVERNANCE.md](GOVERNANCE.md): roles and how decisions are made.
+- [ROADMAP.md](ROADMAP.md): what the lab intends to do, and not do, over the next year.
+- [docs/architecture.md](docs/architecture.md): components, data flow and CI.
+- [docs/assurance-case.md](docs/assurance-case.md): threat model, trust boundaries, why the security requirements are
+  met, and known limits.
 
 ## License
 

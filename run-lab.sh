@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 # run-lab.sh - run thunderbird-mcp lab scenarios in a disposable, offline container.
 #
 # Usage: ./run-lab.sh [--image IMAGE] [--out DIR] [--verbose] SOURCE_DIR SCENARIO.json [SCENARIO.json ...]
@@ -30,7 +32,7 @@ MAX_SCENARIO=1000000      # bytes
 LAB_UID=10001             # the image's unprivileged user
 
 die() { printf 'run-lab: %s\n' "$*" >&2; exit 2; }
-usage() { awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"; exit "${1:-0}"; }
+usage() { awk 'NR == 1 || /^# SPDX-/ { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"; exit "${1:-0}"; }
 need() { command -v "$1" >/dev/null 2>&1 || die "missing dependency: $1"; }
 
 # Output of the container is untrusted: decode as UTF-8 (invalid bytes become U+FFFD, which also neutralises raw C1

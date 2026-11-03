@@ -1,0 +1,11 @@
+{
+ "steps": {
+  "id": "s1"
+ },
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

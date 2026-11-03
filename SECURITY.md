@@ -10,7 +10,7 @@ Please **do not open a public issue**. Use GitHub's private vulnerability report
 of this repository and choose **Report a vulnerability**.
 
 Please include what you observed, how to reproduce it, and the impact you expect. This is a volunteer project: we aim
-to acknowledge reports within 7 days and will keep you informed until the issue is resolved. We are happy to credit
+to acknowledge reports within 72 hours (see below) and will keep you informed until the issue is resolved. We are happy to credit
 reporters who wish to be credited.
 
 In scope, for example:
@@ -29,6 +29,20 @@ In scope, for example:
 Known limitations documented in the [README](README.md#security-model-of-the-lab) are not vulnerabilities by
 themselves: the kernel is shared with the host, access to Docker is equivalent to root, and code under test runs
 under the same uid as the harness and can influence what the harness observes, so a verdict is data, not proof.
+
+## How a report is handled
+
+1. We acknowledge the report within 72 hours (target) and give a first assessment within 7 days, as the main
+   project does.
+2. We check whether it is in scope and how serious it is, and tell the reporter. A problem that belongs to another
+   project is routed there (see below).
+3. A confirmed vulnerability is fixed in private, in a temporary private fork attached to a GitHub security advisory.
+   The fix must keep `selftest/run.sh` passing, and adds a self-test or validator check for the problem when that is
+   practical.
+4. The fix is merged into `main` (the lab has no releases: `main` is the supported version), and the advisory is
+   published, crediting the reporter unless they ask not to be named.
+5. Projects that run the lab at a pinned commit, such as Commonpost MCP for Thunderbird, are told which commit to
+   move to.
 
 ## Vulnerabilities in other projects
 

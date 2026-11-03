@@ -1,0 +1,9 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts"
+  }
+ ],
+ "checks": []
+}

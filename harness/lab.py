@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 """End-to-end lab harness for thunderbird-mcp.
 
 Runs inside a disposable container started with --network none --read-only --cap-drop ALL, as an unprivileged user

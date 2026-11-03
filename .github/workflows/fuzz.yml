@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 name: fuzz
 
 # ClusterFuzzLite (https://google.github.io/clusterfuzzlite/) fuzzes the scenario validator (fuzz/, harness/lab.py):

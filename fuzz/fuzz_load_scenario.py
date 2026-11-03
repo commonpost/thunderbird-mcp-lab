@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 """Fuzz target for the scenario validator (load_scenario in harness/lab.py).
 
 Scenario files come from contributors, through pull requests, and the validator is the first code that reads them.

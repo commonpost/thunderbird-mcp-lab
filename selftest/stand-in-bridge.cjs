@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2026 Guillaume Laforest
 // Lab self-test only: a stand-in for mcp-bridge.cjs. It is NOT thunderbird-mcp. It speaks just enough MCP to be
 // driven by the harness, and reports what code under test can and cannot do inside the lab container. It also
 // emits terminal control sequences and a forged result marker, which must never reach the launcher's output raw.
