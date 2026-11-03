@@ -1,0 +1,189 @@
+{
+  "name": "headers-unsubscribe",
+  "description": "getMessages headersOnly: parsed List-Unsubscribe / List-Unsubscribe-Post (read-only).",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u1]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u1@example.com>\nList-Id: Lab list <lab.example.com>\nList-Unsubscribe: (one click) <https://List.Example.com/u?t=abc123>,\n <mailto:unsub@example.com?subject=unsubscribe>\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n",
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u2]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u2@example.com>\nList-Unsubscribe: <mailto:leave@example.com?subject=Remove%20me&body=please%20remove%0D%0A\n thanks>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n",
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u3]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u3@example.com>\nList-Unsubscribe: <https://good.example.com@evil.test/u>, https://bare.example.com/u, <http://old.example.com/unsub?id=7>, <mailto:broken\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n",
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u4]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u4@example.com>\nList-Unsubscribe: <javascript:alert(1)>, <data:text/html,hi>\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n",
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u5]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u5@example.com>\nList-Id: Plain <plain.example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n",
+        "From: List <list@example.com>\nTo: Lab User <lab@example.test>\nSubject: Unsub [u6]\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <u6@example.com>\nList-Unsubscribe: <https://127.0.0.1/u>, <https://0x7f.1/u>, <http://printer.local/u>,\n <https://list.example.com/ok>\nList-Unsubscribe-Post: List-Unsubscribe=One-Click\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nBody of the list message.\n"
+      ]
+    }
+  ],
+  "schema_watch": [
+    "getMessages"
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "wait_after": 3,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "u1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "headers",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "headersOnly": true,
+        "messages": [
+          {
+            "messageId": "u1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "u2@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "u3@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "u4@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "u6@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "u5@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "headers"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"succeeded\":6,\"failed\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "one-click https + mailto, comment and folding",
+      "contains": "\"unsubscribe\":{\"mailto\":[{\"address\":\"unsub@example.com\",\"subject\":\"unsubscribe\"}],\"https\":[\"https://list.example.com/u?t=abc123\"],\"oneClick\":true}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "raw header still returned",
+      "contains": "\"listUnsubscribePost\":\"List-Unsubscribe=One-Click\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "mailto only, subject decoded",
+      "contains": "\"unsubscribe\":{\"mailto\":[{\"address\":\"leave@example.com\",\"subject\":\"Remove me\",\"body\":"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "body CRLF folded URI",
+      "contains": "please remove\\nthanks"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "malformed: user info, bare URI, unclosed; http apart",
+      "contains": "\"unsubscribe\":{\"mailto\":[],\"https\":[],\"oneClick\":false,\"insecure\":[\"http://old.example.com/unsub?id=7\"],\"ignored\":2}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "javascript:/data: dropped, no one-click without https",
+      "contains": "\"unsubscribe\":{\"mailto\":[],\"https\":[],\"oneClick\":false,\"ignored\":2}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "evil.test/u\"]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "bare.example.com/u\"]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "no List-Unsubscribe, no unsubscribe",
+      "contains": "\"listId\":\"Plain <plain.example.com>\"},\"headerSource\":\"message\",\"read\":false,\"flagged\":false,\"size\":279}]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "five messages, four with List-Unsubscribe",
+      "contains": "\"unsubscribe\":{\"mailto\":[{\"address\":\"unsub"
+    },
+    {
+      "type": "tool_json_contains",
+      "tool": "getMessages",
+      "path": "inputSchema.properties.headersOnly.description",
+      "contains": "sender-set"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "note": "IP literal, hex short form and .local host dropped",
+      "contains": "\"unsubscribe\":{\"mailto\":[],\"https\":[\"https://list.example.com/ok\"],\"oneClick\":true,\"ignored\":3}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "127.0.0.1/u\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "printer.local/u\"",
+      "present": false
+    }
+  ],
+  "tools_dump": [
+    "getMessages"
+  ]
+}
