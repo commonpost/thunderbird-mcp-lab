@@ -1,0 +1,27 @@
+{
+ "name": "http-idle",
+ "description": "A client that never finishes its request is cut off by the extension's HTTP server.",
+ "prefs": {},
+ "steps": [
+  {
+   "id": "idle",
+   "tool": "labHttpIdle",
+   "timeout": 60,
+   "arguments": {
+    "wait": 50
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_result_contains",
+   "step": "idle",
+   "contains": "\"closed\": true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "idle",
+   "contains": "\"closedAfter\": 3"
+  }
+ ]
+}
