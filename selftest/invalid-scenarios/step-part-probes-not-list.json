@@ -1,0 +1,18 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts",
+   "part_probes": {
+    "header": "To",
+    "needle": "x"
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 name: scorecard
 
 # OpenSSF Scorecard (https://scorecard.dev): automated checks of this repository's security practices.

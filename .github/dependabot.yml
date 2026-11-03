@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 version: 2
 # cooldown: a new release is proposed only after 7 days, so that a compromised release is more likely to be
 # caught and withdrawn upstream before it reaches this repository.

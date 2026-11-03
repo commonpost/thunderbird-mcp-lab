@@ -1,0 +1,24 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts",
+   "arguments": {
+    "a": [
+     {
+      "$lab_base64": {
+       "bytes": 1,
+       "size": 2
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

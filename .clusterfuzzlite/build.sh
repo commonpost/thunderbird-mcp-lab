@@ -1,4 +1,6 @@
 #!/bin/bash -eu
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
 # ClusterFuzzLite build: bundles each fuzz target (with harness/lab.py) and its seed corpus (the public scenarios).
 cp harness/lab.py fuzz/lab.py
 for fuzzer in fuzz/fuzz_*.py; do

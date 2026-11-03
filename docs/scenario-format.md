@@ -80,6 +80,12 @@ an `error` field.
 (1 to 32 MiB) of value `byte` (0-255, default 97). The result keeps the compact form and records the size, base64
 length and SHA-256 in `generated_arguments`. This keeps scenarios and results small.
 
+**`labHttpIdle`.** A step whose `tool` is `labHttpIdle` calls no MCP tool: the harness opens a TCP connection to the
+extension's HTTP port (read from its connection file), sends `arguments.send` (at most 4096 characters; by default a
+request line and one header, never the end of the headers), then waits up to `arguments.wait` seconds (1-120, default
+45) for the server to close the connection. The step's text is a JSON object `{"closed": bool, "closedAfter":
+seconds, "received": first bytes}`, so `tool_result_contains` checks work on it. Use it outside a `batch`.
+
 ## Checks
 
 Every check is an object with a `type`, optional `note`, and optional `xfail` (a reason, e.g. a link to a publicly

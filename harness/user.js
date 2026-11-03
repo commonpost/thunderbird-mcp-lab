@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+// SPDX-FileCopyrightText: 2026 Guillaume Laforest
 // Throw-away Thunderbird profile of the thunderbird-mcp lab. Copied into the profile on every run; the harness
 // appends the scenario's own preferences. No network access is possible (--network none): these preferences
 // mostly avoid attempts, delays and first-run windows.

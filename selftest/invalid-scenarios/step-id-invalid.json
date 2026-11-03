@@ -1,0 +1,14 @@
+{
+ "steps": [
+  {
+   "id": "bad id!",
+   "tool": "listAccounts"
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

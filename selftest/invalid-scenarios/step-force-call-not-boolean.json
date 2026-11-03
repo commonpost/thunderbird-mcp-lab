@@ -1,0 +1,15 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts",
+   "force_call": "yes"
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}
