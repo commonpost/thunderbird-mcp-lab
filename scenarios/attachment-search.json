@@ -1,0 +1,611 @@
+{
+  "name": "attachment-search",
+  "description": "searchMessages attachmentName / attachmentType on seeded local messages.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Invoice mail [a1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <att-pdf@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b1\"\n\n--b1\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b1\nContent-Type: application/pdf\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment; filename=\"Facture 42.pdf\"\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--b1--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Holiday photo [a2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <att-img@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b2\"\n\n--b2\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b2\nContent-Type: image/png\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment;\n filename*=UTF-8''photo-%C3%A9t%C3%A9.png\n\niVBOR3l5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5\n--b2--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Plain text [a3]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <att-none@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nNo attachment here.\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Forwarded [a4]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <att-fwd@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b4\"\n\n--b4\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b4\nContent-Type: message/rfc822\nContent-Disposition: attachment; filename=\"fwd.eml\"\n\nFrom: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Inner report\nDate: Thu, 01 Jan 2026 12:00:00 +0000\nMessage-ID: <att-inner@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"in\"\n\n--in\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--in\nContent-Type: application/pdf\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment; filename=\"inner-report.pdf\"\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--in--\n\n--b4--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Secret plans [a5]\nDate: Mon, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <att-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\nContent-Description: PGP/MIME version identification\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\nContent-Disposition: inline; filename=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\nhQEMA0xxxx\n-----END PGP MESSAGE-----\n\n--enc--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Secret wrapped [a6]\nDate: Tue, 06 Jan 2026 10:00:00 +0000\nMessage-ID: <att-enc2@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b6\"\n\n--b6\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b6\nContent-Type: application/pdf\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment; filename=\"secret-annex.pdf\"\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--b6\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\nContent-Description: PGP/MIME version identification\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\nContent-Disposition: inline; filename=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\nhQEMA0xxxx\n-----END PGP MESSAGE-----\n\n--enc--\n\n--b6--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Newsletter [a7]\nDate: Wed, 07 Jan 2026 10:00:00 +0000\nMessage-ID: <att-related@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/related; boundary=\"b7\"\n\n--b7\nContent-Type: text/html; charset=UTF-8\n\n<p><img src=\"cid:logo@x\"></p>\n\n--b7\nContent-Type: image/png\nContent-Transfer-Encoding: base64\nContent-ID: <logo@x>\n\niVBOR3l5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5eXl5\n--b7--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Signed contract [a8]\nDate: Thu, 08 Jan 2026 10:00:00 +0000\nMessage-ID: <att-signed@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/signed; protocol=\"application/pgp-signature\"; micalg=pgp-sha256; boundary=\"s1\"\n\n--s1\nContent-Type: multipart/mixed; boundary=\"s2\"\n\n--s2\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--s2\nContent-Type: application/pdf\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment; filename=\"signed-contract.pdf\"\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--s2--\n\n--s1\nContent-Type: application/pgp-signature; name=\"signature.asc\"\n\n-----BEGIN PGP SIGNATURE-----\nxx\n-----END PGP SIGNATURE-----\n\n--s1--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Annual report [a9]\nDate: Fri, 09 Jan 2026 10:00:00 +0000\nMessage-ID: <att-cont@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b9\"\n\n--b9\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b9\nContent-Type: application/pdf\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment;\n filename*0*=utf-8''ann%C3%A9e-;\n filename*1*=rapport.pdf\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--b9--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Scan [a10]\nDate: Sat, 10 Jan 2026 10:00:00 +0000\nMessage-ID: <att-octet@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"b10\"\n\n--b10\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--b10\nContent-Type: application/octet-stream; name=\"=?UTF-8?B?c2Nhbi1yZcOndS5wZGY=?=\"\nContent-Transfer-Encoding: base64\n\nJVBERi0xLjQgeHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n--b10--\n"
+      ]
+    },
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 0 [z]\nDate: Mon, 12 Jan 2026 00:00:00 +0000\nMessage-ID: <bulk-0@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-0.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 1 [z]\nDate: Mon, 12 Jan 2026 01:00:00 +0000\nMessage-ID: <bulk-1@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-1.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 2 [z]\nDate: Mon, 12 Jan 2026 02:00:00 +0000\nMessage-ID: <bulk-2@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-2.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 3 [z]\nDate: Mon, 12 Jan 2026 03:00:00 +0000\nMessage-ID: <bulk-3@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-3.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 4 [z]\nDate: Mon, 12 Jan 2026 04:00:00 +0000\nMessage-ID: <bulk-4@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-4.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 5 [z]\nDate: Mon, 12 Jan 2026 05:00:00 +0000\nMessage-ID: <bulk-5@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-5.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 6 [z]\nDate: Mon, 12 Jan 2026 06:00:00 +0000\nMessage-ID: <bulk-6@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-6.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 7 [z]\nDate: Mon, 12 Jan 2026 07:00:00 +0000\nMessage-ID: <bulk-7@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-7.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 8 [z]\nDate: Mon, 12 Jan 2026 08:00:00 +0000\nMessage-ID: <bulk-8@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-8.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 9 [z]\nDate: Mon, 12 Jan 2026 09:00:00 +0000\nMessage-ID: <bulk-9@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-9.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 10 [z]\nDate: Mon, 12 Jan 2026 10:00:00 +0000\nMessage-ID: <bulk-10@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-10.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 11 [z]\nDate: Mon, 12 Jan 2026 11:00:00 +0000\nMessage-ID: <bulk-11@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-11.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 12 [z]\nDate: Mon, 12 Jan 2026 12:00:00 +0000\nMessage-ID: <bulk-12@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-12.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 13 [z]\nDate: Mon, 12 Jan 2026 13:00:00 +0000\nMessage-ID: <bulk-13@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-13.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 14 [z]\nDate: Mon, 12 Jan 2026 14:00:00 +0000\nMessage-ID: <bulk-14@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-14.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 15 [z]\nDate: Mon, 12 Jan 2026 15:00:00 +0000\nMessage-ID: <bulk-15@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-15.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 16 [z]\nDate: Mon, 12 Jan 2026 16:00:00 +0000\nMessage-ID: <bulk-16@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-16.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 17 [z]\nDate: Mon, 12 Jan 2026 17:00:00 +0000\nMessage-ID: <bulk-17@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-17.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 18 [z]\nDate: Mon, 12 Jan 2026 18:00:00 +0000\nMessage-ID: <bulk-18@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-18.csv\"\n\na,b\n\n--bz--\n",
+        "From: Alice <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Bulk 19 [z]\nDate: Mon, 12 Jan 2026 19:00:00 +0000\nMessage-ID: <bulk-19@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"bz\"\n\n--bz\nContent-Type: text/plain; charset=UTF-8\n\nSee attached.\n\n--bz\nContent-Type: text/csv\nContent-Disposition: attachment; filename=\"bulk-19.csv\"\n\na,b\n\n--bz--\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "wait_after": 3,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "arguments": {
+        "messageId": "att-pdf@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "list-all",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "maxResults": 50
+      }
+    },
+    {
+      "id": "pdf",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "application/pdf",
+        "maxResults": 50
+      }
+    },
+    {
+      "id": "img",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "image/",
+        "maxResults": 50
+      }
+    },
+    {
+      "id": "name-facture",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "FACTURE"
+      }
+    },
+    {
+      "id": "name-accent",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "ÉTÉ"
+      }
+    },
+    {
+      "id": "name-cont",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "année-rapport"
+      }
+    },
+    {
+      "id": "name-2047",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "reçu"
+      }
+    },
+    {
+      "id": "eml",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "message/rfc822"
+      }
+    },
+    {
+      "id": "and-query",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "subject:invoice",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "pdf"
+      }
+    },
+    {
+      "id": "and-date",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "application/pdf",
+        "startDate": "2026-01-03"
+      }
+    },
+    {
+      "id": "query-secret",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "secret",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "a"
+      }
+    },
+    {
+      "id": "count",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "application/pdf",
+        "countOnly": true
+      }
+    },
+    {
+      "id": "table",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "pdf",
+        "format": "table"
+      }
+    },
+    {
+      "id": "asc-page",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "application/pdf",
+        "sortOrder": "asc",
+        "maxResults": 1
+      }
+    },
+    {
+      "id": "all-accounts",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "attachmentName": "facture"
+      }
+    },
+    {
+      "id": "bad-type",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentType": "*/*"
+      }
+    },
+    {
+      "id": "empty-name",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "  "
+      }
+    },
+    {
+      "id": "with-body",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "invoice",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "pdf",
+        "searchBody": true
+      }
+    },
+    {
+      "id": "with-legacy",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "pdf",
+        "format": "legacy"
+      }
+    },
+    {
+      "id": "bulk",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "bulk-",
+        "maxResults": 50
+      },
+      "note": "26 candidates: Thunderbird runs between messages after 25"
+    },
+    {
+      "id": "show-signed",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "att-signed@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "pdf-after-show",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "signed-contract"
+      }
+    },
+    {
+      "id": "recent",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "maxResults": 50,
+        "daysBack": 3650
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "pdf"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"name\":\"Facture 42.pdf\",\"contentType\":\"application/pdf\",\"size\":1000"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"name\":\"inner-report.pdf\",\"contentType\":\"application/pdf\",\"size\":1000,\"inAttachedMessage\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"name\":\"année-rapport.pdf\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "[a6]",
+      "present": false,
+      "note": "a message with an encrypted part is skipped"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "secret-annex",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "Secret",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"encrypted\":",
+      "note": "encrypted skips are counted when the query has no words"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "[a3]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "Holiday",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "signed-contract.pdf",
+      "note": "multipart/signed around multipart/mixed",
+      "xfail": "Thunderbird sets nsMsgMessageFlags.Attachment only on a top-level multipart/mixed when it parses a local message (seen in run 2026-11-03): a signed message is not a candidate"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"attachmentSearch\":{\"checked\":25,\"skipped\":{\"encrypted\":1},\"coverage\":\"Only messages Thunderbird flags as having attachments are read; signed (multipart/signed), multipart/related and single-part messages are usually not flagged.\"}",
+      "note": "26 flagged: a1 a2 a4 a6 a9 a10 and the 20 bulk; a6 has an encrypted part"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "scan-reçu.pdf",
+      "present": false,
+      "note": "declared application/octet-stream: not application/pdf"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf",
+      "contains": "\"attachmentSearch\":{\"checked\":"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "img",
+      "contains": "\"name\":\"photo-été.png\",\"contentType\":\"image/png\",\"size\":300"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "img",
+      "contains": "[a7]",
+      "present": false,
+      "note": "an inline image in multipart/related is not an attachment"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "img",
+      "contains": "[a1]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "name-facture",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "name-facture",
+      "contains": "[a1]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "name-accent",
+      "contains": "[a2]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "name-cont",
+      "contains": "[a9]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "name-2047",
+      "contains": "\"name\":\"scan-reçu.pdf\",\"contentType\":\"application/octet-stream\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "eml",
+      "contains": "\"name\":\"fwd.eml\",\"contentType\":\"message/rfc822\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "eml",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "and-query",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "and-query",
+      "contains": "[a1]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "and-date",
+      "contains": "[a1]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "and-date",
+      "contains": "[a4]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "query-secret",
+      "contains": "[a5]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "query-secret",
+      "contains": "[a6]",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "query-secret",
+      "contains": "\"attachmentSearch\":{\"checked\":0,\"skipped\":{\"encrypted\":1},\"coverage\":",
+      "present": true,
+      "note": "with query words the encrypted envelope [a5] is left out before reading; [a6] (encrypted part in a plain envelope, listed by the main search too) is counted"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "query-secret",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "count",
+      "contains": "\"count\":"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "count",
+      "contains": "\"attachmentSearch\":"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "table",
+      "contains": "\"columns\":["
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "table",
+      "contains": "\"attachments\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "asc-page",
+      "contains": "[a1]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "asc-page",
+      "contains": "\"hasMore\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "all-accounts",
+      "contains": "[a1]"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "bad-type",
+      "contains": "MIME type or prefix"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "empty-name",
+      "contains": "non-empty string"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "with-body",
+      "contains": "cannot be combined with searchBody"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "with-legacy",
+      "contains": "cannot be combined with format"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "[a10]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "bulk",
+      "contains": "\"totalMatches\":20"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "bulk",
+      "contains": "\"attachmentSearch\":{\"checked\":25,\"skipped\":{\"encrypted\":1},\"coverage\":\"Only messages Thunderbird flags as having attachments are read; signed (multipart/signed), multipart/related and single-part messages are usually not flagged.\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "show-signed",
+      "contains": "signed-contract.pdf",
+      "note": "Thunderbird itself lists the attachment of the signed message"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "pdf-after-show",
+      "contains": "[a8]",
+      "note": "does displaying it set the Attachment flag?",
+      "xfail": "unknown: recorded to learn whether reading the message flags it"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "[a1]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "attachmentSearch",
+      "present": false
+    },
+    {
+      "type": "schema_has",
+      "tool": "searchMessages",
+      "property": "attachmentName"
+    },
+    {
+      "type": "schema_has",
+      "tool": "searchMessages",
+      "property": "attachmentType"
+    }
+  ],
+  "schema_watch": [
+    "searchMessages"
+  ]
+}

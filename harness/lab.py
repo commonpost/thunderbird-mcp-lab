@@ -35,6 +35,7 @@ import poplib
 import queue
 import re
 import shutil
+import socket
 import signal
 import smtplib
 import subprocess
@@ -1037,7 +1038,65 @@ def run_mcp(sc, br):
         R["bridge_other_messages"] = br.notes[:20]
 
 
+# Pseudo-tool "labHttpIdle": opens a TCP connection to the extension's HTTP server, sends only the start of a
+# request (arguments.send, default a request line and one header, never the end of the headers), then waits up to
+# arguments.wait seconds (1-120, default 45) for the server to close it. The step's text is a JSON object
+# {"closed": bool, "closedAfter": seconds, "received": first bytes}, so tool_result_contains checks work on it.
+LAB_HTTP_IDLE = "labHttpIdle"
+
+
+def run_http_idle(st, entry):
+    args = st.get("arguments", {})
+    wait = args.get("wait", 45)
+    if not isinstance(wait, int) or isinstance(wait, bool) or not 1 <= wait <= 120:
+        entry.update(ok=False, error="labHttpIdle: wait must be an integer 1-120")
+        return
+    send = args.get("send", "POST / HTTP/1.1\r\nHost: 127.0.0.1\r\n")
+    if not isinstance(send, str) or len(send) > 4096:
+        entry.update(ok=False, error="labHttpIdle: send must be a string of at most 4096 characters")
+        return
+    try:
+        with open(CONN) as f:
+            port = json.load(f).get("port")
+    except Exception as e:
+        entry.update(ok=False, error="labHttpIdle: no connection file: %s" % e)
+        return
+    entry["sent_at"] = round(time.monotonic() - T0, 2)
+    start = time.monotonic()
+    closed, received = False, b""
+    try:
+        with socket.create_connection(("127.0.0.1", int(port)), timeout=5) as sock:
+            sock.sendall(send.encode("utf-8"))
+            sock.settimeout(1)
+            while time.monotonic() - start < wait:
+                try:
+                    chunk = sock.recv(4096)
+                except socket.timeout:
+                    continue
+                except OSError:
+                    closed = True
+                    break
+                if not chunk:
+                    closed = True
+                    break
+                received += chunk[:512 - len(received)]
+    except OSError as e:
+        entry.update(ok=False, error="labHttpIdle: %s" % e)
+        return
+    text = json.dumps({"closed": closed, "closedAfter": round(time.monotonic() - start, 1),
+                       "received": received.decode("latin-1")[:512]})
+    entry.update(ok=True, text=text, answered_at=round(time.monotonic() - T0, 2))
+    FULLTEXT[st["id"]] = text
+
+
 def run_group(grp, by_name, br):
+    if len(grp) == 1 and grp[0]["tool"] == LAB_HTTP_IDLE:
+        st = grp[0]
+        entry = {"id": st["id"], "tool": st["tool"], "arguments": st.get("arguments", {})}
+        log("lab step %s (%s)" % (st["tool"], st["id"]))
+        run_http_idle(st, entry)
+        R["steps"].append(entry)
+        return
     entries = []
     for st in grp:
         entry = {"id": st["id"], "tool": st["tool"], "arguments": st.get("arguments", {})}
