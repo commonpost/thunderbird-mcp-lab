@@ -1,0 +1,467 @@
+{
+  "name": "calendar-reminders",
+  "description": "createEvent/updateEvent reminders, listEvents reminders, seeded non-display alarms kept",
+  "prefs": {
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "calendar.list.sortOrder": "labstore labics labmax",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "calendar.registry.labics.type": "ics",
+    "calendar.registry.labics.uri": "file:///lab/profile/Mail/labcal/msgFilterRules.dat",
+    "calendar.registry.labics.name": "Lab ics",
+    "calendar.registry.labics.disabled": false,
+    "calendar.registry.labics.calendar-main-in-composite": true,
+    "calendar.registry.labmax.type": "storage",
+    "calendar.registry.labmax.uri": "moz-storage-calendar://",
+    "calendar.registry.labmax.name": "Lab max",
+    "calendar.registry.labmax.disabled": false,
+    "calendar.registry.labmax.calendar-main-in-composite": true,
+    "calendar.registry.labmax.capabilities.alarms.maxCount": 1,
+    "calendar.registry.labmax.suppressAlarms": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labcal/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Reminders//EN\r\nBEGIN:VEVENT\r\nUID:lab-seeded-alarms@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261215T150000Z\r\nDTEND:20261215T160000Z\r\nSUMMARY:Seeded alarms\r\nBEGIN:VALARM\r\nACTION:EMAIL\r\nTRIGGER:-PT2H\r\nSUMMARY:Mail reminder\r\nDESCRIPTION:Mail reminder\r\nATTENDEE:mailto:lab@example.test\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER;VALUE=DATE-TIME:20261214T090000Z\r\nDESCRIPTION:Absolute reminder\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER;RELATED=END:-PT5M\r\nDESCRIPTION:End reminder\r\nEND:VALARM\r\nBEGIN:VALARM\r\nACTION:DISPLAY\r\nTRIGGER:-PT30M\r\nDESCRIPTION:Old reminder\r\nEND:VALARM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "arguments": {}
+    },
+    {
+      "id": "create",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem direct",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "reminders": [
+          15,
+          1440,
+          15
+        ]
+      }
+    },
+    {
+      "id": "create-allday",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem allday",
+        "startDate": "2026-12-11",
+        "allDay": true,
+        "calendarId": "labstore",
+        "skipReview": true,
+        "reminders": [
+          1440
+        ]
+      }
+    },
+    {
+      "id": "create-none",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem none",
+        "startDate": "2026-12-12T09:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "create-dialog",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem dialog",
+        "startDate": "2026-12-13T09:00:00Z",
+        "calendarId": "labstore",
+        "reminders": [
+          30
+        ]
+      }
+    },
+    {
+      "id": "create-neg",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem bad",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "reminders": [
+          -5
+        ]
+      }
+    },
+    {
+      "id": "create-six",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem bad",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "reminders": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      }
+    },
+    {
+      "id": "create-max",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem max",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labmax",
+        "skipReview": true,
+        "reminders": [
+          60,
+          15
+        ]
+      }
+    },
+    {
+      "id": "create-max-ok",
+      "tool": "createEvent",
+      "arguments": {
+        "title": "Rem maxok",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labmax",
+        "skipReview": true,
+        "reminders": [
+          15
+        ]
+      }
+    },
+    {
+      "id": "list-store",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "list-max",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labmax"
+      }
+    },
+    {
+      "id": "list-ics",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "note": "the ics calendar loads asynchronously; retried only on error"
+    },
+    {
+      "id": "u1",
+      "tool": "updateEvent",
+      "arguments": {
+        "eventId": "lab-seeded-alarms@example.test",
+        "calendarId": "labics",
+        "reminders": [
+          10,
+          1440
+        ]
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "l2",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "u2",
+      "tool": "updateEvent",
+      "arguments": {
+        "eventId": "lab-seeded-alarms@example.test",
+        "calendarId": "labics",
+        "reminders": []
+      }
+    },
+    {
+      "id": "l3",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "u3",
+      "tool": "updateEvent",
+      "arguments": {
+        "eventId": "lab-seeded-alarms@example.test",
+        "calendarId": "labics",
+        "reminders": [
+          60
+        ]
+      }
+    },
+    {
+      "id": "u4",
+      "tool": "updateEvent",
+      "arguments": {
+        "eventId": "lab-seeded-alarms@example.test",
+        "calendarId": "labics",
+        "title": "Seeded alarms renamed"
+      }
+    },
+    {
+      "id": "l4",
+      "tool": "listEvents",
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      },
+      "wait_after": 3
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labics\"",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labmax\"",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "create",
+      "contains": "\"reminders\":[1440,15]",
+      "present": true
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-allday"
+    },
+    {
+      "type": "tool_ok",
+      "step": "create-none"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "create-dialog",
+      "contains": "Event dialog opened",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "create-dialog",
+      "contains": "\"reminders\":[30]",
+      "present": true
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "create-neg",
+      "contains": ">= 0"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "create-six",
+      "contains": "at most 5"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "create-max",
+      "contains": "at most 1 alarm(s) per event"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "create-max-ok",
+      "contains": "\"reminders\":[15]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "create-max-ok",
+      "contains": "Reminders are turned off",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-store",
+      "contains": "Rem direct",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-store",
+      "contains": "\"reminders\":[1440,15]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-store",
+      "contains": "\"reminders\":[1440]}",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-store",
+      "contains": "\"reminders\":[]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-max",
+      "contains": "\"reminders\":[15]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-max",
+      "contains": "Rem max\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "Seeded alarms",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"reminders\":[30]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u1",
+      "contains": "\"reminders\":[1440,10]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "l2",
+      "contains": "\"reminders\":[1440,10]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u2",
+      "contains": "\"reminders\":[]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "l3",
+      "contains": "\"reminders\":[]",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u3",
+      "contains": "\"reminders\":[60]",
+      "present": true
+    },
+    {
+      "type": "tool_ok",
+      "step": "u4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u4",
+      "contains": "\"reminders\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "l4",
+      "contains": "Seeded alarms renamed",
+      "present": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "l4",
+      "contains": "\"reminders\":[60]",
+      "present": true
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "ACTION:EMAIL"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "TRIGGER:-PT2H"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "20261214T090000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "RELATED=END"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "Old reminder",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "TRIGGER:-PT1H"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labcal/msgFilterRules.dat",
+      "contains": "Seeded alarms renamed"
+    }
+  ],
+  "inspect": {
+    "prefs": [
+      "calendar.registry.lab"
+    ],
+    "files": [
+      "Mail/labcal/msgFilterRules.dat"
+    ]
+  }
+}
