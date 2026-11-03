@@ -56,8 +56,10 @@ For the lab in particular:
 - The lab image is built from this repository alone (`docker build -t thunderbird-mcp-lab:local harness`), with
   verified downloads. No secret is needed to build it, to run the scenarios, or to run CI.
 
-What one maintainer cannot hand over alone is administrative access to the `commonpost` organization and to this
-repository's settings. Until a second maintainer joins, that is the gap in continuity.
+Administrative access to the `commonpost` organization and to this repository's settings is covered by the lockbox
+and will described in the
+[main repository](https://github.com/commonpost/thunderbird-mcp/blob/main/GOVERNANCE.md#continuity): a successor is
+invited as owner of the organization within a week, or the repositories are archived if nobody accepts.
 
 ## Changes to this document
 
