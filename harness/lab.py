@@ -68,6 +68,7 @@ POP3_USER = "lab"
 MAX_TEXT = 20000
 MAX_OUT = 3_000_000
 MAX_SCENARIO = 1_000_000
+MAX_COVERAGE = 65536          # hex characters of the coverage bitmap (4 statements each)
 MARK_BEGIN = "===== THUNDERBIRD-MCP-LAB RESULT JSON %s ====="
 MARK_END = "===== THUNDERBIRD-MCP-LAB END %s ====="
 NONCE = ""          # read from the first input line; authenticates the result block
@@ -1169,6 +1170,20 @@ def run_group(grp, by_name, br):
     R["steps"].extend(e for _, e in entries)
 
 
+def read_coverage():
+    """Statement coverage of an instrumented add-on: scripts/coverage/instrument.cjs of commonpost/thunderbird-mcp makes
+    it write a hex bitmap of the statements it ran to <profile>/cp-coverage.txt. A normal build writes no such file."""
+    p = PROF + "/cp-coverage.txt"
+    if os.path.islink(p) or not os.path.isfile(p):
+        return
+    with open(p, "rb") as f:
+        raw = f.read(MAX_COVERAGE + 1)
+    if len(raw) > MAX_COVERAGE or not re.fullmatch(rb"[0-9a-f]*", raw):
+        R["coverage_error"] = "cp-coverage.txt is not a hex bitmap of at most %d characters" % MAX_COVERAGE
+        return
+    R["coverage_hex"] = raw.decode("ascii")
+
+
 def inspect(sc):
     ins = sc.get("inspect", {})
     ds = drafts()
@@ -1499,8 +1514,14 @@ def main():
     except Exception as e:
         fail("%s: %s" % (type(e).__name__, e))
     finally:
+        if os.path.isfile(PROF + "/cp-coverage.txt"):
+            time.sleep(0.6)           # an instrumented add-on writes its bitmap every 250 ms: let it write once more
         for n in ("bridge", "thunderbird", "xvfb", "mailpit"):
             stop(n)
+        try:
+            read_coverage()
+        except OSError as e:
+            R["coverage_error"] = str(e)[:500]
         if PW and "prefs_timeline" not in R:
             PW.stop()
         emit()
