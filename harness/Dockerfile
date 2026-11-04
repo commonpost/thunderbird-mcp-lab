@@ -9,8 +9,19 @@
 # --- Stage 1: the mailpit binary (SMTP + POP3 + HTTP API), copied from the official image.
 FROM axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498 AS mailpit
 
-# --- Stage 2: VERIFIED download of Thunderbird (GPG signature of SHA512SUMS, then SHA512 of the archive).
-FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS tbdl
+# --- Stage 2: Debian with apt over https://. The slim image fetches packages from http:// sources and has no CA
+# certificates for https://; the CA bundle of the mailpit image (pinned above), named to apt (CAInfo), lets apt use
+# https:// from the first request. Package integrity still comes from Debian's signed archive metadata.
+FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a AS debian-https
+COPY --from=mailpit /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+RUN sed -i 's#^URIs: http://#URIs: https://#' /etc/apt/sources.list.d/debian.sources \
+ && echo 'Acquire::https::CAInfo "/etc/ssl/certs/ca-certificates.crt";' > /etc/apt/apt.conf.d/99https-ca \
+ && [ ! -e /etc/apt/sources.list ] \
+ && ! grep -Rq '^URIs:.*http://' /etc/apt/sources.list.d/ \
+ && grep -q '^URIs: https://deb.debian.org/debian$' /etc/apt/sources.list.d/debian.sources
+
+# --- Stage 3: VERIFIED download of Thunderbird (GPG signature of SHA512SUMS, then SHA512 of the archive).
+FROM debian-https AS tbdl
 ARG TB_VERSION=156.0.1
 ARG TB_BASE=https://archive.mozilla.org/pub/thunderbird/releases
 # PRIMARY key fingerprint of "Mozilla Software Releases <release@mozilla.com>" (the KEY file of the release directory;
@@ -41,8 +52,8 @@ RUN set -eu; \
     grep -qx "Version=$TB_VERSION" /opt/tb/thunderbird/application.ini; \
     echo "Thunderbird $TB_VERSION: GPG signature and SHA512 verified."
 
-# --- Stage 3: runtime image.
-FROM debian:13-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
+# --- Stage 4: runtime image.
+FROM debian-https
 LABEL org.opencontainers.image.title="thunderbird-mcp-lab" \
       org.opencontainers.image.description="Offline end-to-end lab for thunderbird-mcp (Thunderbird + mailpit + Xvfb)" \
       org.opencontainers.image.licenses="MIT"
@@ -52,6 +63,8 @@ RUN apt-get update \
       xvfb xauth fonts-dejavu-core fontconfig \
       nodejs python3 jq procps \
  && rm -rf /var/lib/apt/lists/* \
+ && rm -f /etc/ssl/certs/ca-certificates.crt /etc/apt/apt.conf.d/99https-ca \
+ && rmdir --ignore-fail-on-non-empty /etc/ssl/certs /etc/ssl \
  && { find / -xdev -perm /6000 -type f -exec chmod a-s {} + 2>/dev/null || true; }
 # Xvfb compiles its keymap into /var/lib/xkb; the root file system is read-only at run time, so point it at /tmp (tmpfs).
 RUN rm -rf /var/lib/xkb && ln -s /tmp /var/lib/xkb \

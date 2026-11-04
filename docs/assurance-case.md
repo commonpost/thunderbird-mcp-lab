@@ -141,8 +141,9 @@ Thunderbird) get `/dev/null` or a log file as standard streams (`start`); the br
 - **The protection of the result channel** rests on the kernel's non-dumpable flag and on the absence of
   `CAP_SYS_PTRACE` in the container. The self-test checks the access paths it knows; it does not prove that no other
   path exists.
-- **Debian packages are not pinned**, and apt fetches them over HTTP from `deb.debian.org`, authenticated by Debian's
-  signed archive metadata. Two builds at different times can differ.
+- **Debian packages are not pinned.** apt fetches them over HTTPS from `deb.debian.org` and authenticates them by
+  Debian's signed archive metadata; the CA bundle that apt trusts for that comes from the pinned mailpit image. Two
+  builds at different times can differ.
 - **Thunderbird updates are manual.** Dependabot does not track `TB_VERSION`; only 156.0.1 has been tested. Inside the
   lab, Thunderbird runs offline on synthetic data, and the code under test already runs with its privileges.
 - **Validator tests.** Every refusal in the validator is reached by at least one case in `selftest/invalid-scenarios/`,
