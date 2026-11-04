@@ -205,9 +205,9 @@ def tail(path, nlines=60, nchars=8000):
 
 
 def start(name, argv, env=None, cwd=None, stdin=subprocess.DEVNULL, stdout=None):
-    logf = open(os.path.join(LOGS, name + ".log"), "wb")
-    p = subprocess.Popen(argv, env=env, cwd=cwd, stdin=stdin, stdout=stdout if stdout is not None else logf,
-                         stderr=logf, start_new_session=True, close_fds=True)
+    with open(os.path.join(LOGS, name + ".log"), "wb") as logf:      # the process keeps its own copy
+        p = subprocess.Popen(argv, env=env, cwd=cwd, stdin=stdin, stdout=stdout if stdout is not None else logf,
+                             stderr=logf, start_new_session=True, close_fds=True)
     PROCS[name] = p
     return p
 
@@ -567,7 +567,8 @@ BOUNDARY_RE = re.compile(r'boundary\s*=\s*(?:"([^"]+)"|([^;\s]+))', re.I)
 
 def mime_parts(msg):
     """MIME parts of an analysed message: the RAW body is split on the boundary of its Content-Type ("--boundary"
-    lines, CRs kept), and each part is analysed again as a message (part headers + body)."""
+    lines, CRs kept), and each part is analysed again as a message (part headers + body). A last part with no closing
+    "--boundary--" line is kept."""
     ct = ""
     for f in msg["fields"]:
         if (f["name"] or "").lower() == "content-type":
@@ -590,6 +591,8 @@ def mime_parts(msg):
             continue
         if cur is not None:
             cur.append(full)
+    if cur is not None:
+        parts.append(cur)
     return [analyse_message({"from_line": b"", "lines": p}) for p in parts[:30]]
 
 
@@ -747,7 +750,7 @@ def extract_source():
 def _gecko(mf):
     gecko = (mf.get("browser_specific_settings") or mf.get("applications") or {}).get("gecko") or {}
     gid = str(gecko.get("id", ""))
-    if not re.match(r"^[A-Za-z0-9._@{}-]{3,100}$", gid) or ".." in gid:
+    if not re.fullmatch(r"[A-Za-z0-9._@{}-]{3,100}", gid) or ".." in gid:
         raise RuntimeError("invalid gecko id in the manifest: %r" % gid)
     global CONN
     if gid in CONN_BY_ID:
@@ -904,8 +907,9 @@ def make_profile(sc):
 
 # ------------------------------------------------------------------------------------------------ prefs.js watch
 class PrefWatch:
-    """"watch_prefs": re-reads prefs.js every 0.2 s and records every change of the watched lines (prefixes), with
-    the current step. Thunderbird rewrites prefs.js ~0.5 s after a change: a shorter-lived state can be missed."""
+    """"watch_prefs": re-reads prefs.js every 0.2 s and records the watched lines (prefixes) when the file first
+    appears, then every change of them, with the current step. Thunderbird rewrites prefs.js ~0.5 s after a change: a
+    shorter-lived state can be missed."""
 
     def __init__(self, prefixes):
         self.prefixes = prefixes
@@ -1064,11 +1068,14 @@ def run_http_idle(st, entry):
     except Exception as e:
         entry.update(ok=False, error="labHttpIdle: no connection file: %s" % e)
         return
+    if not isinstance(port, int) or isinstance(port, bool) or not 1 <= port <= 65535:
+        entry.update(ok=False, error="labHttpIdle: no valid port in the connection file: %r" % (port,))
+        return
     entry["sent_at"] = round(time.monotonic() - T0, 2)
     start = time.monotonic()
     closed, received = False, b""
     try:
-        with socket.create_connection(("127.0.0.1", int(port)), timeout=5) as sock:
+        with socket.create_connection(("127.0.0.1", port), timeout=5) as sock:
             sock.sendall(send.encode("utf-8"))
             sock.settimeout(1)
             while time.monotonic() - start < wait:
@@ -1474,7 +1481,13 @@ def emit():
     if len(out) > MAX_OUT:
         R["logs"] = {"truncated": True}
         R["tools"] = R.get("tools", [])[:5] + ["..."]
-        out = json.dumps(R, ensure_ascii=True, indent=1)[:MAX_OUT]
+        out = json.dumps(R, ensure_ascii=True, indent=1)
+    if len(out) > MAX_OUT:
+        # Still too large: a failed result that keeps only its summary, still valid JSON for the launcher.
+        out = json.dumps({"harness": HARNESS, "ok": False, "scenario": R.get("scenario"), "summary": R.get("summary"),
+                          "errors": [clip(str(e), 500) for e in R["errors"][:5]]
+                          + ["the result was larger than %d characters: only its summary is kept" % MAX_OUT]},
+                         ensure_ascii=True, indent=1)
     sys.stdout.write((MARK_BEGIN + "\n%s\n" + MARK_END + "\n") % (NONCE, out, NONCE))
     sys.stdout.flush()
 

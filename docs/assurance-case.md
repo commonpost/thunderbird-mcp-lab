@@ -149,6 +149,8 @@ Thunderbird) get `/dev/null` or a log file as standard streams (`start`); the br
 - **Validator tests.** Every refusal in the validator is reached by at least one case in `selftest/invalid-scenarios/`,
   but not every condition of each refusal; the 5 MB limit on seeded messages has no case, since a scenario cannot
   reach it under the 1,000,000-byte limit on the scenario itself.
-- **Coverage.** The scenarios, the self-test and the validator cases cover 82% of the statements of `harness/lab.py`
-  (measured by hand with coverage.py in November 2026, not in CI); branch coverage is not measured. The shell scripts
-  are covered only by the scenarios and the self-test that run through them.
+- **Coverage.** The coverage workflow measures `harness/lab.py` with coverage.py, on `main` and every week: the
+  validator cases, the harness tests, the public scenarios and the self-test cover 100% of its statements and branches
+  (November 2026); the workflow fails below 90% of the statements or 80% of the branches. Many harness tests fake
+  Thunderbird, mailpit and processes: they pin the harness's own logic, while the scenarios show it working against
+  the real programs. The shell scripts are covered only by the scenarios and the self-test that run through them.

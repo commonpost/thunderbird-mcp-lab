@@ -65,18 +65,22 @@ jobs:
       - name: Harness, launcher and scenarios
         run: |
           set -euo pipefail
-          python3 -B -m py_compile harness/lab.py fuzz/fuzz_load_scenario.py selftest/validator-cases.py
+          python3 -B -m py_compile harness/lab.py harness/self_coverage.py fuzz/fuzz_load_scenario.py \
+            selftest/validator-cases.py selftest/harness-tests.py
           python3 -B harness/lab.py --validate scenarios/*.json selftest/isolation.json
           # Negative tests: every file of selftest/invalid-scenarios/ must be refused with its expected message.
           python3 -B selftest/validator-cases.py
-          bash -n run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
-          shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh
+          # Unit tests of the harness functions that need no Thunderbird.
+          python3 -B selftest/harness-tests.py
+          bash -n run-lab.sh selftest/run.sh selftest/coverage.sh .clusterfuzzlite/build.sh
+          shellcheck run-lab.sh selftest/run.sh selftest/coverage.sh .clusterfuzzlite/build.sh
 
       - name: Python lint (pyflakes)
         run: |
           set -euo pipefail
           sudo apt-get install -y -qq --no-install-recommends pyflakes3 >/dev/null
-          pyflakes3 harness/lab.py fuzz/fuzz_load_scenario.py selftest/validator-cases.py
+          pyflakes3 harness/lab.py harness/self_coverage.py fuzz/fuzz_load_scenario.py selftest/validator-cases.py \
+            selftest/harness-tests.py
 
       - name: License headers (SPDX)
         run: |

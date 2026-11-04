@@ -211,6 +211,12 @@ and are not pinned.
 - manually (`workflow_dispatch`) against the latest release, its `main` branch, or a given **pull request**
   (the pull request head is resolved through the API and through git, and both must agree).
 
+`.github/workflows/coverage.yml` measures the statement and branch coverage of the harness (`harness/lab.py`) with
+coverage.py, on `main` and every week: the validator cases, the harness tests (`selftest/harness-tests.py`), the
+public scenarios against the latest release, and the self-test, all run in a variant of the image that adds
+coverage.py (`docker build --target coverage`; the default image is unchanged). It fails below 90% of the statements
+or 80% of the branches; see `selftest/coverage.sh`.
+
 The code under test is only checked out and streamed into the lab container: it is never executed on the runner. The
 workflow uses no secrets, its token is read-only (`contents: read`) and is not passed to the container, it does not
 use `pull_request_target`, and credentials are not persisted by `actions/checkout`. Only the summary table is published

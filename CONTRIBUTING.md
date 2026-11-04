@@ -25,8 +25,10 @@ are already public, harness improvements, better documentation, CI fixes.
    explain why they are safe. In particular, do not start the image with `--init`: the harness must be PID 1.
 6. **Pin what you add.** GitHub Actions by full commit SHA (with the version in a comment), base images by digest.
 7. **Test what you change.** New functionality in the harness, the launcher or the scenario format comes with a
-   scenario, a self-test check or a validator case that exercises it, in the same pull request; a bug fix comes with
-   a check that fails without the fix whenever that is practical. Say in the pull request which tests you added.
+   scenario, a self-test check, a validator case or a harness test (`selftest/harness-tests.py`) that exercises it,
+   in the same pull request; a bug fix comes with a check that fails without the fix whenever that is practical. Say
+   in the pull request which tests you added. The coverage workflow fails below 90% of the statements or 80% of the
+   branches of `harness/lab.py`.
 8. **Be respectful of other projects.** Findings about thunderbird-mcp, Thunderbird or any other project go to that
    project through its usual channels; the lab is not a place to criticise anyone's work.
 9. **License header in each source file.** A new source file (code, Dockerfile, workflow) starts, after any `#!` line,
@@ -40,9 +42,12 @@ are already public, harness improvements, better documentation, CI fixes.
 docker build -t thunderbird-mcp-lab:local harness            # build the image
 python3 harness/lab.py --validate scenarios/*.json            # validate scenarios (no container)
 python3 selftest/validator-cases.py                           # invalid scenarios must be refused
+python3 selftest/harness-tests.py                             # unit tests of the harness (no container)
 ./run-lab.sh path/to/commonpost-mcp scenarios/*.json          # run them
 selftest/run.sh path/to/thunderbird-mcp                       # isolation self-test
-shellcheck run-lab.sh selftest/run.sh .clusterfuzzlite/build.sh   # shell lint
+docker build --target coverage -t thunderbird-mcp-lab:coverage harness   # the image plus coverage.py
+selftest/coverage.sh path/to/commonpost-mcp                   # statement and branch coverage of harness/lab.py
+shellcheck run-lab.sh selftest/run.sh selftest/coverage.sh .clusterfuzzlite/build.sh   # shell lint
 docker run --rm -v "$PWD:/repo:ro" -w /repo rhysd/actionlint:latest   # workflow lint
 ```
 
@@ -69,10 +74,11 @@ and its expected error message in `selftest/invalid-scenarios.json`; `selftest/v
 
 The coding standard of the lab is what these tools accept; contributions must pass them:
 
-- **Shell** (`run-lab.sh`, `selftest/run.sh`, `.clusterfuzzlite/build.sh`): Bash, stopping on errors (`set -euo
+- **Shell** (`run-lab.sh`, `selftest/run.sh`, `selftest/coverage.sh`, `.clusterfuzzlite/build.sh`): Bash, stopping on errors (`set -euo
   pipefail`, or `-eu` for the ClusterFuzzLite build script); [ShellCheck](https://www.shellcheck.net/) at its default
   severity (style) reports nothing. A `# shellcheck disable=` comment must say why.
-- **Python** (`harness/lab.py`, `fuzz/`): standard library only, for the Python 3 of the image (Debian 13);
+- **Python** (`harness/`, `fuzz/`, `selftest/`): standard library only, for the Python 3 of the image (Debian 13),
+  except `harness/self_coverage.py`, which uses coverage.py in the coverage image only;
   [pyflakes](https://github.com/PyCQA/pyflakes) reports nothing.
 - **Workflows**: actions pinned by full commit SHA, least-privilege `permissions`, `persist-credentials: false`;
   [zizmor](https://docs.zizmor.sh/) with its pedantic persona reports nothing; actionlint is run locally.

@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: MIT
+# SPDX-FileCopyrightText: 2026 Guillaume Laforest
+name: coverage
+
+# Statement and branch coverage of the harness (harness/lab.py), measured by coverage.py in the coverage image
+# (harness/Dockerfile, target "coverage"; see selftest/coverage.sh): the validator cases, the harness tests, the public
+# scenarios against the latest release of Commonpost MCP for Thunderbird, and the isolation self-test. Runs on main and
+# every week; the job fails below MIN_STATEMENTS or MIN_BRANCHES percent.
+#
+# As in lab.yml, the code under test is never executed on the runner: it is cloned, then streamed into the lab
+# containers by run-lab.sh. Only the figures are published (job summary and a small artifact).
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "41 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_REPO: commonpost/thunderbird-mcp
+  MIN_STATEMENTS: "90"
+  MIN_BRANCHES: "80"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  coverage:
+    name: Harness coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out the lab
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Clone the latest release of the code under test (never executed on the runner)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$(gh api -H "Accept: application/vnd.github+json" "repos/$TARGET_REPO/releases/latest" --jq .tag_name)"
+          if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "::error::unexpected tag name"; exit 1; fi
+          git -c advice.detachedHead=false clone --quiet --depth 1 --branch "$tag" "https://github.com/$TARGET_REPO.git" target
+          test "$(jq -r .version target/extension/manifest.json)" = "${tag#v}"
+          echo "code under test: $TARGET_REPO $tag ($(git -C target rev-parse HEAD))"
+
+      - name: Build the lab and coverage images
+        run: |
+          set -euo pipefail
+          docker build -t thunderbird-mcp-lab:ci harness
+          docker build --target coverage -t thunderbird-mcp-lab:coverage harness
+
+      - name: Measure
+        run: >-
+          selftest/coverage.sh --image thunderbird-mcp-lab:coverage --out coverage-results
+          --min-statements "$MIN_STATEMENTS" --min-branches "$MIN_BRANCHES" target
+
+      - name: Job summary
+        if: always()
+        run: |
+          set -euo pipefail
+          f=coverage-results/summary.json
+          [ -s "$f" ] || { echo "No coverage figures." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          jq -r '"### Coverage of harness/lab.py",
+            "",
+            "| | covered | total | percent |",
+            "|---|---:|---:|---:|",
+            "| statements | \(.covered_statements) | \(.statements) | \(.statement_percent)% |",
+            "| branches | \(.covered_branches) | \(.branches) | \(.branch_percent)% |",
+            "",
+            "coverage.py \(.coverage_py), \(.measures) measured processes (validator cases, harness tests, public scenarios, isolation self-test). Minimums: \(env.MIN_STATEMENTS)% of statements, \(env.MIN_BRANCHES)% of branches."' \
+            "$f" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the figures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-summary
+          path: |
+            coverage-results/summary.json
+            coverage-results/report.txt
+          retention-days: 90
+          if-no-files-found: warn
