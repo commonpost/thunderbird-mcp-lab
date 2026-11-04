@@ -144,6 +144,9 @@ The result JSON contains, among others: `ok`, `errors`, `summary` (`pass`, `fail
 `checks` (each with `check`, `ok`, `status` and `detail`), `pid1` (whether the harness runs as PID 1 of the
 container) and `nondumpable`, `phases` (versions of Thunderbird, mailpit, Node.js and the extension, MCP server info,
 XPI hash), `tools`, `steps` (arguments, timing, response text), `drafts`, `mbox_folders`, `mailpit`, the optional
-inspection results, and the tail of the Thunderbird, bridge, mailpit and Xvfb logs.
+inspection results, and the tail of the Thunderbird, bridge, mailpit and Xvfb logs. When the add-on under test was
+instrumented for coverage (`scripts/coverage/instrument.cjs` in commonpost/thunderbird-mcp), `coverage_hex` holds
+the hex bitmap of the statements of `api.js` it ran, read from `<profile>/cp-coverage.txt` (hex digits only, at most
+65,536); a normal build has no such field.
 
 It is produced next to the code under test: treat it as data.
