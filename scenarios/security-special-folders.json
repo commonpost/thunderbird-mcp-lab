@@ -1,0 +1,453 @@
+{
+  "name": "security-special-folders",
+  "description": "Thunderbird's special folders stay as they are through MCP (GHSA-whwf-gghm-mwx9, fixed in 0.18.1): the Trash, Inbox, Junk, Templates and Drafts folders are not renamed, moved or deleted, and their messages stay; no top-level folder is created or renamed with a special folder's name; nothing is created or moved into Templates; an ordinary folder is still created, renamed and deleted.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders mike\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-mike@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-mike.\n"
+      ]
+    },
+    {
+      "folder": "127.0.0.1/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders november\nDate: Thu, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-november@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-november.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders oscar\nDate: Thu, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-oscar@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-oscar.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders papa\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-papa@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-papa.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Junk",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders quebec\nDate: Thu, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-quebec@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-quebec.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders romeo\nDate: Thu, 06 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-romeo@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-romeo.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Templates",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders papa\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-templates@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-papa.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Drafts",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders papa\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-drafts@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-papa.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Archives",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders papa\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-archives@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-papa.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "ptrash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-november@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "ltrash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-papa@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "junk-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-quebec@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "templates-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sf-templates@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Templates",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "drafts-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sf-drafts@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "archives-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sf-archives@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Archives",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "r-trash",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "newName": "x1"
+      }
+    },
+    {
+      "id": "d-trash",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash"
+      }
+    },
+    {
+      "id": "r-inbox",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "newName": "x2"
+      }
+    },
+    {
+      "id": "m-junk",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "newParentPath": "mailbox://nobody@Local%20Folders/Archives"
+      }
+    },
+    {
+      "id": "d-junk",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk"
+      }
+    },
+    {
+      "id": "r-templates",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Templates",
+        "newName": "x3"
+      }
+    },
+    {
+      "id": "d-drafts",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    },
+    {
+      "id": "c-reserved",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "templates"
+      }
+    },
+    {
+      "id": "c-in-templates",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders/Templates",
+        "name": "inside"
+      }
+    },
+    {
+      "id": "c-ok",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-ok"
+      }
+    },
+    {
+      "id": "m-into-templates",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-ok",
+        "newParentPath": "mailbox://nobody@Local%20Folders/Templates"
+      }
+    },
+    {
+      "id": "r-reserved",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-ok",
+        "newName": "Trash"
+      }
+    },
+    {
+      "id": "r-ok",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-ok",
+        "newName": "lab-ok2"
+      }
+    },
+    {
+      "id": "d-ok",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-ok2"
+      }
+    },
+    {
+      "id": "trash-still",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-papa@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "junk-still",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-quebec@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "inbox-still",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "templates-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "drafts-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "archives-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-trigger"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ptrash-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ltrash-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "junk-ready"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-trash",
+      "contains": "Cannot rename the Trash folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "d-trash",
+      "contains": "Cannot delete the Trash folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-inbox",
+      "contains": "Cannot rename the Inbox folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "m-junk",
+      "contains": "Cannot move the Junk folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "d-junk",
+      "contains": "Cannot delete the Junk folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-templates",
+      "contains": "Cannot rename the Templates folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "d-drafts",
+      "contains": "Cannot delete the Drafts folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "c-reserved",
+      "contains": "is the name of a Thunderbird special folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "c-in-templates",
+      "contains": "Cannot put a folder inside a Templates folder through MCP"
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-ok"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-ok",
+      "contains": "\"path\":\"mailbox://nobody@Local%20Folders/lab-ok\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "m-into-templates",
+      "contains": "Cannot put a folder inside a Templates folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-reserved",
+      "contains": "is the name of a Thunderbird special folder"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-ok"
+    },
+    {
+      "type": "tool_ok",
+      "step": "d-ok"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "d-ok",
+      "contains": "moved to Trash"
+    },
+    {
+      "type": "tool_ok",
+      "step": "trash-still"
+    },
+    {
+      "type": "tool_ok",
+      "step": "junk-still"
+    },
+    {
+      "type": "tool_ok",
+      "step": "inbox-still"
+    }
+  ]
+}
