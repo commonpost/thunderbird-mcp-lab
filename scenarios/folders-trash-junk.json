@@ -1,0 +1,789 @@
+{
+  "name": "folders-trash-junk",
+  "description": "Folder tools on Local Folders and the POP3 account: renameFolder keeps the messages of the folder and changes its URI, moveFolder puts it under another folder (listFolders shows the new depth and path, the message follows), deleteFolder moves it to the Trash and, from the Trash, deletes it for good with its message. emptyTrash empties the Trash of one account and leaves the other account's Trash alone (the seeded mbox file of the POP3 Trash is emptied too), then of all accounts; emptyJunk empties Local Folders' Junk (the POP3 account has none); getAccountAccess lists both accounts. The main errors are checked: unknown folder or account, a folder name with a backslash, the root folder, a move under the folder's own parent, missing arguments. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders mike\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-mike@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-mike.\n"
+      ]
+    },
+    {
+      "folder": "127.0.0.1/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders november\nDate: Thu, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-november@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-november.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders oscar\nDate: Thu, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-oscar@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-oscar.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders papa\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-papa@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-papa.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Junk",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders quebec\nDate: Thu, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-quebec@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-quebec.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab folders romeo\nDate: Thu, 06 Jan 2026 10:00:00 +0000\nMessage-ID: <ft-romeo@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of ft-romeo.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "ptrash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-november@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "ltrash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-papa@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "junk-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-quebec@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "cf-a",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-a"
+      }
+    },
+    {
+      "id": "cf-b",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-b"
+      }
+    },
+    {
+      "id": "um-move",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ft-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "moveTo": "mailbox://nobody@Local%20Folders/lab-a"
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "s-a",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a"
+      }
+    },
+    {
+      "id": "rename",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a",
+        "newName": "lab-a2"
+      }
+    },
+    {
+      "id": "s-a2",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a2"
+      }
+    },
+    {
+      "id": "s-old-a",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a"
+      }
+    },
+    {
+      "id": "list-renamed",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "format": "table"
+      }
+    },
+    {
+      "id": "move",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a2",
+        "newParentPath": "mailbox://nobody@Local%20Folders/lab-b"
+      }
+    },
+    {
+      "id": "s-moved",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b/lab-a2"
+      }
+    },
+    {
+      "id": "list-moved",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "format": "table"
+      }
+    },
+    {
+      "id": "delete-1",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b/lab-a2"
+      }
+    },
+    {
+      "id": "list-trashed",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "format": "table"
+      }
+    },
+    {
+      "id": "s-in-trash",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash/lab-a2"
+      }
+    },
+    {
+      "id": "delete-2",
+      "tool": "deleteFolder",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash/lab-a2"
+      }
+    },
+    {
+      "id": "list-deleted",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "format": "table"
+      }
+    },
+    {
+      "id": "s-gone",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "mike",
+        "includeTrash": true
+      }
+    },
+    {
+      "id": "s-ptrash-0",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "et-account2",
+      "tool": "emptyTrash",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "s-ptrash-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "s-ltrash-0",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash"
+      }
+    },
+    {
+      "id": "et-all",
+      "tool": "emptyTrash",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "s-ltrash-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash"
+      }
+    },
+    {
+      "id": "s-junk-0",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk"
+      }
+    },
+    {
+      "id": "ej-account2",
+      "tool": "emptyJunk",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "s-junk-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk"
+      }
+    },
+    {
+      "id": "ej-account1",
+      "tool": "emptyJunk",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1"
+      }
+    },
+    {
+      "id": "s-junk-2",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk"
+      }
+    },
+    {
+      "id": "access",
+      "tool": "getAccountAccess",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "e-rename-unknown",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/no-such-folder",
+        "newName": "x"
+      }
+    },
+    {
+      "id": "e-rename-name",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b",
+        "newName": "bad\\name"
+      }
+    },
+    {
+      "id": "e-rename-noname",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b"
+      }
+    },
+    {
+      "id": "e-delete-root",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders"
+      }
+    },
+    {
+      "id": "e-delete-unknown",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/no-such-folder"
+      }
+    },
+    {
+      "id": "e-move-same",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b",
+        "newParentPath": "mailbox://nobody@Local%20Folders"
+      }
+    },
+    {
+      "id": "e-move-source",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/no-such-folder",
+        "newParentPath": "mailbox://nobody@Local%20Folders"
+      }
+    },
+    {
+      "id": "e-move-parent",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-b",
+        "newParentPath": "mailbox://nobody@Local%20Folders/no-such-folder"
+      }
+    },
+    {
+      "id": "e-trash-account",
+      "tool": "emptyTrash",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "no-such-account"
+      }
+    },
+    {
+      "id": "e-junk-account",
+      "tool": "emptyJunk",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "no-such-account"
+      }
+    },
+    {
+      "id": "list-end",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "format": "table"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ptrash-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ltrash-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "junk-ready"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cf-a",
+      "contains": "\"path\":\"mailbox://nobody@Local%20Folders/lab-a\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "cf-b"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-move",
+      "contains": "{\"type\":\"move\",\"to\":\"mailbox://nobody@Local%20Folders/lab-a\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-a",
+      "contains": "Lab folders mike"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "rename",
+      "contains": "\"oldPath\":\"mailbox://nobody@Local%20Folders/lab-a\",\"path\":\"mailbox://nobody@Local%20Folders/lab-a2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-a2",
+      "contains": "Lab folders mike",
+      "note": "the message is still in the renamed folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-old-a",
+      "contains": "Folder not found: mailbox://nobody@Local%20Folders/lab-a"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-renamed",
+      "contains": "[\"account1\",0,\"lab-a2\",\"mailbox://nobody@Local%20Folders/lab-a2\",1,\"folder\",1,false]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-renamed",
+      "contains": "\"mailbox://nobody@Local%20Folders/lab-a\"",
+      "present": false,
+      "note": "the old name is gone"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "move",
+      "contains": "Folder \\\"lab-a2\\\" moved to \\\"lab-b\\\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-moved",
+      "contains": "Lab folders mike",
+      "note": "the message followed the folder"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-moved",
+      "contains": "[\"account1\",1,\"lab-a2\",\"mailbox://nobody@Local%20Folders/lab-b/lab-a2\",1,\"folder\",1,false]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-moved",
+      "contains": "\"mailbox://nobody@Local%20Folders/lab-a2\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-1",
+      "contains": "moved to Trash"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-trashed",
+      "contains": "[\"account1\",1,\"lab-a2\",\"mailbox://nobody@Local%20Folders/Trash/lab-a2\",1,\"folder\",1,false]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-trashed",
+      "contains": "lab-b/lab-a2",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-in-trash",
+      "contains": "Lab folders mike"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-2",
+      "contains": "permanently deleted"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-deleted",
+      "contains": "lab-a2",
+      "present": false,
+      "note": "deleted from the Trash for good"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-deleted",
+      "contains": "\"mailbox://nobody@Local%20Folders/lab-b\"",
+      "note": "the other folder is untouched"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-gone",
+      "contains": "\"totalMatches\":0",
+      "note": "the message went with its folder"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ptrash-0",
+      "contains": "\"totalMatches\":2"
+    },
+    {
+      "type": "tool_ok",
+      "step": "et-account2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "et-account2",
+      "contains": "\"account\":\"account2\",\"folder\":\"mailbox://lab@127.0.0.1/Trash\",\"status\":\"emptied\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "et-account2",
+      "contains": "\"account\":\"account1\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ptrash-1",
+      "contains": "\"totalMatches\":0",
+      "note": "the Trash of the POP3 account is empty"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ltrash-0",
+      "contains": "Lab folders papa",
+      "note": "emptying one account leaves the other account's Trash alone"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ltrash-0",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_ok",
+      "step": "et-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "et-all",
+      "contains": "\"account\":\"account2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "et-all",
+      "contains": "\"account\":\"account1\",\"folder\":\"mailbox://nobody@Local%20Folders/Trash\",\"status\":\"emptied\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ltrash-1",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-junk-0",
+      "contains": "\"totalMatches\":2"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ej-account2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ej-account2",
+      "contains": "\"account\":\"account2\",\"status\":\"no Junk folder found\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-junk-1",
+      "contains": "\"totalMatches\":2",
+      "note": "emptying the other account's Junk touches nothing here"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ej-account1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ej-account1",
+      "contains": "\"account\":\"account1\",\"folder\":\"mailbox://nobody@Local%20Folders/Junk\",\"deleted\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-junk-2",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_ok",
+      "step": "access"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "\"mode\":\"all\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "{\"id\":\"account2\",\"name\":\"Lab POP3 (mailpit)\",\"type\":\"pop3\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "{\"id\":\"account1\",\"name\":\"Local Folders\",\"type\":\"none\"}"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-rename-unknown",
+      "contains": "Folder not found: mailbox://nobody@Local%20Folders/no-such-folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-rename-name",
+      "contains": "Folder name contains a backslash"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-rename-noname",
+      "contains": "Missing required parameter: newName"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-root",
+      "contains": "Cannot delete a root folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-unknown",
+      "contains": "Folder not found: mailbox://nobody@Local%20Folders/no-such-folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-move-same",
+      "contains": "Folder is already under this parent"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-move-source",
+      "contains": "Folder not found: mailbox://nobody@Local%20Folders/no-such-folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-move-parent",
+      "contains": "Folder not found: mailbox://nobody@Local%20Folders/no-such-folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-trash-account",
+      "contains": "Account not found: no-such-account"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-junk-account",
+      "contains": "Account not found: no-such-account"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-end",
+      "contains": "\"mailbox://nobody@Local%20Folders/lab-b\"",
+      "note": "the refused calls changed no folder"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/127.0.0.1/Trash",
+      "contains": "Lab folders november",
+      "present": false,
+      "note": "the mbox file of the POP3 Trash was emptied on disk too"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/127.0.0.1/Trash"
+    ]
+  }
+}

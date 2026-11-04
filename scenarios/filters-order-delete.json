@@ -1,0 +1,712 @@
+{
+  "name": "filters-order-delete",
+  "description": "reorderFilters and deleteFilter on a hand-made filter list (seeded msgFilterRules.dat) of six rules, one of which forwards mail. While the list holds that rule, reorderFilters and deleteFilter of another rule are refused by default and change nothing, but deleting the forwarding rule itself is allowed. Then rules are moved up (to the top, to the middle, to their own place) and deleted (middle, last, first); after each change listFilters must show the new order, and msgFilterRules.dat, as Thunderbird wrote it, the same rules in the same order. The main errors are checked (index out of range, negative or fractional index, wrong type, unknown account, an account without rules). Limit: moves towards the end of the list are not covered. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed_files": [
+    {
+      "path": "Mail/127.0.0.1/msgFilterRules.dat",
+      "content": "version=\"9\"\nlogging=\"no\"\nname=\"lab-p1\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark read\"\ncondition=\"AND (subject,contains,p1)\"\nname=\"lab-p2\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark flagged\"\ncondition=\"AND (subject,contains,p2)\"\nname=\"lab-fwd\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Forward\"\nactionValue=\"forward@example.com\"\ncondition=\"AND (subject,contains,fwd)\"\nname=\"lab-p3\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark unread\"\ncondition=\"AND (subject,contains,p3)\"\nname=\"lab-p4\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark read\"\ncondition=\"AND (subject,contains,p4)\"\nname=\"lab-p5\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark flagged\"\ncondition=\"AND (subject,contains,p5)\"\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "list-0",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "reorder-refused",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 4,
+        "toIndex": 0
+      }
+    },
+    {
+      "id": "delete-refused",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "list-1",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "delete-fwd",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 2
+      }
+    },
+    {
+      "id": "list-2",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "move-top",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 4,
+        "toIndex": 0
+      }
+    },
+    {
+      "id": "list-3",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "move-middle",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 4,
+        "toIndex": 2
+      }
+    },
+    {
+      "id": "list-4",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "move-same",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 1,
+        "toIndex": 1
+      }
+    },
+    {
+      "id": "list-5",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "delete-middle",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 2
+      }
+    },
+    {
+      "id": "list-6",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "delete-last",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 3
+      }
+    },
+    {
+      "id": "delete-first",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "list-7",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "e-reorder-from",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 99,
+        "toIndex": 0
+      }
+    },
+    {
+      "id": "e-reorder-to",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 0,
+        "toIndex": 99
+      }
+    },
+    {
+      "id": "e-reorder-negative",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 0,
+        "toIndex": -1
+      }
+    },
+    {
+      "id": "e-reorder-fraction",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 0.5,
+        "toIndex": 1
+      }
+    },
+    {
+      "id": "e-reorder-account",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "no-such-account",
+        "fromIndex": 0,
+        "toIndex": 1
+      }
+    },
+    {
+      "id": "e-reorder-noindex",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 0
+      }
+    },
+    {
+      "id": "e-delete-range",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 42
+      }
+    },
+    {
+      "id": "e-delete-negative",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": -1
+      }
+    },
+    {
+      "id": "e-delete-fraction",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 1.5
+      }
+    },
+    {
+      "id": "e-delete-type",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": "first"
+      }
+    },
+    {
+      "id": "e-delete-account",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "no-such-account",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "e-delete-norules",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "list-end",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "list-0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-0",
+      "contains": "\"filterCount\":6"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-0",
+      "contains": "\"index\":2,\"name\":\"lab-fwd\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-0",
+      "contains": "\"type\":\"forward\",\"value\":\"forward@example.com\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "reorder-refused",
+      "contains": "MCP cannot change this filter list (reorder)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "reorder-refused",
+      "contains": "#2 \"lab-fwd\" (forward)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "delete-refused",
+      "contains": "MCP cannot change this filter list (delete)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "delete-refused",
+      "contains": "deleting one of those rules is allowed"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-1",
+      "contains": "\"filterCount\":6"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-1",
+      "contains": "\"index\":0,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-1",
+      "contains": "\"index\":4,\"name\":\"lab-p4\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-1",
+      "contains": "\"index\":5,\"name\":\"lab-p5\"",
+      "note": "nothing changed by the refused calls"
+    },
+    {
+      "type": "tool_ok",
+      "step": "delete-fwd"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-fwd",
+      "contains": "\"success\":true,\"deleted\":\"lab-fwd\",\"remainingCount\":5"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"filterCount\":5"
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-2",
+      "name": "lab-fwd",
+      "absent": true
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"index\":0,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"index\":1,\"name\":\"lab-p2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"index\":2,\"name\":\"lab-p3\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"index\":3,\"name\":\"lab-p4\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-2",
+      "contains": "\"index\":4,\"name\":\"lab-p5\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "move-top",
+      "contains": "\"success\":true,\"name\":\"lab-p5\",\"fromIndex\":4,\"toIndex\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-3",
+      "contains": "\"index\":0,\"name\":\"lab-p5\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-3",
+      "contains": "\"index\":1,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-3",
+      "contains": "\"index\":2,\"name\":\"lab-p2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-3",
+      "contains": "\"index\":3,\"name\":\"lab-p3\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-3",
+      "contains": "\"index\":4,\"name\":\"lab-p4\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "move-middle",
+      "contains": "\"name\":\"lab-p4\",\"fromIndex\":4,\"toIndex\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-4",
+      "contains": "\"index\":0,\"name\":\"lab-p5\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-4",
+      "contains": "\"index\":1,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-4",
+      "contains": "\"index\":2,\"name\":\"lab-p4\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-4",
+      "contains": "\"index\":3,\"name\":\"lab-p2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-4",
+      "contains": "\"index\":4,\"name\":\"lab-p3\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "move-same"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-5",
+      "contains": "\"index\":0,\"name\":\"lab-p5\"",
+      "note": "a rule moved onto its own index stays where it is"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-5",
+      "contains": "\"index\":1,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-5",
+      "contains": "\"index\":2,\"name\":\"lab-p4\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-5",
+      "contains": "\"index\":3,\"name\":\"lab-p2\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-5",
+      "contains": "\"index\":4,\"name\":\"lab-p3\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-middle",
+      "contains": "\"deleted\":\"lab-p4\",\"remainingCount\":4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-6",
+      "contains": "\"index\":0,\"name\":\"lab-p5\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-6",
+      "contains": "\"index\":1,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-6",
+      "contains": "\"index\":2,\"name\":\"lab-p2\"",
+      "note": "later rules shift up by one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-6",
+      "contains": "\"index\":3,\"name\":\"lab-p3\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-last",
+      "contains": "\"deleted\":\"lab-p3\",\"remainingCount\":3"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete-first",
+      "contains": "\"deleted\":\"lab-p5\",\"remainingCount\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-7",
+      "contains": "\"filterCount\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-7",
+      "contains": "\"index\":0,\"name\":\"lab-p1\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-7",
+      "contains": "\"index\":1,\"name\":\"lab-p2\""
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "name": "lab-fwd",
+      "absent": true
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "name": "lab-p3",
+      "absent": true
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "name": "lab-p4",
+      "absent": true
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "name": "lab-p5",
+      "absent": true
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "account": "account2",
+      "name": "lab-p1",
+      "action_types": [
+        "markRead"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "p1"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "type": "listed_filter",
+      "step": "list-7",
+      "account": "account2",
+      "name": "lab-p2",
+      "action_types": [
+        "markFlagged"
+      ],
+      "terms": [
+        {
+          "attrib": "subject",
+          "op": "contains",
+          "value": "p2"
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "contains": "name=\"lab-p1\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark read\"\ncondition=\"AND (subject,contains,p1)\"\nname=\"lab-p2\"\nenabled=\"yes\"\ntype=\"17\"\naction=\"Mark flagged\"\ncondition=\"AND (subject,contains,p2)\"\n",
+      "note": "the two remaining rules, in that order, as Thunderbird wrote them"
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-fwd",
+      "absent": true
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-p3",
+      "absent": true
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-p4",
+      "absent": true
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-p5",
+      "absent": true
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-p1",
+      "actions": [
+        "Mark read"
+      ]
+    },
+    {
+      "type": "filter_rule",
+      "file": "Mail/127.0.0.1/msgFilterRules.dat",
+      "name": "lab-p2",
+      "actions": [
+        "Mark flagged"
+      ]
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-from",
+      "contains": "Invalid source index: 99"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-to",
+      "contains": "Invalid target index: 99"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-negative",
+      "contains": "Invalid target index: -1"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-fraction",
+      "contains": "fromIndex must be an integer"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-account",
+      "contains": "Account not found: no-such-account"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder-noindex",
+      "contains": "Missing required parameter: toIndex"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-range",
+      "contains": "Invalid filter index: 42"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-negative",
+      "contains": "Invalid filter index: -1"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-fraction",
+      "contains": "filterIndex must be an integer"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-type",
+      "contains": "Parameter 'filterIndex' must be number"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-account",
+      "contains": "Account not found: no-such-account"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-norules",
+      "contains": "Invalid filter index: 0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-end",
+      "contains": "\"filterCount\":2",
+      "note": "the refused calls changed nothing"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/127.0.0.1/msgFilterRules.dat"
+    ]
+  }
+}

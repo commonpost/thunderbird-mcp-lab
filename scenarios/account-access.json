@@ -1,0 +1,395 @@
+{
+  "name": "account-access",
+  "description": "Only Local Folders (account1) is allowed (allowedAccounts = [\"account1\"]). getAccountAccess reports the restricted mode and lists only that account. The write tools that act on the hidden POP3 account (account2) are refused and change nothing: emptyTrash and emptyJunk with its id, updateMessage, deleteMessages, displayMessage, renameFolder, deleteFolder, moveFolder (towards it), reorderFilters and deleteFilter; the mbox files of its Inbox and Trash still hold their seeded messages at the end. Called without an account, emptyTrash and emptyJunk act on Local Folders only. Local Folders keeps working (createFolder, renameFolder). Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.allowedAccounts": "[\"account1\"]"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab access inbox\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <aa-inbox@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of aa-inbox.\n"
+      ]
+    },
+    {
+      "folder": "127.0.0.1/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab access ptrash\nDate: Thu, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <aa-ptrash@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of aa-ptrash.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab access ltrash\nDate: Thu, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <aa-ltrash@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of aa-ltrash.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Junk",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab access junk\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <aa-junk@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of aa-junk.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "access",
+      "tool": "getAccountAccess",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "ltrash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "aa-ltrash@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "junk-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "aa-junk@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      },
+      "wait_after": 8,
+      "note": "Pause: right after startup the POP3 Inbox may not exist yet, and a refusal would then read 'Folder not found' instead of 'Account not accessible'."
+    },
+    {
+      "id": "e-trash",
+      "tool": "emptyTrash",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "e-junk",
+      "tool": "emptyJunk",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    },
+    {
+      "id": "e-update",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "aa-inbox@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "read": true
+      }
+    },
+    {
+      "id": "e-delete",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "aa-inbox@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-display",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "aa-inbox@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-rename",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Trash",
+        "newName": "Renamed"
+      }
+    },
+    {
+      "id": "e-delete-folder",
+      "tool": "deleteFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "cf-a",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-a"
+      }
+    },
+    {
+      "id": "e-move",
+      "tool": "moveFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a",
+        "newParentPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "rename-ok",
+      "tool": "renameFolder",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-a",
+        "newName": "lab-a2"
+      }
+    },
+    {
+      "id": "e-reorder",
+      "tool": "reorderFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "fromIndex": 0,
+        "toIndex": 1
+      }
+    },
+    {
+      "id": "e-filter",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "filter-ok",
+      "tool": "deleteFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1",
+        "filterIndex": 0
+      }
+    },
+    {
+      "id": "trash-all",
+      "tool": "emptyTrash",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "junk-all",
+      "tool": "emptyJunk",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "s-ltrash",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash",
+        "includeTrash": true
+      }
+    },
+    {
+      "id": "s-junk",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://nobody@Local%20Folders/Junk",
+        "includeTrash": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "access"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "\"mode\":\"restricted\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "{\"id\":\"account1\",\"name\":\"Local Folders\",\"type\":\"none\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "access",
+      "contains": "Lab POP3",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "accounts",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-trash",
+      "contains": "Account not accessible: account2"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-junk",
+      "contains": "Account not accessible: account2"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-update",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-display",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-rename",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-delete-folder",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-move",
+      "contains": "not accessible"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reorder",
+      "contains": "Account not accessible: account2"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-filter",
+      "contains": "Account not accessible: account2"
+    },
+    {
+      "type": "tool_ok",
+      "step": "cf-a"
+    },
+    {
+      "type": "tool_ok",
+      "step": "rename-ok"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "rename-ok",
+      "contains": "\"path\":\"mailbox://nobody@Local%20Folders/lab-a2\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "filter-ok",
+      "contains": "Invalid filter index: 0"
+    },
+    {
+      "type": "tool_ok",
+      "step": "trash-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "trash-all",
+      "contains": "\"account\":\"account1\",\"folder\":\"mailbox://nobody@Local%20Folders/Trash\",\"status\":\"emptied\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "trash-all",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "junk-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "junk-all",
+      "contains": "\"account\":\"account1\",\"folder\":\"mailbox://nobody@Local%20Folders/Junk\",\"deleted\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "junk-all",
+      "contains": "account2",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-ltrash",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-junk",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/127.0.0.1/Trash",
+      "contains": "Subject: Lab access ptrash",
+      "note": "the hidden account's Trash was not emptied"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/127.0.0.1/Inbox",
+      "contains": "Subject: Lab access inbox"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/127.0.0.1/Inbox",
+      "Mail/127.0.0.1/Trash"
+    ]
+  }
+}

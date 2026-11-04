@@ -1,0 +1,711 @@
+{
+  "name": "messages-update",
+  "description": "updateMessage on seeded messages of the POP3 Inbox: read, unread, flagged and unflagged (each change is read back with searchMessages, other messages stay untouched), tags added, removed and filtered on, one call on several messages with read, flag and tag together, a move to a new folder (the message leaves the Inbox, a message id that does not exist is reported in notFound), a move with tags (warning), and trash (the message lands in the account's Trash). The main errors are checked: messageId together with messageIds, nothing to update, moveTo together with trash, unknown message, unknown folder, a move into a Templates folder (refused through MCP), a tag list that is not an array, a missing folder. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update alpha\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-alpha@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-alpha.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update bravo\nDate: Thu, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-bravo@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-bravo.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update charlie\nDate: Thu, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-charlie@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-charlie.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update delta\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-delta@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-delta.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update echo\nDate: Thu, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-echo@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-echo.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update foxtrot\nDate: Thu, 06 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-foxtrot@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-foxtrot.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update golf\nDate: Thu, 07 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-golf@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-golf.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab update hotel\nDate: Thu, 08 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-hotel@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-hotel.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Templates",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab template kilo\nDate: Thu, 09 Jan 2026 10:00:00 +0000\nMessage-ID: <mu-kilo@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of mu-kilo.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "mu-alpha@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "templates-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "mu-kilo@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Templates",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "s-alpha-0",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "alpha",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "um-read",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-alpha@example.com",
+        "read": true
+      }
+    },
+    {
+      "id": "s-alpha-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "alpha",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "um-flag",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-alpha@example.com",
+        "flagged": true
+      }
+    },
+    {
+      "id": "s-alpha-2",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "alpha",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-flagged",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "flaggedOnly": true
+      }
+    },
+    {
+      "id": "um-reset",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-alpha@example.com",
+        "read": false,
+        "flagged": false
+      }
+    },
+    {
+      "id": "s-alpha-3",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "alpha",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "um-addtags",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-bravo@example.com",
+        "addTags": [
+          "$label1",
+          "lab-x"
+        ]
+      }
+    },
+    {
+      "id": "s-bravo-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "bravo",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "get-bravo",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "mu-bravo@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "um-rmtag",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-bravo@example.com",
+        "removeTags": [
+          "lab-x"
+        ]
+      }
+    },
+    {
+      "id": "s-bravo-2",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "bravo",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-tagfilter",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "tag": "$label1"
+      }
+    },
+    {
+      "id": "um-bulk",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageIds": [
+          "mu-charlie@example.com",
+          "mu-bravo@example.com"
+        ],
+        "read": true,
+        "flagged": true,
+        "addTags": [
+          "bulk"
+        ]
+      }
+    },
+    {
+      "id": "s-charlie",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "charlie",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-bravo-3",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "bravo",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-golf",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "golf",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-unread-count",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "unreadOnly": true,
+        "countOnly": true
+      }
+    },
+    {
+      "id": "s-flagged-count",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "flaggedOnly": true,
+        "countOnly": true
+      }
+    },
+    {
+      "id": "cf-target",
+      "tool": "createFolder",
+      "timeout": 30,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-target"
+      }
+    },
+    {
+      "id": "um-move",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageIds": [
+          "mu-delta@example.com",
+          "nope@example.com"
+        ],
+        "moveTo": "mailbox://nobody@Local%20Folders/lab-target"
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "s-target",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://nobody@Local%20Folders/lab-target"
+      }
+    },
+    {
+      "id": "s-inbox-delta",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "delta",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "um-tagmove",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-hotel@example.com",
+        "addTags": [
+          "moved"
+        ],
+        "moveTo": "mailbox://nobody@Local%20Folders/lab-target"
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "um-trash",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-echo@example.com",
+        "trash": true
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "s-trash",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Trash",
+        "includeTrash": true
+      }
+    },
+    {
+      "id": "s-inbox-echo",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "echo",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-both-ids",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-golf@example.com",
+        "messageIds": [
+          "mu-golf@example.com"
+        ],
+        "read": true
+      }
+    },
+    {
+      "id": "e-none",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "read": true
+      }
+    },
+    {
+      "id": "e-both-dest",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-golf@example.com",
+        "moveTo": "mailbox://nobody@Local%20Folders/lab-target",
+        "trash": true
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "nope@example.com",
+        "read": true
+      }
+    },
+    {
+      "id": "e-folder",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "mu-golf@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Nope",
+        "read": true
+      }
+    },
+    {
+      "id": "e-templates",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-golf@example.com",
+        "moveTo": "mailbox://nobody@Local%20Folders/Templates"
+      }
+    },
+    {
+      "id": "e-tags-type",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "mu-golf@example.com",
+        "addTags": "not-an-array"
+      }
+    },
+    {
+      "id": "e-nofolder",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "mu-golf@example.com",
+        "read": true
+      }
+    },
+    {
+      "id": "s-golf-end",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "golf",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "templates-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-alpha-0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-alpha-0",
+      "contains": "\"read\":false}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-read",
+      "contains": "\"updated\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-read",
+      "contains": "{\"type\":\"read\",\"value\":true}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-alpha-1",
+      "contains": "\"read\":true}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-flag",
+      "contains": "{\"type\":\"flagged\",\"value\":true}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-alpha-2",
+      "contains": "\"read\":true,\"flagged\":true}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-flagged",
+      "contains": "Lab update alpha"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-flagged",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-reset",
+      "contains": "{\"type\":\"read\",\"value\":false},{\"type\":\"flagged\",\"value\":false}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-alpha-3",
+      "contains": "\"read\":false}],\"totalMatches\":1",
+      "note": "unread and unflagged again: no flagged or tags in the row"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-addtags",
+      "contains": "{\"type\":\"addTags\",\"value\":[\"$label1\",\"lab-x\"]}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-bravo-1",
+      "contains": "\"tags\":[\"$label1\",\"lab-x\"]}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-bravo"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-bravo",
+      "contains": "\"tags\":[\"$label1\",\"lab-x\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-rmtag",
+      "contains": "{\"type\":\"removeTags\",\"value\":[\"lab-x\"]}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-bravo-2",
+      "contains": "\"tags\":[\"$label1\"]}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-tagfilter",
+      "contains": "Lab update bravo"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-tagfilter",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-bulk",
+      "contains": "\"updated\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-charlie",
+      "contains": "\"read\":true,\"flagged\":true,\"tags\":[\"bulk\"]}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-bravo-3",
+      "contains": "\"read\":true,\"flagged\":true,\"tags\":[\"$label1\",\"bulk\"]}],\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-golf",
+      "contains": "\"read\":false}],\"totalMatches\":1",
+      "note": "control: a message never touched stays unread, unflagged, untagged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-unread-count",
+      "contains": "\"count\":6",
+      "note": "8 seeded messages, 2 read (bravo, charlie)"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-flagged-count",
+      "contains": "\"count\":2"
+    },
+    {
+      "type": "tool_ok",
+      "step": "cf-target"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-move",
+      "contains": "\"updated\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-move",
+      "contains": "\"notFound\":[\"nope@example.com\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-move",
+      "contains": "{\"type\":\"move\",\"to\":\"mailbox://nobody@Local%20Folders/lab-target\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-target",
+      "contains": "Lab update delta"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-target",
+      "contains": "\"folderPath\":\"mailbox://nobody@Local%20Folders/lab-target\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox-delta",
+      "contains": "\"totalMatches\":0",
+      "note": "the moved message left the Inbox"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-tagmove",
+      "contains": "Tags were applied before move"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-trash",
+      "contains": "{\"type\":\"move\",\"to\":\"mailbox://lab@127.0.0.1/Trash\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash",
+      "contains": "Lab update echo"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox-echo",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-both-ids",
+      "contains": "Specify messageId or messageIds, not both"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-none",
+      "contains": "messageId or messageIds is required"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-both-dest",
+      "contains": "Cannot specify both moveTo and trash"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "No matching messages found"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-folder",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-templates",
+      "contains": "Cannot move a message into a Templates folder through MCP"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-tags-type",
+      "contains": "Parameter 'addTags' must be an array"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-nofolder",
+      "contains": "Missing required parameter: folderPath"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-golf-end",
+      "contains": "\"read\":false}],\"totalMatches\":1",
+      "note": "the refused calls changed nothing on the control message"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

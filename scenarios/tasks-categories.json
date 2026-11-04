@@ -1,0 +1,946 @@
+{
+  "name": "tasks-categories",
+  "description": "Tasks, categories and event deletion in two calendars: a storage calendar and an ics calendar seeded with two events and three tasks. listCategories returns the configured names sorted; createTask (direct, in a named calendar, in the default one) is visible in listTasks with its due date and priority; updateTask completes, reopens, sets a percentage, changes title, due date (date only, date-time, cleared), description and priority, and listTasks (completed, dueBefore, maxResults, table) reflects it, as does the .ics file written by Thunderbird; deleteEvent removes a seeded event from listEvents and from the file; an event created with categories lists them. The main errors are checked (unknown calendar or task or event, bad date, bad priority, missing argument, completed together with percentComplete, nothing to change). Limits: a task or event created by a tool gets a generated id that a scenario cannot pass to a later step, so updateTask and deleteEvent work on seeded items; the review dialog of createTask is only opened, not driven. Nothing is sent.",
+  "prefs": {
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "calendar.categories.names": "Zebra,Alpha,Mango",
+    "calendar.list.sortOrder": "labstore labics",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "calendar.registry.labics.type": "ics",
+    "calendar.registry.labics.uri": "file:///lab/profile/Mail/labtasks/msgFilterRules.dat",
+    "calendar.registry.labics.name": "Lab ics",
+    "calendar.registry.labics.disabled": false,
+    "calendar.registry.labics.calendar-main-in-composite": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labtasks/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Tasks//EN\r\nBEGIN:VEVENT\r\nUID:lab-evt-1@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261215T150000Z\r\nDTEND:20261215T160000Z\r\nSUMMARY:Seeded event one\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:lab-evt-2@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261216T150000Z\r\nDTEND:20261216T160000Z\r\nSUMMARY:Seeded event two\r\nEND:VEVENT\r\nBEGIN:VTODO\r\nUID:lab-todo-1@example.test\r\nDTSTAMP:20261101T120000Z\r\nSUMMARY:Seeded task one\r\nDUE:20261220T120000Z\r\nPRIORITY:5\r\nSTATUS:NEEDS-ACTION\r\nEND:VTODO\r\nBEGIN:VTODO\r\nUID:lab-todo-2@example.test\r\nDTSTAMP:20261101T120000Z\r\nSUMMARY:Seeded task two\r\nDUE:20261225T120000Z\r\nEND:VTODO\r\nBEGIN:VTODO\r\nUID:lab-todo-3@example.test\r\nDTSTAMP:20261101T120000Z\r\nSUMMARY:Seeded task three\r\nDUE:20261230T120000Z\r\nPRIORITY:9\r\nEND:VTODO\r\nEND:VCALENDAR\r\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "cats",
+      "tool": "listCategories",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "ct-store",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab task store",
+        "dueDate": "2026-12-31",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "priority": 1,
+        "description": "Store task description",
+        "categories": [
+          "Alpha"
+        ]
+      }
+    },
+    {
+      "id": "ct-ics",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab task ics",
+        "dueDate": "2026-12-30T10:00:00Z",
+        "calendarId": "labics",
+        "skipReview": true,
+        "priority": 9,
+        "categories": [
+          "Zebra",
+          "Mango"
+        ]
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "ct-default",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab task default calendar",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "lt-all",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "lt-store",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "lt-ics",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "lt-table",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "format": "table"
+      }
+    },
+    {
+      "id": "lt-max",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "maxResults": 1
+      }
+    },
+    {
+      "id": "ut-done",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-1@example.test",
+        "calendarId": "labics",
+        "completed": true
+      }
+    },
+    {
+      "id": "lt-done",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "completed": true
+      }
+    },
+    {
+      "id": "lt-open",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "completed": false
+      }
+    },
+    {
+      "id": "ut-reopen",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-1@example.test",
+        "calendarId": "labics",
+        "completed": false
+      }
+    },
+    {
+      "id": "ut-percent",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-1@example.test",
+        "calendarId": "labics",
+        "percentComplete": 50
+      }
+    },
+    {
+      "id": "ut-clear-due",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-2@example.test",
+        "calendarId": "labics",
+        "dueDate": ""
+      }
+    },
+    {
+      "id": "lt-due",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "dueBefore": "2026-12-26"
+      }
+    },
+    {
+      "id": "ut-fields",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-2@example.test",
+        "calendarId": "labics",
+        "title": "Seeded task two renamed",
+        "dueDate": "2026-12-28",
+        "priority": 5
+      }
+    },
+    {
+      "id": "ut-task2-done",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-2@example.test",
+        "calendarId": "labics",
+        "completed": true
+      }
+    },
+    {
+      "id": "ut-task3",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-3@example.test",
+        "calendarId": "labics",
+        "dueDate": "2026-12-24T08:30:00Z",
+        "description": "New description\nSecond line",
+        "priority": 1
+      }
+    },
+    {
+      "id": "lt-final",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "e-ut-both",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-1@example.test",
+        "calendarId": "labics",
+        "completed": true,
+        "percentComplete": 10
+      }
+    },
+    {
+      "id": "e-ut-none",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-1@example.test",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "e-ut-date",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-3@example.test",
+        "calendarId": "labics",
+        "dueDate": "not-a-date"
+      }
+    },
+    {
+      "id": "e-ut-priority",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-3@example.test",
+        "calendarId": "labics",
+        "priority": 42
+      }
+    },
+    {
+      "id": "e-ut-calendar",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-3@example.test",
+        "calendarId": "no-such-calendar",
+        "priority": 1
+      }
+    },
+    {
+      "id": "e-ut-nocalendar",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-todo-3@example.test",
+        "priority": 1
+      }
+    },
+    {
+      "id": "e-ut-unknown",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "no-such-task",
+        "calendarId": "labics",
+        "completed": true
+      }
+    },
+    {
+      "id": "e-ct-date",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab bad date",
+        "dueDate": "not-a-date",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "e-ct-calendar",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab bad calendar",
+        "calendarId": "no-such-calendar",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "e-ct-priority",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab bad priority",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "priority": 10
+      }
+    },
+    {
+      "id": "e-ct-title",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "e-lt-calendar",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "no-such-calendar"
+      }
+    },
+    {
+      "id": "e-lt-date",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "dueBefore": "not-a-date"
+      }
+    },
+    {
+      "id": "le-ics",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31"
+      }
+    },
+    {
+      "id": "ce-cat",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab categorised event",
+        "startDate": "2026-12-12T09:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true,
+        "categories": [
+          "Alpha",
+          "Zebra"
+        ]
+      }
+    },
+    {
+      "id": "le-store",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore",
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31"
+      }
+    },
+    {
+      "id": "de",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-evt-1@example.test",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "le-after",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31"
+      }
+    },
+    {
+      "id": "e-de-again",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-evt-1@example.test",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "e-de-calendar",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-evt-2@example.test",
+        "calendarId": "no-such-calendar"
+      }
+    },
+    {
+      "id": "e-de-nocalendar",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-evt-2@example.test"
+      }
+    },
+    {
+      "id": "ct-dialog",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab task dialog",
+        "calendarId": "labstore"
+      },
+      "wait_after": 3
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labstore\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labics\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"supportsTasks\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "cats"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cats",
+      "contains": "[\"Alpha\",\"Mango\",\"Zebra\"]",
+      "note": "the preference lists Zebra,Alpha,Mango: the tool sorts them"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ct-store"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ct-store",
+      "contains": "created in calendar"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ct-ics"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ct-default"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ct-default",
+      "contains": "Lab store",
+      "note": "without calendarId the first writable calendar is used"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-all",
+      "contains": "Lab task store"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-all",
+      "contains": "Lab task ics"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-all",
+      "contains": "Lab task default calendar"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-all",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-all",
+      "contains": "Seeded task three"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-store",
+      "contains": "\"dueDate\":\"2026-12-31T00:00:00.000Z\",\"startDate\":null,\"completedDate\":null,\"completed\":false,\"percentComplete\":0,\"priority\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-store",
+      "contains": "Store task description"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-store",
+      "contains": "Seeded task",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-ics",
+      "contains": "\"dueDate\":\"2026-12-30T10:00:00.000Z\",\"startDate\":null,\"completedDate\":null,\"completed\":false,\"percentComplete\":0,\"priority\":9"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-ics",
+      "contains": "\"id\":\"lab-todo-1@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-ics",
+      "contains": "Lab task store",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-table",
+      "contains": "\"columns\":["
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-table",
+      "contains": "Seeded task two"
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-max"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-max",
+      "contains": "Seeded task one",
+      "note": "sorted by due date, the earliest first"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-max",
+      "contains": "Seeded task two",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "ut-done"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-done",
+      "contains": "\"updated\":[\"completed\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-done",
+      "contains": "\"completed\":true,\"percentComplete\":100"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-done",
+      "contains": "\"completedDate\":null",
+      "present": false,
+      "note": "a completion date is recorded"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-done",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-done",
+      "contains": "Seeded task two",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-open",
+      "contains": "Seeded task two"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-open",
+      "contains": "Seeded task three"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-open",
+      "contains": "Seeded task one",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-reopen",
+      "contains": "\"completedDate\":null,\"completed\":false,\"percentComplete\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-percent",
+      "contains": "\"updated\":[\"percentComplete\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-percent",
+      "contains": "\"completed\":false,\"percentComplete\":50"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-clear-due",
+      "contains": "\"dueDate\":null"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-due",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-due",
+      "contains": "Seeded task two",
+      "present": false,
+      "note": "a task without a due date is left out"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-due",
+      "contains": "Seeded task three",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-fields",
+      "contains": "\"updated\":[\"title\",\"priority\",\"dueDate\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-fields",
+      "contains": "\"title\":\"Seeded task two renamed\",\"dueDate\":\"2026-12-28T00:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-fields",
+      "contains": "\"priority\":5"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-task2-done",
+      "contains": "\"completed\":true,\"percentComplete\":100"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-task3",
+      "contains": "\"dueDate\":\"2026-12-24T08:30:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ut-task3",
+      "contains": "\"priority\":1,\"description\":\"New description\\nSecond line\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-final"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "\"dueDate\":\"2026-12-24T08:30:00.000Z\",\"startDate\":null,\"completedDate\":null,\"completed\":false,\"percentComplete\":0,\"priority\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "Seeded task two renamed"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "\"completed\":true,\"percentComplete\":100"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "\"completed\":false,\"percentComplete\":50"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-both",
+      "contains": "Specify either 'completed' or 'percentComplete', not both"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-none",
+      "contains": "No changes specified"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-date",
+      "contains": "Invalid dueDate: not-a-date"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-priority",
+      "contains": "Parameter 'priority' must be <= 9"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-calendar",
+      "contains": "Calendar not found: no-such-calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-nocalendar",
+      "contains": "Missing required parameter: calendarId"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ut-unknown",
+      "contains": "Task not found: no-such-task"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ct-date",
+      "contains": "Invalid dueDate: not-a-date"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ct-calendar",
+      "contains": "Calendar not found: no-such-calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ct-priority",
+      "contains": "Parameter 'priority' must be <= 9"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-ct-title",
+      "contains": "Missing required parameter: title"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-lt-calendar",
+      "contains": "Calendar not found: no-such-calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-lt-date",
+      "contains": "Invalid dueBefore: not-a-date"
+    },
+    {
+      "type": "tool_ok",
+      "step": "le-ics"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-ics",
+      "contains": "Seeded event one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-ics",
+      "contains": "Seeded event two"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ce-cat"
+    },
+    {
+      "type": "tool_ok",
+      "step": "le-store"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-store",
+      "contains": "\"categories\":[\"Alpha\",\"Zebra\"]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "de"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "de",
+      "contains": "\"deleted\":\"lab-evt-1@example.test\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "le-after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Seeded event one",
+      "present": false,
+      "note": "the deleted event is gone from listEvents"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Seeded event two",
+      "note": "the other event is untouched"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-de-again",
+      "contains": "Event not found: lab-evt-1@example.test"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-de-calendar",
+      "contains": "Calendar not found: no-such-calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-de-nocalendar",
+      "contains": "Missing required parameter: calendarId"
+    },
+    {
+      "type": "tool_ok",
+      "step": "ct-dialog"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ct-dialog",
+      "contains": "Task dialog opened",
+      "note": "without skipReview a review dialog is opened (not driven here)"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "UID:lab-evt-1@example.test",
+      "present": false,
+      "note": "the deleted event is gone from the file"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "UID:lab-evt-2@example.test"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "SUMMARY:Seeded task two renamed"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "STATUS:COMPLETED"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "STATUS:IN-PROCESS"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "PERCENT-COMPLETE:50"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "DUE:20261224T083000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "SUMMARY:Lab task ics"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "CATEGORIES:Zebra",
+      "note": "categories of createTask are stored"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "CATEGORIES:Mango"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "DUE;VALUE=DATE:20261228",
+      "note": "a date-only due date is stored as a date"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labtasks/msgFilterRules.dat",
+      "contains": "\nCOMPLETED:",
+      "note": "the completion date is recorded"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/labtasks/msgFilterRules.dat"
+    ]
+  }
+}
