@@ -1,0 +1,566 @@
+{
+  "name": "messages-delete-display",
+  "description": "deleteMessages on seeded messages: one message (an id that does not exist is reported in notFound) and two messages at once go from the POP3 Inbox to its Trash, a message already in the Trash is deleted for good (it does not move anywhere), a message of the Drafts folder goes to the Trash of Local Folders (movedToTrash), and a message that was not deleted stays. displayMessage opens a message in the default (3pane), tab and window modes and returns its subject. The main errors are checked: empty or unknown message ids, unknown folder, missing arguments, an unknown message, an invalid displayMode. Limit: whether Thunderbird really shows the message is not observable; only the tool's answer is checked. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete foxtrot\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <md-foxtrot@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-foxtrot.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete golf\nDate: Thu, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <md-golf@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-golf.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete charlie\nDate: Thu, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <md-charlie@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-charlie.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete delta\nDate: Thu, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <md-delta@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-delta.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete mike\nDate: Thu, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <md-mike@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-mike.\n"
+      ]
+    },
+    {
+      "folder": "127.0.0.1/Trash",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete lima\nDate: Thu, 06 Jan 2026 10:00:00 +0000\nMessage-ID: <md-lima@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-lima.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Drafts",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: Lab delete juliet\nDate: Thu, 07 Jan 2026 10:00:00 +0000\nMessage-ID: <md-juliet@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nBody of md-juliet.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-foxtrot@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "trash-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-lima@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Trash",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "drafts-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-juliet@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "s-trash-0",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "del-one",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-foxtrot@example.com",
+          "nope@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-inbox-foxtrot",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "foxtrot",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-trash-1",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "del-two",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-charlie@example.com",
+          "md-delta@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-trash-2",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "del-in-trash",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-lima@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "s-trash-3",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Trash"
+      }
+    },
+    {
+      "id": "s-everywhere-lima",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "lima",
+        "includeTrash": true
+      }
+    },
+    {
+      "id": "s-inbox",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "del-draft",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-juliet@example.com"
+        ],
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    },
+    {
+      "id": "s-drafts",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    },
+    {
+      "id": "s-local-trash",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://nobody@Local%20Folders/Trash"
+      }
+    },
+    {
+      "id": "disp-default",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "disp-3pane",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "displayMode": "3pane"
+      }
+    },
+    {
+      "id": "disp-tab",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "displayMode": "tab"
+      }
+    },
+    {
+      "id": "disp-window",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "displayMode": "window"
+      }
+    },
+    {
+      "id": "e-disp-unknown",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "nope@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-disp-mode",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "displayMode": "bogus"
+      }
+    },
+    {
+      "id": "e-disp-folder",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "md-mike@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Nope"
+      }
+    },
+    {
+      "id": "e-disp-noid",
+      "tool": "displayMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-del-empty",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-del-unknown",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "nope@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "e-del-folder",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-golf@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Nope"
+      }
+    },
+    {
+      "id": "e-del-nofolder",
+      "tool": "deleteMessages",
+      "timeout": 30,
+      "arguments": {
+        "messageIds": [
+          "md-golf@example.com"
+        ]
+      }
+    },
+    {
+      "id": "s-inbox-end",
+      "tool": "searchMessages",
+      "timeout": 30,
+      "arguments": {
+        "query": "",
+        "includeTrash": true,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "trash-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "drafts-ready"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-0",
+      "contains": "Lab delete lima"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-0",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_ok",
+      "step": "del-one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-one",
+      "contains": "\"success\":true,\"deleted\":1,\"notFound\":[\"nope@example.com\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox-foxtrot",
+      "contains": "\"totalMatches\":0",
+      "note": "deleted from the Inbox"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-1",
+      "contains": "Lab delete foxtrot",
+      "note": "...and found in the account's Trash"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-1",
+      "contains": "\"totalMatches\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-two",
+      "contains": "\"deleted\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-2",
+      "contains": "\"totalMatches\":4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-2",
+      "contains": "Lab delete charlie"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-2",
+      "contains": "Lab delete delta"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-in-trash",
+      "contains": "\"deleted\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-in-trash",
+      "contains": "movedToTrash",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-3",
+      "contains": "\"totalMatches\":3"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-trash-3",
+      "contains": "Lab delete lima",
+      "present": false,
+      "note": "deleted from the Trash for good"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-everywhere-lima",
+      "contains": "\"totalMatches\":0",
+      "note": "and not moved to any other folder"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox",
+      "contains": "Lab delete golf",
+      "note": "a message that was not deleted stays"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox",
+      "contains": "Lab delete mike"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox",
+      "contains": "\"totalMatches\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-draft",
+      "contains": "\"success\":true,\"deleted\":1,\"movedToTrash\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-drafts",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-local-trash",
+      "contains": "Lab delete juliet"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-local-trash",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "disp-default",
+      "contains": "\"success\":true,\"displayMode\":\"3pane\",\"subject\":\"Lab delete mike\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "disp-3pane",
+      "contains": "\"success\":true,\"displayMode\":\"3pane\",\"subject\":\"Lab delete mike\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "disp-tab",
+      "contains": "\"success\":true,\"displayMode\":\"tab\",\"subject\":\"Lab delete mike\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "disp-window",
+      "contains": "\"success\":true,\"displayMode\":\"window\",\"subject\":\"Lab delete mike\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-disp-unknown",
+      "contains": "Message not found: nope@example.com"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-disp-mode",
+      "contains": "Parameter 'displayMode' must be one of"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-disp-folder",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-disp-noid",
+      "contains": "Missing required parameter: messageId"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-del-empty",
+      "contains": "messageIds must be a non-empty array of strings"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-del-unknown",
+      "contains": "No matching messages found"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-del-folder",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-del-nofolder",
+      "contains": "Missing required parameter: folderPath"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-inbox-end",
+      "contains": "\"totalMatches\":2",
+      "note": "the refused calls deleted nothing"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
