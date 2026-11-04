@@ -21,8 +21,6 @@ Requests are welcome as [issues](https://github.com/commonpost/thunderbird-mcp-l
 
 ## Quality of the lab itself
 
-- Measure the statement coverage of `harness/lab.py` in CI (it is measured by hand today: 82% of statements in
-  November 2026), and measure branch coverage.
 - Keep the isolation self-test in step with every change to the container options or the process layout.
 - Find a second maintainer ([GOVERNANCE.md](GOVERNANCE.md)).
 
