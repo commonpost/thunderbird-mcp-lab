@@ -3,6 +3,8 @@
 # thunderbird-mcp lab image: a real Thunderbird (Linux x86_64) + mailpit + Xvfb + Node.js + the harness.
 # The network is used ONLY during "docker build"; at run time the container runs with --network none (run-lab.sh).
 # Build:  docker build -t thunderbird-mcp-lab:local harness
+# Coverage image (the same image plus coverage.py, to measure harness/lab.py; see selftest/coverage.sh):
+#         docker build --target coverage -t thunderbird-mcp-lab:coverage harness
 #
 # Base images are pinned by digest (update them deliberately, e.g. through Dependabot).
 
@@ -53,7 +55,7 @@ RUN set -eu; \
     echo "Thunderbird $TB_VERSION: GPG signature and SHA512 verified."
 
 # --- Stage 4: runtime image.
-FROM debian-https
+FROM debian-https AS lab
 LABEL org.opencontainers.image.title="thunderbird-mcp-lab" \
       org.opencontainers.image.description="Offline end-to-end lab for thunderbird-mcp (Thunderbird + mailpit + Xvfb)" \
       org.opencontainers.image.licenses="MIT"
@@ -84,3 +86,21 @@ ENV HOME=/home/tblab LANG=C.UTF-8 TZ=UTC
 USER 10001:10001
 WORKDIR /lab
 ENTRYPOINT ["python3", "-I", "/opt/tblab/lab.py"]
+
+# --- Stage 5 (only with --target coverage): the runtime image plus coverage.py, from Debian's signed archive, and
+# harness/self_coverage.py, imported by every Python process through a .pth file. It measures harness/lab.py (statements
+# and branches) and writes what ran after the result block. The CA bundle is only used by apt and is removed again.
+FROM lab AS coverage
+USER root
+COPY --from=mailpit /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+RUN apt-get -o Acquire::https::CAInfo=/etc/ssl/certs/ca-certificates.crt update \
+ && apt-get -o Acquire::https::CAInfo=/etc/ssl/certs/ca-certificates.crt install -y --no-install-recommends python3-coverage \
+ && rm -rf /var/lib/apt/lists/* /etc/ssl
+COPY self_coverage.py /usr/lib/python3/dist-packages/lab_self_coverage.py
+RUN echo 'import lab_self_coverage' > /usr/lib/python3/dist-packages/lab-self-coverage.pth \
+ && chmod 644 /usr/lib/python3/dist-packages/lab_self_coverage.py /usr/lib/python3/dist-packages/lab-self-coverage.pth \
+ && LAB_SELF_COVERAGE=off python3 -I -c 'import coverage, lab_self_coverage; print("coverage.py", coverage.__version__)'
+USER 10001:10001
+
+# --- The default image: the runtime stage, unchanged (stage 5 is built only when asked for).
+FROM lab
