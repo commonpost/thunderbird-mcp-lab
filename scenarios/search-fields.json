@@ -1,0 +1,954 @@
+{
+  "name": "search-fields",
+  "description": "fields of searchMessages and getRecentMessages (new in 0.19.0) on four seeded POP3 messages (one flagged and tagged, one with a Cc, one with an attachment, one encrypted) and a copy of one of them in Archives. A row is cut to the asked columns plus id and folderPath, in the order the add-on writes them, in objects and in table format: one column, several, none, with a query, a page, a JSON string holding the list; the columns an option or a state adds stay (attachments with attachmentName, dupLocations when asked for, encrypted in getRecentMessages); the number of matches does not change. fields is refused with countOnly, groupBy and format legacy, and a name that is not a column (id included) or a value that is not a list is refused by the schema; without fields all of these work as before. The definition of the two tools (the enum of the columns). Not covered: the preview column (no row of the lab's seeded messages carries one, so there is nothing to cut) and mail that is not stored locally. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "schema_watch": [
+    "searchMessages",
+    "getRecentMessages"
+  ],
+  "tools_dump": [
+    "searchMessages",
+    "getRecentMessages"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nCc: Carol Example <carol@example.com>\nSubject: SF first [sf-1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-1@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nFirst body.\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: SF second [sf-2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-2@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nSecond body.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: SF attached [sf-3]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-3@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"sf3\"\n\n--sf3\nContent-Type: text/plain; charset=UTF-8\n\nThird body with a file.\n\n--sf3\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: base64\nContent-Disposition: attachment; filename=\"sf-notes.txt\"\n\nSGVsbG8gZnJvbSB0aGUgbGFiLgo=\n\n--sf3--\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: SF secret [sf-enc]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Archives",
+      "messages": [
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: SF second [sf-2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <sf-2@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nSecond body.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it."
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sf-1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "archive-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sf-2@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Archives",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "um-state",
+      "tool": "updateMessage",
+      "timeout": 30,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "messageId": "sf-1@example.com",
+        "flagged": true,
+        "addTags": [
+          "lab-tag"
+        ]
+      }
+    },
+    {
+      "id": "s-full",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-subject",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ]
+      }
+    },
+    {
+      "id": "s-several",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "author",
+          "recipients",
+          "ccList",
+          "date",
+          "read",
+          "flagged",
+          "tags"
+        ]
+      }
+    },
+    {
+      "id": "s-empty",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": []
+      }
+    },
+    {
+      "id": "s-json-string",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": "[\"subject\"]"
+      },
+      "note": "A JSON string holding the list is accepted, as for the other array arguments."
+    },
+    {
+      "id": "s-table",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject",
+          "date"
+        ],
+        "format": "table"
+      }
+    },
+    {
+      "id": "s-table-empty",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [],
+        "format": "table"
+      }
+    },
+    {
+      "id": "s-query",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "from:alice",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "author"
+        ]
+      }
+    },
+    {
+      "id": "s-paged",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ],
+        "maxResults": 2,
+        "offset": 1
+      }
+    },
+    {
+      "id": "s-attach",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "sf-notes",
+        "fields": [
+          "subject"
+        ]
+      }
+    },
+    {
+      "id": "s-attach-table",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "attachmentName": "sf-notes",
+        "fields": [
+          "subject"
+        ],
+        "format": "table"
+      }
+    },
+    {
+      "id": "s-dup-cut",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "sf-2",
+        "fields": [
+          "subject"
+        ]
+      }
+    },
+    {
+      "id": "s-dup-kept",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "sf-2",
+        "fields": [
+          "dupLocations"
+        ]
+      }
+    },
+    {
+      "id": "s-dup-full",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "sf-2"
+      }
+    },
+    {
+      "id": "s-count",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "countOnly": true
+      }
+    },
+    {
+      "id": "s-group",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "groupBy": "sender"
+      }
+    },
+    {
+      "id": "e-count",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ],
+        "countOnly": true
+      }
+    },
+    {
+      "id": "e-group",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ],
+        "groupBy": "sender"
+      }
+    },
+    {
+      "id": "e-legacy",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ],
+        "format": "legacy"
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject",
+          "body"
+        ]
+      }
+    },
+    {
+      "id": "e-id",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "id"
+        ]
+      }
+    },
+    {
+      "id": "e-string",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": "subject"
+      }
+    },
+    {
+      "id": "r-full",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "r-subject",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ]
+      }
+    },
+    {
+      "id": "r-table",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "author",
+          "read"
+        ],
+        "format": "table"
+      }
+    },
+    {
+      "id": "r-flagged",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "tags"
+        ],
+        "flaggedOnly": true
+      }
+    },
+    {
+      "id": "r-legacy",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "subject"
+        ],
+        "format": "legacy"
+      }
+    },
+    {
+      "id": "r-unknown",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "fields": [
+          "body"
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "archive-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "um-state"
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "searchMessages",
+      "path": "inputSchema.properties.fields.type",
+      "equals": "array"
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "searchMessages",
+      "path": "inputSchema.properties.fields.items.enum",
+      "equals": [
+        "date",
+        "author",
+        "recipients",
+        "ccList",
+        "subject",
+        "read",
+        "flagged",
+        "tags",
+        "preview",
+        "dupLocations"
+      ],
+      "note": "The columns of a row, but id and folderPath, which are always returned."
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "getRecentMessages",
+      "path": "inputSchema.properties.fields.type",
+      "equals": "array"
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "getRecentMessages",
+      "path": "inputSchema.properties.fields.items.enum",
+      "equals": [
+        "date",
+        "author",
+        "recipients",
+        "ccList",
+        "subject",
+        "read",
+        "flagged",
+        "tags",
+        "preview",
+        "dupLocations"
+      ]
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-full"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-full",
+      "contains": "\"totalMatches\":3"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-full",
+      "contains": "\"author\":\"Bob Example <bob@example.com>\"",
+      "note": "Without fields a row holds every column."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-full",
+      "contains": "\"recipients\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-full",
+      "contains": "\"read\":false"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-full",
+      "contains": "\"flagged\":true,\"tags\":[\"lab-tag\"]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-subject"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"totalMatches\":3,\"offset\":0,\"limit\":20,\"hasMore\":false",
+      "note": "The number of matches does not depend on fields."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "{\"id\":\"sf-3@example.com\",\"subject\":\"SF attached [sf-3]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}",
+      "note": "Only id, subject and folderPath."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "{\"id\":\"sf-2@example.com\",\"subject\":\"SF second [sf-2]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "{\"id\":\"sf-1@example.com\",\"subject\":\"SF first [sf-1]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"author\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"recipients\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"ccList\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"date\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"read\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"flagged\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"tags\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-subject",
+      "contains": "\"preview\":",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-several"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-several",
+      "contains": "{\"id\":\"sf-1@example.com\",\"author\":\"Alice Example <alice@example.com>\",\"recipients\":\"Lab User <lab@example.test>\",\"ccList\":\"Carol Example <carol@example.com>\",\"date\":\"2026-01-01T10:00:00.000Z\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"read\":false,\"flagged\":true,\"tags\":[\"lab-tag\"]}",
+      "note": "Seven columns asked, all of them there, and no subject."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-several",
+      "contains": "\"subject\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-several",
+      "contains": "{\"id\":\"sf-2@example.com\",\"author\":\"Bob Example <bob@example.com>\",\"recipients\":\"Lab User <lab@example.test>\",\"date\":\"2026-01-02T10:00:00.000Z\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"read\":false}",
+      "note": "A column with no value for a message (ccList, flagged, tags) is left out, as without fields."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-empty"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-empty",
+      "contains": "{\"id\":\"sf-3@example.com\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}",
+      "note": "An empty list keeps only id and folderPath."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-empty",
+      "contains": "{\"id\":\"sf-1@example.com\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-empty",
+      "contains": "\"subject\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-empty",
+      "contains": "\"totalMatches\":3"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-json-string"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-json-string",
+      "contains": "{\"id\":\"sf-1@example.com\",\"subject\":\"SF first [sf-1]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-json-string",
+      "contains": "\"author\":",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table",
+      "contains": "\"columns\":[\"id\",\"folderPath\",\"date\",\"subject\"]",
+      "note": "Table columns follow the order of the row columns, not that of fields."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table",
+      "contains": "[\"sf-1@example.com\",\"mailbox://lab@127.0.0.1/Inbox\",\"2026-01-01T10:00:00.000Z\",\"SF first [sf-1]\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table",
+      "contains": "[\"sf-3@example.com\",\"mailbox://lab@127.0.0.1/Inbox\",\"2026-01-03T10:00:00.000Z\",\"SF attached [sf-3]\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table",
+      "contains": "\"author\"",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-table-empty"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table-empty",
+      "contains": "\"columns\":[\"id\",\"folderPath\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-table-empty",
+      "contains": "[\"sf-2@example.com\",\"mailbox://lab@127.0.0.1/Inbox\"]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-query"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-query",
+      "contains": "\"totalMatches\":2"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-query",
+      "contains": "{\"id\":\"sf-3@example.com\",\"author\":\"Alice Example <alice@example.com>\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}",
+      "note": "fields apply to what a query finds."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-query",
+      "contains": "{\"id\":\"sf-1@example.com\",\"author\":\"Alice Example <alice@example.com>\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-query",
+      "contains": "sf-2@example.com",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-paged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-paged",
+      "contains": "\"totalMatches\":3,\"offset\":1,\"limit\":2,\"hasMore\":false"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-paged",
+      "contains": "{\"id\":\"sf-2@example.com\",\"subject\":\"SF second [sf-2]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-paged",
+      "contains": "{\"id\":\"sf-1@example.com\",\"subject\":\"SF first [sf-1]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-paged",
+      "contains": "sf-3@example.com",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-attach"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-attach",
+      "contains": "{\"id\":\"sf-3@example.com\",\"subject\":\"SF attached [sf-3]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"attachments\":[{\"name\":\"sf-notes.txt\",\"contentType\":\"text/plain\",\"size\":20}]}",
+      "note": "The attachments column that attachmentName adds is kept next to the asked subject."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-attach-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-attach-table",
+      "contains": "\"columns\":[\"id\",\"folderPath\",\"subject\",\"attachments\"]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-dup-full"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-dup-full",
+      "contains": "\"dupLocations\":[\"mailbox://nobody@Local%20Folders/Archives\"]",
+      "note": "Control: a copy of the message in Archives, listed once with its other location."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-dup-cut"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-dup-cut",
+      "contains": "{\"id\":\"sf-2@example.com\",\"subject\":\"SF second [sf-2]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-dup-cut",
+      "contains": "dupLocations",
+      "present": false,
+      "note": "Left out when it is not asked for."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-dup-kept"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-dup-kept",
+      "contains": "{\"id\":\"sf-2@example.com\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"dupLocations\":[\"mailbox://nobody@Local%20Folders/Archives\"]}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-dup-kept",
+      "contains": "\"subject\":",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-count"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-count",
+      "contains": "\"count\":3",
+      "note": "Without fields, countOnly and groupBy work."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-group"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-group",
+      "contains": "\"groups\":["
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-count",
+      "contains": "fields cannot be combined with countOnly"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-group",
+      "contains": "fields cannot be combined with groupBy"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-legacy",
+      "contains": "fields cannot be combined with format \"legacy\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "Parameter 'fields[1]' must be one of [\"date\",\"author\",\"recipients\",\"ccList\",\"subject\",\"read\",\"flagged\",\"tags\",\"preview\",\"dupLocations\"], got \"body\"",
+      "note": "A name that is not a column is refused by the schema, before any search."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-id",
+      "contains": "Parameter 'fields[0]' must be one of",
+      "note": "id and folderPath are always returned: they are not choices."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-string",
+      "contains": "Parameter 'fields' must be an array, got string"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-full"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-full",
+      "contains": "\"totalMatches\":4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-full",
+      "contains": "\"author\":\"Bob Example <bob@example.com>\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-subject"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "\"totalMatches\":4,\"offset\":0,\"limit\":20,\"hasMore\":false"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "{\"id\":\"sf-3@example.com\",\"subject\":\"SF attached [sf-3]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "{\"id\":\"sf-1@example.com\",\"subject\":\"SF first [sf-1]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\"}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "{\"id\":\"sf-enc@example.com\",\"subject\":\"SF secret [sf-enc]\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"encrypted\":true}",
+      "note": "The encrypted state is kept, as the other columns an option or a state adds."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "\"author\":",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-subject",
+      "contains": "\"read\":",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-table",
+      "contains": "\"columns\":[\"id\",\"folderPath\",\"author\",\"read\",\"encrypted\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-table",
+      "contains": "[\"sf-enc@example.com\",\"mailbox://lab@127.0.0.1/Inbox\",\"Bob Example <bob@example.com>\",false,true]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-table",
+      "contains": "[\"sf-1@example.com\",\"mailbox://lab@127.0.0.1/Inbox\",\"Alice Example <alice@example.com>\",false,null]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-flagged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-flagged",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-flagged",
+      "contains": "{\"id\":\"sf-1@example.com\",\"folderPath\":\"mailbox://lab@127.0.0.1/Inbox\",\"tags\":[\"lab-tag\"]}",
+      "note": "fields apply to a filtered list too (flaggedOnly)."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-legacy",
+      "contains": "fields cannot be combined with format \"legacy\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "r-unknown",
+      "contains": "Parameter 'fields[0]' must be one of [\"date\",\"author\",\"recipients\",\"ccList\",\"subject\",\"read\",\"flagged\",\"tags\",\"preview\",\"dupLocations\"], got \"body\""
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

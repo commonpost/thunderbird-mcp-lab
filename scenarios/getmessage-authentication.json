@@ -1,0 +1,274 @@
+{
+  "name": "getmessage-authentication",
+  "description": "getMessage and getMessages (without headersOnly) return authentication (new in 0.19.0): the SPF, DKIM and DMARC results of the topmost Authentication-Results header of five seeded POP3 messages, as the receiving server wrote them, with authservId and the domain and selector each result names. A header folded over several lines with two DKIM signatures is read in full; a message with no such header has no authentication; a header that a sender wrote lower down (a forged pass) is never read, also when the topmost header holds no result (only authservId comes back); a header with no server name, comments, upper-case domains, a final dot, the domain of header.i and a selector that is not valid is cleaned (comments dropped, domains in lower case, the selector left out). Nothing is verified by Thunderbird or by the add-on: the values are what the header says. Not covered: a header over 8,192 characters, more than ten DKIM results, and the other methods a header can report (only SPF, DKIM and DMARC are read). Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "Authentication-Results: mx.example.test;\n spf=pass smtp.mailfrom=bounce@example.com;\n dkim=pass header.d=example.com header.s=sel1;\n dkim=fail header.d=other.example.org header.s=sel2;\n dmarc=pass header.from=example.com\nFrom: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: AU pass [au-1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <au-pass@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of au-pass@example.com.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: AU no header [au-2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <au-none@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of au-none@example.com.\n",
+        "Authentication-Results: mx.example.test;\n spf=fail smtp.mailfrom=sender@example.com;\n dkim=none;\n dmarc=fail header.from=example.com\nFrom: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: AU forged [au-3]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <au-forged@example.com>\nAuthentication-Results: forged.example.net;\n spf=pass smtp.mailfrom=ceo@example.com;\n dkim=pass header.d=example.com header.s=evil;\n dmarc=pass header.from=example.com\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of au-forged@example.com.\n",
+        "Authentication-Results: mx.example.test; none\nFrom: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: AU server only [au-4]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <au-idonly@example.com>\nAuthentication-Results: forged.example.net;\n spf=pass smtp.mailfrom=ceo@example.com;\n dmarc=pass header.from=example.com\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of au-idonly@example.com.\n",
+        "Authentication-Results: spf=softfail (spf=pass smtp.mailfrom=evil.example.net) smtp.helo=Mail.Example.ORG;\n dkim=pass header.i=@Signer.Example.COM header.s=\"sel 3\" (a comment);\n dmarc=pass header.from=EXAMPLE.com.\nFrom: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: AU odd [au-5]\nDate: Mon, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <au-odd@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of au-odd@example.com.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it."
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "au-pass@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "get-pass",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "au-pass@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "get-none",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "au-none@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "get-forged",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "au-forged@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "get-idonly",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "au-idonly@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "get-odd",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "au-odd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "get-several",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "au-pass@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "au-none@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "au-forged@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ],
+        "bodyFormat": "text"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-pass"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-pass",
+      "contains": "\"authentication\":{\"authservId\":\"mx.example.test\",\"spf\":{\"result\":\"pass\",\"domain\":\"example.com\"},\"dkim\":[{\"result\":\"pass\",\"domain\":\"example.com\",\"selector\":\"sel1\"},{\"result\":\"fail\",\"domain\":\"other.example.org\",\"selector\":\"sel2\"}],\"dmarc\":{\"result\":\"pass\",\"domain\":\"example.com\"}}",
+      "note": "authservId, then SPF, both DKIM signatures (in order, with selectors) and DMARC, each with its domain."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-pass",
+      "contains": "Body of au-pass@example.com",
+      "note": "The body is still returned."
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-none"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-none",
+      "contains": "Body of au-none@example.com"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-none",
+      "contains": "authentication",
+      "present": false,
+      "note": "A message without an Authentication-Results header has no authentication."
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-forged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-forged",
+      "contains": "\"authentication\":{\"authservId\":\"mx.example.test\",\"spf\":{\"result\":\"fail\",\"domain\":\"example.com\"},\"dkim\":[{\"result\":\"none\"}],\"dmarc\":{\"result\":\"fail\",\"domain\":\"example.com\"}}",
+      "note": "What the receiving server (the topmost header) reported: SPF and DMARC failed, no DKIM."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-forged",
+      "contains": "forged.example.net",
+      "present": false,
+      "note": "The header written lower down is ignored."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-forged",
+      "contains": "evil",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-forged",
+      "contains": "\"result\":\"pass\"",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-idonly"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-idonly",
+      "contains": "\"authentication\":{\"authservId\":\"mx.example.test\"}}",
+      "note": "A topmost header with no result gives only the server name: the passes of the forged header below are not used."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-idonly",
+      "contains": "\"spf\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-idonly",
+      "contains": "forged.example.net",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-odd"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-odd",
+      "contains": "\"authentication\":{\"spf\":{\"result\":\"softfail\",\"domain\":\"mail.example.org\"},\"dkim\":[{\"result\":\"pass\",\"domain\":\"signer.example.com\"}],\"dmarc\":{\"result\":\"pass\",\"domain\":\"example.com\"}}",
+      "note": "No server name, so no authservId; domains in lower case without the final dot; the domain of header.i; a selector with a space is left out."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-odd",
+      "contains": "authservId",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-odd",
+      "contains": "evil.example.net",
+      "present": false,
+      "note": "What a comment says is dropped."
+    },
+    {
+      "type": "tool_ok",
+      "step": "get-several"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "\"requested\":3,\"succeeded\":3,\"failed\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "\"authentication\":{\"authservId\":\"mx.example.test\",\"spf\":{\"result\":\"pass\",\"domain\":\"example.com\"},\"dkim\":[{\"result\":\"pass\",\"domain\":\"example.com\",\"selector\":\"sel1\"},{\"result\":\"fail\",\"domain\":\"other.example.org\",\"selector\":\"sel2\"}],\"dmarc\":{\"result\":\"pass\",\"domain\":\"example.com\"}}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "\"messageId\":\"au-none@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "\"attachments\":[]},{\"index\":2,\"messageId\":\"au-forged@example.com\"",
+      "note": "The message without a header is followed at once by the next one: no authentication in its entry."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "\"authentication\":{\"authservId\":\"mx.example.test\",\"spf\":{\"result\":\"fail\",\"domain\":\"example.com\"},\"dkim\":[{\"result\":\"none\"}],\"dmarc\":{\"result\":\"fail\",\"domain\":\"example.com\"}}"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "get-several",
+      "contains": "forged.example.net",
+      "present": false
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
