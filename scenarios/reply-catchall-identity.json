@@ -1,0 +1,402 @@
+{
+  "name": "reply-catchall-identity",
+  "description": "An identity with a catch-all address (catchAll with the hint *@example.test): a reply draft and a forward draft are sent from the address the message was written to, as Thunderbird's Reply and Forward do: the To address (with its name), the address of a Cc, an address only named in Delivered-To; a message to the identity's own address and a message to an address the hint does not match keep the identity's address; an explicit from wins. Not covered: the catch-all headers setting (mail.compose.catchAllHeaders), several identities. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "mail.identity.id1.catchAll": true,
+    "mail.identity.id1.catchAllHint": "*@example.test"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Sales Team <sales@example.test>\nSubject: CA sales [ca-sales]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-sales@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of sales.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: CA self [ca-self]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-self@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of self.\n",
+        "From: Alice Example <alice@example.com>\nTo: Someone Else <else@example.net>\nSubject: CA cc [ca-cc]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-cc@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Info Desk <info@example.test>\nContent-Type: text/plain; charset=UTF-8\n\nBody of cc.\n",
+        "From: Alice Example <alice@example.com>\nTo: undisclosed-recipients:;\nSubject: CA delivered [ca-delivered]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-delivered@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nDelivered-To: support@example.test\nContent-Type: text/plain; charset=UTF-8\n\nBody of delivered.\n",
+        "From: Alice Example <alice@example.com>\nTo: Someone Else <else@example.net>\nSubject: CA other [ca-other]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-other@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of other.\n",
+        "From: Alice Example <alice@example.com>\nTo: Sales Team <sales@example.test>\nSubject: CA explicit [ca-explicit]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ca-explicit@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nBody of explicit.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ca-sales@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "r-sales",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-sales@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-sales",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-sales@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-self",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-self@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-self",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-self@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-cc",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-cc@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-cc",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-cc@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-delivered",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-delivered@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-delivered",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-delivered@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-other",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-other@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-other",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-other@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-explicit",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "ca-explicit@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Reply.",
+        "mode": "draft",
+        "from": "lab@example.test",
+        "to": "x@example.com"
+      },
+      "note": "An explicit from wins over the address the message was sent to."
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-sales"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-sales",
+      "contains": "\"from\":\"Sales Team <sales@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CA sales [ca-sales]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA sales [ca-sales]",
+      "header": "From",
+      "contains": "Sales Team <sales@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-sales"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-sales",
+      "contains": "\"from\":\"Sales Team <sales@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CA sales [ca-sales]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: CA sales [ca-sales]",
+      "header": "From",
+      "contains": "Sales Team <sales@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-self"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-self",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CA self [ca-self]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA self [ca-self]",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-self"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-self",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CA self [ca-self]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: CA self [ca-self]",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-cc"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-cc",
+      "contains": "\"from\":\"Info Desk <info@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CA cc [ca-cc]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA cc [ca-cc]",
+      "header": "From",
+      "contains": "Info Desk <info@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-cc"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-cc",
+      "contains": "\"from\":\"Info Desk <info@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CA cc [ca-cc]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: CA cc [ca-cc]",
+      "header": "From",
+      "contains": "Info Desk <info@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-delivered"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-delivered",
+      "contains": "\"from\":\"support@example.test\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CA delivered [ca-delivered]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA delivered [ca-delivered]",
+      "header": "From",
+      "contains": "support@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-delivered"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-delivered",
+      "contains": "\"from\":\"support@example.test\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CA delivered [ca-delivered]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: CA delivered [ca-delivered]",
+      "header": "From",
+      "contains": "support@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-other"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-other",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CA other [ca-other]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA other [ca-other]",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-other"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-other",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CA other [ca-other]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: CA other [ca-other]",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-explicit"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-explicit",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: CA explicit [ca-explicit]",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

@@ -1,0 +1,1064 @@
+{
+  "name": "calendar-update",
+  "description": "Events in ics calendars (one with seeded events, one read-only, one holding a daily series) and a storage calendar. listEvents: one calendar, all calendars, table format, maxResults, a weekly series expanded into its occurrences with one changed occurrence, a daily series cut by a small maxResults, a read-only calendar, an unknown calendar, bad dates. updateEvent on seeded events, read back with listEvents and in the .ics file Thunderbird wrote: title, dates (timed and all-day, where endDate is the last day), location and description, status (set, case-insensitive, cleared), showAs (busy, free, null clears TRANSP), categories (set and cleared), onlineMeeting on and off, reminders and the warnings for a recurring event; deleteEvent of the whole series. Errors of updateEvent: nothing to change, unknown event, bad dates, an end that is not after the start, a status out of the list, unknown and read-only calendars, no eventId. Not covered: calendars other than ics and storage ones (CalDAV, Exchange), several changed occurrences of one series, createEvent (see calendar-create.json). Nothing is sent.",
+  "prefs": {
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "calendar.list.sortOrder": "labstore labics labro labdaily",
+    "calendar.registry.labics.type": "ics",
+    "calendar.registry.labics.uri": "file:///lab/profile/Mail/labupd/msgFilterRules.dat",
+    "calendar.registry.labics.name": "Lab ics",
+    "calendar.registry.labics.disabled": false,
+    "calendar.registry.labics.calendar-main-in-composite": true,
+    "calendar.registry.labro.type": "ics",
+    "calendar.registry.labro.uri": "file:///lab/profile/Mail/labro/msgFilterRules.dat",
+    "calendar.registry.labro.name": "Lab read-only",
+    "calendar.registry.labro.disabled": false,
+    "calendar.registry.labro.calendar-main-in-composite": true,
+    "calendar.registry.labro.readOnly": true,
+    "calendar.registry.labdaily.type": "ics",
+    "calendar.registry.labdaily.uri": "file:///lab/profile/Mail/labdaily/msgFilterRules.dat",
+    "calendar.registry.labdaily.name": "Lab daily",
+    "calendar.registry.labdaily.disabled": false,
+    "calendar.registry.labdaily.calendar-main-in-composite": true,
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labupd/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Update//EN\r\nBEGIN:VEVENT\r\nUID:lab-upd-timed@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261215T150000Z\r\nDTEND:20261215T160000Z\r\nSUMMARY:Planning meeting\r\nLOCATION:Room 1\r\nDESCRIPTION:Agenda\r\nSTATUS:CONFIRMED\r\nCATEGORIES:Work\r\nTRANSP:OPAQUE\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:lab-upd-allday@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART;VALUE=DATE:20261220\r\nDTEND;VALUE=DATE:20261221\r\nSUMMARY:Day off\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:lab-upd-weekly@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261201T100000Z\r\nDTEND:20261201T110000Z\r\nSUMMARY:Weekly sync\r\nRRULE:FREQ=WEEKLY;COUNT=4\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:lab-upd-weekly@example.test\r\nDTSTAMP:20261101T120000Z\r\nRECURRENCE-ID:20261208T100000Z\r\nDTSTART:20261208T120000Z\r\nDTEND:20261208T130000Z\r\nSUMMARY:Weekly sync moved\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:lab-upd-teams@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261218T130000Z\r\nDTEND:20261218T140000Z\r\nSUMMARY:Teams call\r\nTRANSP:OPAQUE\r\nSTATUS:CONFIRMED\r\nX-ONLINE-MEETING-PROVIDER:TeamsForBusiness\r\nX-MICROSOFT-SKYPETEAMSMEETINGURL:https://teams.example.com/join/42\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    },
+    {
+      "path": "Mail/labdaily/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Update//EN\r\nBEGIN:VEVENT\r\nUID:lab-daily@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261201T090000Z\r\nDTEND:20261201T093000Z\r\nSUMMARY:Daily standup\r\nRRULE:FREQ=DAILY;COUNT=14\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    },
+    {
+      "path": "Mail/labro/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Update//EN\r\nBEGIN:VEVENT\r\nUID:lab-ro-event@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261216T150000Z\r\nDTEND:20261216T160000Z\r\nSUMMARY:Read only event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "list-ics",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "note": "The ics calendars load asynchronously; retried only on error."
+    },
+    {
+      "id": "list-all",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "note": "No calendarId: every calendar."
+    },
+    {
+      "id": "list-table",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics",
+        "format": "table"
+      }
+    },
+    {
+      "id": "list-max",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics",
+        "maxResults": 2
+      }
+    },
+    {
+      "id": "list-daily",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labdaily"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "list-daily-one",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labdaily",
+        "maxResults": 1
+      },
+      "note": "A series is expanded up to ten times maxResults occurrences: 14 occurrences, one result wanted, the expansion stops at 10."
+    },
+    {
+      "id": "list-ro",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labro"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "list-nocal",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "nope"
+      }
+    },
+    {
+      "id": "list-badstart",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "garbage"
+      }
+    },
+    {
+      "id": "list-badend",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "garbage"
+      }
+    },
+    {
+      "id": "u-title",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "title": "Planning meeting renamed"
+      }
+    },
+    {
+      "id": "u-dates",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "startDate": "2026-12-15T17:00:00Z",
+        "endDate": "2026-12-15T18:30:00Z"
+      }
+    },
+    {
+      "id": "u-text",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "location": "Room 22",
+        "description": "New agenda"
+      }
+    },
+    {
+      "id": "u-status-tentative",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-teams@example.test",
+        "calendarId": "labics",
+        "status": "Tentative"
+      }
+    },
+    {
+      "id": "u-status-clear",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "status": ""
+      }
+    },
+    {
+      "id": "u-busy",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "showAs": "busy"
+      }
+    },
+    {
+      "id": "u-free",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "showAs": "free"
+      }
+    },
+    {
+      "id": "u-showas-null",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-teams@example.test",
+        "calendarId": "labics",
+        "showAs": null
+      }
+    },
+    {
+      "id": "u-cats",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-allday@example.test",
+        "calendarId": "labics",
+        "categories": [
+          "Home",
+          "Garden"
+        ]
+      }
+    },
+    {
+      "id": "u-cats-clear",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "categories": []
+      }
+    },
+    {
+      "id": "u-online-on",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "onlineMeeting": true
+      }
+    },
+    {
+      "id": "u-online-off",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-teams@example.test",
+        "calendarId": "labics",
+        "onlineMeeting": false
+      }
+    },
+    {
+      "id": "u-allday",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-allday@example.test",
+        "calendarId": "labics",
+        "startDate": "2026-12-22",
+        "endDate": "2026-12-23"
+      }
+    },
+    {
+      "id": "u-weekly",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-weekly@example.test",
+        "calendarId": "labics",
+        "title": "Weekly sync renamed",
+        "reminders": [
+          10
+        ]
+      }
+    },
+    {
+      "id": "list-after",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "e-nochange",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "no-such-event",
+        "calendarId": "labics",
+        "title": "x"
+      }
+    },
+    {
+      "id": "e-badstart",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "startDate": "garbage"
+      }
+    },
+    {
+      "id": "e-badend",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "endDate": "garbage"
+      }
+    },
+    {
+      "id": "e-endbefore",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "endDate": "2026-12-15T10:00:00Z"
+      }
+    },
+    {
+      "id": "e-status",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-timed@example.test",
+        "calendarId": "labics",
+        "status": "maybe"
+      }
+    },
+    {
+      "id": "e-nocalendar",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "x",
+        "calendarId": "nope",
+        "title": "x"
+      }
+    },
+    {
+      "id": "e-readonly",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-ro-event@example.test",
+        "calendarId": "labro",
+        "title": "x"
+      }
+    },
+    {
+      "id": "e-noid",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labics",
+        "title": "x"
+      }
+    },
+    {
+      "id": "del-weekly",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-upd-weekly@example.test",
+        "calendarId": "labics"
+      }
+    },
+    {
+      "id": "list-final",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labics"
+      },
+      "wait_after": 3
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labro\",\"name\":\"Lab read-only\",\"type\":\"ics\",\"readOnly\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-ics"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "Planning meeting"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "Day off"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "Teams call"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"onlineMeetingURL\":\"https://teams.example.com/join/42\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"allDay\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"categories\":[\"Work\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "Weekly sync moved",
+      "note": "A changed occurrence of the series is listed with its own title and time."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"startDate\":\"2026-12-08T12:00:00.000Z\",\"endDate\":\"2026-12-08T13:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"startDate\":\"2026-12-08T10:00:00.000Z\"",
+      "present": false,
+      "note": "The occurrence that was moved is not listed a second time."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"recurrenceId\":\"2026-12-01T10:00:00.000Z\"",
+      "note": "Weekly series: its occurrences in December."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"recurrenceId\":\"2026-12-15T10:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ics",
+      "contains": "\"recurrenceId\":\"2026-12-22T10:00:00.000Z\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "Planning meeting"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "Read only event"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "Daily standup"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "\"calendarId\":\"labro\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "\"calendarId\":\"labics\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-all",
+      "contains": "\"calendarId\":\"labdaily\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-table",
+      "contains": "\"columns\":[\"id\",\"allDay\",\"calendarId\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-table",
+      "contains": "\"rows\":[["
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-table",
+      "contains": "lab-upd-timed@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-max"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-max",
+      "contains": "\"startDate\":\"2026-12-01T10:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-max",
+      "contains": "\"startDate\":\"2026-12-08T12:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-max",
+      "contains": "\"startDate\":\"2026-12-15T10:00:00.000Z\"",
+      "present": false,
+      "note": "maxResults 2 keeps the two first events."
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-daily"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-daily",
+      "contains": "\"startDate\":\"2026-12-01T09:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-daily",
+      "contains": "\"startDate\":\"2026-12-14T09:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-daily",
+      "contains": "\"startDate\":\"2026-12-15T09:00:00.000Z\"",
+      "present": false,
+      "note": "COUNT=14: fourteen occurrences."
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-daily-one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-daily-one",
+      "contains": "\"startDate\":\"2026-12-01T09:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-daily-one",
+      "contains": "\"startDate\":\"2026-12-02T09:00:00.000Z\"",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-ro"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ro",
+      "contains": "Read only event"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "list-nocal",
+      "contains": "Calendar not found: nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "list-badstart",
+      "contains": "Invalid startDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "list-badend",
+      "contains": "Invalid endDate: garbage"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-title"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-title",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-dates"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-dates",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-text"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-text",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-status-tentative"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-status-tentative",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-status-clear"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-status-clear",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-busy"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-busy",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-free"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-free",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-showas-null"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-showas-null",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-cats"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-cats",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-cats-clear"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-cats-clear",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-online-on"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-online-on",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-online-off"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-online-off",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-allday"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-allday",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-weekly"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-weekly",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-title",
+      "contains": "\"updated\":[\"title\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-dates",
+      "contains": "\"updated\":[\"startDate\",\"endDate\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-text",
+      "contains": "\"updated\":[\"location\",\"description\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-status-tentative",
+      "contains": "\"updated\":[\"status\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-showas-null",
+      "contains": "\"updated\":[\"showAs\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-cats",
+      "contains": "\"updated\":[\"categories\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-online-on",
+      "contains": "\"updated\":[\"onlineMeeting\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-weekly",
+      "contains": "\"updated\":[\"title\",\"reminders\"],\"reminders\":[10]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-weekly",
+      "contains": "This is a recurring event -- changes apply to the entire series."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-weekly",
+      "contains": "Occurrences changed on their own keep their own reminders."
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "Planning meeting renamed"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"startDate\":\"2026-12-15T17:00:00.000Z\",\"endDate\":\"2026-12-15T18:30:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "Room 22"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "New agenda"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"status\":\"tentative\"",
+      "note": "The status Tentative is stored as tentative; cleared on the timed event."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"status\":\"confirmed\"",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"categories\":[\"Home\",\"Garden\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"categories\":[\"Work\"]",
+      "present": false,
+      "note": "The categories of the timed event were cleared."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"startDate\":\"2026-12-22T00:00:00.000Z\",\"endDate\":\"2026-12-23T00:00:00.000Z\"",
+      "note": "An all-day event: endDate is its last day."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "Weekly sync renamed"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"reminders\":[10]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-after",
+      "contains": "\"onlineMeetingURL\":null"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-nochange",
+      "contains": "No changes specified"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "Event not found: no-such-event"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-badstart",
+      "contains": "Invalid startDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-badend",
+      "contains": "Invalid endDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-endbefore",
+      "contains": "endDate must be after startDate"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-status",
+      "contains": "Invalid status: \"maybe\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-nocalendar",
+      "contains": "Calendar not found: nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-readonly",
+      "contains": "Calendar is read-only: Lab read-only"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-noid",
+      "contains": "Missing required parameter: eventId"
+    },
+    {
+      "type": "tool_ok",
+      "step": "del-weekly"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "del-weekly",
+      "contains": "This was a recurring event -- the entire series was deleted."
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-final"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-final",
+      "contains": "Weekly sync",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-final",
+      "contains": "Planning meeting renamed"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "SUMMARY:Planning meeting renamed"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "DTSTART:20261215T170000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "DTEND:20261215T183000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "LOCATION:Room 22"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "DESCRIPTION:New agenda"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "STATUS:TENTATIVE"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "STATUS:CONFIRMED",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "TRANSP:TRANSPARENT"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "TRANSP:OPAQUE",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "CATEGORIES:Home"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "CATEGORIES:Garden"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "CATEGORIES:Work",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "X-ONLINE-MEETING-PROVIDER:TeamsForBusiness"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "X-MICROSOFT-SKYPETEAMSMEETINGURL",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "DTSTART;VALUE=DATE:20261222"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "DTEND;VALUE=DATE:20261224"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "RRULE",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labupd/msgFilterRules.dat",
+      "contains": "Weekly sync",
+      "present": false
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/labupd/msgFilterRules.dat"
+    ]
+  }
+}

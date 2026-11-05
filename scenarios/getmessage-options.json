@@ -1,0 +1,1486 @@
+{
+ "name": "getmessage-options",
+ "description": "getMessage options on seeded POP3 messages. Paging of a long body (maxBodyChars, bodyOffset, a limit above the maximum), the three body formats of an HTML message (hidden elements are removed and counted in bodyNote) and of a multipart/alternative one, rawSource as text and as base64 (pages on 4-character groups), inline images of a multipart/related part with includeInlineImages (included, skipped for an unsupported type, an RFC 2231 name read in the raw message) and without it, saveAttachments (files in the temporary directory, two attachments of one name, an image of a multipart/related part) with the saved files attached again to a draft and compared byte for byte, a message that only has an attachment, a message with no Subject (rawSource too) and an attachment with no name, empty plain and HTML bodies, an encrypted message (content withheld, also when it has no From or To; its reply and forward are refused), odd attachments (undecodable base64, empty, a detached attachment that is only a link, an attached message) with the forward refused for the link. Errors: unknown message, unknown folder, arguments out of range. Not reached: a raw source that is not valid UTF-8 (the seeded files are UTF-8), the recovery of an attachment from the raw message after a wrong size, failures of the temporary directory, an image over the base64 limit. Nothing is sent.",
+ "prefs": {
+  "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+ },
+ "schema_watch": [
+  "getMessage"
+ ],
+ "seed": [
+  {
+   "folder": "127.0.0.1/Inbox",
+   "messages": [
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO long [go-long]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-long@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nLine 001: the quick brown fox jumps over the lazy dog.\nLine 002: the quick brown fox jumps over the lazy dog.\nLine 003: the quick brown fox jumps over the lazy dog.\nLine 004: the quick brown fox jumps over the lazy dog.\nLine 005: the quick brown fox jumps over the lazy dog.\nLine 006: the quick brown fox jumps over the lazy dog.\nLine 007: the quick brown fox jumps over the lazy dog.\nLine 008: the quick brown fox jumps over the lazy dog.\nLine 009: the quick brown fox jumps over the lazy dog.\nLine 010: the quick brown fox jumps over the lazy dog.\nLine 011: the quick brown fox jumps over the lazy dog.\nLine 012: the quick brown fox jumps over the lazy dog.\nLine 013: the quick brown fox jumps over the lazy dog.\nLine 014: the quick brown fox jumps over the lazy dog.\nLine 015: the quick brown fox jumps over the lazy dog.\nLine 016: the quick brown fox jumps over the lazy dog.\nLine 017: the quick brown fox jumps over the lazy dog.\nLine 018: the quick brown fox jumps over the lazy dog.\nLine 019: the quick brown fox jumps over the lazy dog.\nLine 020: the quick brown fox jumps over the lazy dog.\nLine 021: the quick brown fox jumps over the lazy dog.\nLine 022: the quick brown fox jumps over the lazy dog.\nLine 023: the quick brown fox jumps over the lazy dog.\nLine 024: the quick brown fox jumps over the lazy dog.\nLine 025: the quick brown fox jumps over the lazy dog.\nLine 026: the quick brown fox jumps over the lazy dog.\nLine 027: the quick brown fox jumps over the lazy dog.\nLine 028: the quick brown fox jumps over the lazy dog.\nLine 029: the quick brown fox jumps over the lazy dog.\nLine 030: the quick brown fox jumps over the lazy dog.\nLine 031: the quick brown fox jumps over the lazy dog.\nLine 032: the quick brown fox jumps over the lazy dog.\nLine 033: the quick brown fox jumps over the lazy dog.\nLine 034: the quick brown fox jumps over the lazy dog.\nLine 035: the quick brown fox jumps over the lazy dog.\nLine 036: the quick brown fox jumps over the lazy dog.\nLine 037: the quick brown fox jumps over the lazy dog.\nLine 038: the quick brown fox jumps over the lazy dog.\nLine 039: the quick brown fox jumps over the lazy dog.\nLine 040: the quick brown fox jumps over the lazy dog.\nLine 041: the quick brown fox jumps over the lazy dog.\nLine 042: the quick brown fox jumps over the lazy dog.\nLine 043: the quick brown fox jumps over the lazy dog.\nLine 044: the quick brown fox jumps over the lazy dog.\nLine 045: the quick brown fox jumps over the lazy dog.\nLine 046: the quick brown fox jumps over the lazy dog.\nLine 047: the quick brown fox jumps over the lazy dog.\nLine 048: the quick brown fox jumps over the lazy dog.\nLine 049: the quick brown fox jumps over the lazy dog.\nLine 050: the quick brown fox jumps over the lazy dog.\nLine 051: the quick brown fox jumps over the lazy dog.\nLine 052: the quick brown fox jumps over the lazy dog.\nLine 053: the quick brown fox jumps over the lazy dog.\nLine 054: the quick brown fox jumps over the lazy dog.\nLine 055: the quick brown fox jumps over the lazy dog.\nLine 056: the quick brown fox jumps over the lazy dog.\nLine 057: the quick brown fox jumps over the lazy dog.\nLine 058: the quick brown fox jumps over the lazy dog.\nLine 059: the quick brown fox jumps over the lazy dog.\nLine 060: the quick brown fox jumps over the lazy dog.\nLine 061: the quick brown fox jumps over the lazy dog.\nLine 062: the quick brown fox jumps over the lazy dog.\nLine 063: the quick brown fox jumps over the lazy dog.\nLine 064: the quick brown fox jumps over the lazy dog.\nLine 065: the quick brown fox jumps over the lazy dog.\nLine 066: the quick brown fox jumps over the lazy dog.\nLine 067: the quick brown fox jumps over the lazy dog.\nLine 068: the quick brown fox jumps over the lazy dog.\nLine 069: the quick brown fox jumps over the lazy dog.\nLine 070: the quick brown fox jumps over the lazy dog.\nLine 071: the quick brown fox jumps over the lazy dog.\nLine 072: the quick brown fox jumps over the lazy dog.\nLine 073: the quick brown fox jumps over the lazy dog.\nLine 074: the quick brown fox jumps over the lazy dog.\nLine 075: the quick brown fox jumps over the lazy dog.\nLine 076: the quick brown fox jumps over the lazy dog.\nLine 077: the quick brown fox jumps over the lazy dog.\nLine 078: the quick brown fox jumps over the lazy dog.\nLine 079: the quick brown fox jumps over the lazy dog.\nLine 080: the quick brown fox jumps over the lazy dog.\nLine 081: the quick brown fox jumps over the lazy dog.\nLine 082: the quick brown fox jumps over the lazy dog.\nLine 083: the quick brown fox jumps over the lazy dog.\nLine 084: the quick brown fox jumps over the lazy dog.\nLine 085: the quick brown fox jumps over the lazy dog.\nLine 086: the quick brown fox jumps over the lazy dog.\nLine 087: the quick brown fox jumps over the lazy dog.\nLine 088: the quick brown fox jumps over the lazy dog.\nLine 089: the quick brown fox jumps over the lazy dog.\nLine 090: the quick brown fox jumps over the lazy dog.\nLine 091: the quick brown fox jumps over the lazy dog.\nLine 092: the quick brown fox jumps over the lazy dog.\nLine 093: the quick brown fox jumps over the lazy dog.\nLine 094: the quick brown fox jumps over the lazy dog.\nLine 095: the quick brown fox jumps over the lazy dog.\nLine 096: the quick brown fox jumps over the lazy dog.\nLine 097: the quick brown fox jumps over the lazy dog.\nLine 098: the quick brown fox jumps over the lazy dog.\nLine 099: the quick brown fox jumps over the lazy dog.\nLine 100: the quick brown fox jumps over the lazy dog.\nLine 101: the quick brown fox jumps over the lazy dog.\nLine 102: the quick brown fox jumps over the lazy dog.\nLine 103: the quick brown fox jumps over the lazy dog.\nLine 104: the quick brown fox jumps over the lazy dog.\nLine 105: the quick brown fox jumps over the lazy dog.\nLine 106: the quick brown fox jumps over the lazy dog.\nLine 107: the quick brown fox jumps over the lazy dog.\nLine 108: the quick brown fox jumps over the lazy dog.\nLine 109: the quick brown fox jumps over the lazy dog.\nLine 110: the quick brown fox jumps over the lazy dog.\nLine 111: the quick brown fox jumps over the lazy dog.\nLine 112: the quick brown fox jumps over the lazy dog.\nLine 113: the quick brown fox jumps over the lazy dog.\nLine 114: the quick brown fox jumps over the lazy dog.\nLine 115: the quick brown fox jumps over the lazy dog.\nLine 116: the quick brown fox jumps over the lazy dog.\nLine 117: the quick brown fox jumps over the lazy dog.\nLine 118: the quick brown fox jumps over the lazy dog.\nLine 119: the quick brown fox jumps over the lazy dog.\nLine 120: the quick brown fox jumps over the lazy dog.\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO html [go-html]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-html@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/html; charset=UTF-8\n\n<html><head><style>.gone{display:none}</style></head><body><h1>Heading One</h1><p>Visible <b>bold</b> and <a href=\"https://example.com/page\">a link</a>.</p><ul><li>first item</li><li>second item</li></ul><div style=\"display:none\">HIDDEN-BY-STYLE</div><p hidden>HIDDEN-BY-ATTRIBUTE</p><template>HIDDEN-IN-TEMPLATE</template><p>after</p></body></html>\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO alt [go-alt]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-alt@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"alt-b\"\n\n--alt-b\nContent-Type: text/plain; charset=UTF-8\n\nPlain part of the alternative.\n\n--alt-b\nContent-Type: text/html; charset=UTF-8\n\n<html><body><p>HTML <i>part</i> of the alternative.</p></body></html>\n\n--alt-b--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO inline [go-inline]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-inline@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"mix-b\"\n\n--mix-b\nContent-Type: multipart/related; boundary=\"rel-b\"\n\n--rel-b\nContent-Type: text/html; charset=UTF-8\n\n<html><body><p>Look: <img src=\"cid:second@lab\"> and <img src=\"cid:first@lab\"> and <img src=\"cid:svg@lab\"></p></body></html>\n\n--rel-b\nContent-Type: image/png; name=\"first.png\"\nContent-Disposition: inline; filename=\"first.png\"\nContent-ID: <first@lab>\nContent-Transfer-Encoding: base64\n\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\n\n--rel-b\nContent-Type: image/gif; name=\"second.gif\"\nContent-Disposition: inline; filename=\"second.gif\"\nContent-ID: <second@lab>\nContent-Transfer-Encoding: base64\n\nR0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\n\n--rel-b\nContent-Type: image/svg+xml; name=\"vector.svg\"\nContent-Disposition: inline; filename=\"vector.svg\"\nContent-ID: <svg@lab>\nContent-Transfer-Encoding: base64\n\nPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnLz4=\n\n--rel-b--\n\n--mix-b\nContent-Type: text/plain; name=\"my report (final).txt\"\nContent-Disposition: attachment; filename=\"my report (final).txt\"\nContent-Transfer-Encoding: base64\n\nRmlyc3QgcmVwb3J0IHRleHQuCg==\n\n--mix-b\nContent-Type: text/plain; name=\"my report (final).txt\"\nContent-Disposition: attachment; filename=\"my report (final).txt\"\nContent-Transfer-Encoding: base64\n\nU2Vjb25kIHJlcG9ydCB0ZXh0LCBzYW1lIG5hbWUuCg==\n\n--mix-b\nContent-Type: application/octet-stream; name=\"data.bin\"\nContent-Disposition: attachment; filename=\"data.bin\"\nContent-Transfer-Encoding: base64\n\nAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/w==\n\n--mix-b--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO mixed image [go-mixed]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-mixed@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"mx\"\n\n--mx\nContent-Type: text/plain; charset=UTF-8\n\nBody with a picture attached next to it.\n\n--mx\nContent-Type: image/png; name=\"pic.png\"\nContent-Disposition: inline; filename=\"pic.png\"\nContent-ID: <pic@lab>\nContent-Transfer-Encoding: base64\n\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\n\n--mx\nContent-Type: application/octet-stream; name=\"blob.dat\"\nContent-Disposition: attachment; filename=\"blob.dat\"\nContent-Transfer-Encoding: base64\n\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n\n--mx--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO attachment only [go-only]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-only@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"ao\"\n\n--ao\nContent-Type: application/octet-stream; name=\"only.dat\"\nContent-Disposition: attachment; filename=\"only.dat\"\nContent-Transfer-Encoding: base64\n\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eA==\n\n--ao--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO empty [go-empty]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-empty@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO empty html [go-eh]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-eh@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/html; charset=UTF-8\n\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO related [go-related]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-related@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"mix-b\"\n\n--mix-b\nContent-Type: multipart/related; boundary=\"rel-b\"\n\n--rel-b\nContent-Type: text/html; charset=UTF-8\n\n<html><body><p>Look: <img src=\"cid:noname@lab\"> and <img src=\"cid:plain@lab\"></p></body></html>\n\n--rel-b\nContent-Type: image/png\nContent-Disposition: inline\nContent-ID: <noname@lab>\nContent-Transfer-Encoding: base64\n\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\n\n--rel-b\nContent-Type: image/gif; name=\"plain.gif\"\nContent-ID: <plain@lab>\nContent-Transfer-Encoding: base64\n\nR0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7\n\n--rel-b--\n\n--mix-b--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO fancy [go-fancy]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-fancy@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"m2\"\n\n--m2\nContent-Type: multipart/related; boundary=\"r2\"\n\n--r2\nContent-Type: text/html; charset=UTF-8\n\n<html><body><img src=\"cid:fancy@lab\"></body></html>\n\n--r2\nContent-Type: image/png\nContent-Disposition: inline; filename*=UTF-8''pretty%20picture.png\nContent-ID: <fancy@lab>\nContent-Transfer-Encoding: base64\n\niVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==\n\n--r2--\n\n--m2--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO encrypted [go-enc]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nMessage-ID: <go-nosubject@example.com>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nA message with neither Subject nor Date.\n",
+    "Message-ID: <go-enc-bare@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO noname [go-noname]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-noname@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"nn\"\n\n--nn\nContent-Type: text/plain; charset=UTF-8\n\nOne attachment without a name.\n\n--nn\nContent-Type: application/octet-stream\nContent-Disposition: attachment\nContent-Transfer-Encoding: base64\n\nYW5vbnltb3VzIGF0dGFjaG1lbnQgYnl0ZXMK\n\n--nn--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: GO odd [go-odd]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <go-odd@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"od\"\n\n--od\nContent-Type: text/plain; charset=UTF-8\n\nOdd attachments below.\n\n--od\nContent-Type: application/octet-stream; name=\"garbage64.dat\"\nContent-Disposition: attachment; filename=\"garbage64.dat\"\nContent-Transfer-Encoding: base64\n\n!!!!####$$$$\n\n--od\nContent-Type: application/octet-stream; name=\"empty.dat\"\nContent-Disposition: attachment; filename=\"empty.dat\"\nContent-Transfer-Encoding: base64\n\n\n--od\nContent-Type: message/rfc822; name=\"inner.eml\"\nContent-Disposition: attachment; filename=\"inner.eml\"\n\nFrom: Inner Sender <inner@example.com>\nTo: Someone <someone@example.com>\nSubject: Inner message\nMessage-ID: <inner@example.com>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nContent-Type: text/plain; charset=UTF-8\n\nInner body text.\n\n--od\nContent-Type: text/plain; name=\"detached.txt\"\nContent-Disposition: attachment; filename=\"detached.txt\"\nX-Mozilla-External-Attachment-URL: file:///etc/hostname\nX-Mozilla-Altered: AttachmentDetached; date=\"Thu Jan 01 10:00:00 2026\"\n\nYou deleted an attachment from this message. The original MIME headers for the attachment were:\nContent-Type: text/plain; name=\"detached.txt\"\n\n--od--\n"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "index-trigger",
+   "tool": "applyFilters",
+   "timeout": 30,
+   "arguments": {
+    "accountId": "account2",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   },
+   "wait_after": 3,
+   "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+   "retry": {
+    "attempts": 10,
+    "delay": 2
+   }
+  },
+  {
+   "id": "index-ready",
+   "tool": "getMessage",
+   "timeout": 30,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   },
+   "retry": {
+    "attempts": 12,
+    "delay": 3
+   }
+  },
+  {
+   "id": "long-1",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "maxBodyChars": 1000
+   },
+   "note": "120 lines of 55 characters: 6600 characters, paged by 1000."
+  },
+  {
+   "id": "long-2",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "maxBodyChars": 1000,
+    "bodyOffset": 1000
+   }
+  },
+  {
+   "id": "long-last",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "maxBodyChars": 1000,
+    "bodyOffset": 6000
+   }
+  },
+  {
+   "id": "long-clamped",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "maxBodyChars": 1000000
+   },
+   "note": "A limit above the maximum is clamped, not refused."
+  },
+  {
+   "id": "html-markdown",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-html@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "html-text",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-html@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "html-html",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-html@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html"
+   }
+  },
+  {
+   "id": "alt-text",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "alt-html",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html"
+   }
+  },
+  {
+   "id": "raw",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true
+   }
+  },
+  {
+   "id": "raw-b64-1",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true,
+    "rawEncoding": "base64",
+    "maxBodyChars": 200
+   }
+  },
+  {
+   "id": "raw-b64-2",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true,
+    "rawEncoding": "base64",
+    "maxBodyChars": 200,
+    "bodyOffset": 200
+   }
+  },
+  {
+   "id": "raw-b64-aligned",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-alt@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true,
+    "rawEncoding": "base64",
+    "maxBodyChars": 203,
+    "bodyOffset": 202
+   },
+   "note": "Base64 pages start and end on 4-character groups: offset 202 starts at 200, 203 characters become 200."
+  },
+  {
+   "id": "inline-default",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-inline@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html"
+   }
+  },
+  {
+   "id": "inline-images",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-inline@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html",
+    "includeInlineImages": true
+   }
+  },
+  {
+   "id": "inline-save",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-inline@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "includeInlineImages": true,
+    "saveAttachments": true
+   }
+  },
+  {
+   "id": "mixed-images",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-mixed@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "includeInlineImages": true
+   }
+  },
+  {
+   "id": "mixed-save",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-mixed@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "saveAttachments": true
+   }
+  },
+  {
+   "id": "attach-saved",
+   "tool": "saveDraft",
+   "timeout": 90,
+   "arguments": {
+    "to": "x@example.com",
+    "subject": "GO saved attachments [go-saved]",
+    "body": "Saved attachments, attached again.",
+    "attachments": [
+     "/tmp/commonpost-mcp/go_mixed_example_com/blob.dat",
+     "/tmp/commonpost-mcp/go_mixed_example_com/pic.png",
+     "/tmp/commonpost-mcp/go_inline_example_com/data.bin",
+     "/tmp/commonpost-mcp/go_inline_example_com/first.png"
+    ]
+   },
+   "draft_subject": "[go-saved]",
+   "draft_wait": 60,
+   "note": "The files getMessage saved are attached to a draft: what the draft carries is what was saved, byte for byte."
+  },
+  {
+   "id": "only",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-only@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "only-save",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-only@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "saveAttachments": true
+   }
+  },
+  {
+   "id": "empty",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-empty@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "empty-html-markdown",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-eh@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "empty-html-text",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-eh@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "empty-html-html",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-eh@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html"
+   }
+  },
+  {
+   "id": "related-images",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-related@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "includeInlineImages": true
+   }
+  },
+  {
+   "id": "nosubject",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-nosubject@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "nosubject-raw",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-nosubject@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true
+   }
+  },
+  {
+   "id": "nosubject-raw-b64",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-nosubject@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "rawSource": true,
+    "rawEncoding": "base64"
+   }
+  },
+  {
+   "id": "noname",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-noname@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "noname-save",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-noname@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "saveAttachments": true
+   }
+  },
+  {
+   "id": "fancy-images",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-fancy@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "includeInlineImages": true
+   }
+  },
+  {
+   "id": "encrypted",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-enc@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "encrypted-bare",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-enc-bare@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "odd",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-odd@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "odd-save",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-odd@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text",
+    "saveAttachments": true
+   }
+  },
+  {
+   "id": "attach-inner-eml",
+   "tool": "saveDraft",
+   "timeout": 90,
+   "arguments": {
+    "to": "x@example.com",
+    "subject": "GO saved attached message [go-inner-eml]",
+    "body": "The attached message saved by getMessage, attached again.",
+    "attachments": [
+     "/tmp/commonpost-mcp/go_odd_example_com/inner.eml"
+    ]
+   },
+   "draft_subject": "[go-inner-eml]",
+   "draft_wait": 60,
+   "note": "The attached message (message/rfc822) saved by odd-save is the whole message: its headers and its body."
+  },
+  {
+   "id": "odd-forward",
+   "tool": "forwardMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-odd@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "to": "dest@example.com",
+    "mode": "draft"
+   }
+  },
+  {
+   "id": "odd-reply",
+   "tool": "replyToMessage",
+   "timeout": 90,
+   "arguments": {
+    "messageId": "go-odd@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "body": "Reply to the odd message.",
+    "mode": "draft"
+   },
+   "draft_subject": "Re: GO odd"
+  },
+  {
+   "id": "encrypted-reply",
+   "tool": "replyToMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-enc@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "body": "x",
+    "mode": "draft"
+   }
+  },
+  {
+   "id": "encrypted-forward",
+   "tool": "forwardMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-enc@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "to": "dest@example.com",
+    "mode": "draft"
+   }
+  },
+  {
+   "id": "e-unknown-message",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-nope@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "e-unknown-folder",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Nope"
+   }
+  },
+  {
+   "id": "e-max-zero",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "maxBodyChars": 0
+   }
+  },
+  {
+   "id": "e-no-folder",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com"
+   }
+  },
+  {
+   "id": "e-bad-format",
+   "tool": "getMessage",
+   "timeout": 60,
+   "arguments": {
+    "messageId": "go-long@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "pdf"
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "index-ready"
+  },
+  {
+   "type": "tool_ok",
+   "step": "long-1"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "\"bodyTotalChars\":6600"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "\"bodyTruncated\":true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "\"nextBodyOffset\":1000"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "Line 001: the quick brown fox"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "Line 019: "
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "Line 020:",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-1",
+   "contains": "\"bodyOffset\"",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "long-2"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-2",
+   "contains": "\"bodyOffset\":1000"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-2",
+   "contains": "\"nextBodyOffset\":2000"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-2",
+   "contains": "Line 020: the quick brown fox"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-2",
+   "contains": "Line 019:",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "long-last"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-last",
+   "contains": "\"bodyOffset\":6000"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-last",
+   "contains": "\"bodyTotalChars\":6600"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-last",
+   "contains": "Line 120: the quick brown fox"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-last",
+   "contains": "\"bodyTruncated\"",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-last",
+   "contains": "\"nextBodyOffset\"",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "long-clamped"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-clamped",
+   "contains": "Line 120: the quick brown fox"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "long-clamped",
+   "contains": "\"bodyTruncated\"",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "html-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "# Heading One"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "**bold**"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "[a link](https://example.com/page)"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "- first item"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "\"bodyIsHtml\":false"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "3 element(s) hidden by CSS, the hidden attribute, or <template> were removed from the HTML body"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "HIDDEN-BY-STYLE",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "HIDDEN-BY-ATTRIBUTE",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-markdown",
+   "contains": "HIDDEN-IN-TEMPLATE",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "html-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "Heading One"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "Visible bold and a link"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "first item"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "#",
+   "present": false,
+   "note": "No Markdown marks in the plain-text rendering."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "<h1>",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "HIDDEN-BY-STYLE",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-text",
+   "contains": "\"bodyIsHtml\":false"
+  },
+  {
+   "type": "tool_ok",
+   "step": "html-html"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-html",
+   "contains": "\"bodyIsHtml\":true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-html",
+   "contains": "<h1>Heading One</h1>"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "html-html",
+   "contains": "bodyNote",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "alt-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-text",
+   "contains": "Plain part of the alternative."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-text",
+   "contains": "HTML <i>part</i>",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-text",
+   "contains": "\"bodyIsHtml\":false"
+  },
+  {
+   "type": "tool_ok",
+   "step": "alt-html"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-html",
+   "contains": "<p>HTML <i>part</i> of the alternative.</p>"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-html",
+   "contains": "\"bodyIsHtml\":true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "alt-html",
+   "contains": "Plain part of the alternative.",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "raw"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "\"rawCharset\":\"utf-8\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "Content-Type: multipart/alternative; boundary=\\\"alt-b\\\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "Message-ID: <go-alt@example.com>"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "Plain part of the alternative."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "<p>HTML <i>part</i> of the alternative.</p>"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "\"bodyIsHtml\"",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw",
+   "contains": "\"attachments\"",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "raw-b64-1"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-1",
+   "contains": "\"rawEncoding\":\"base64\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-1",
+   "contains": "\"rawSource\":\"<email-content id=\\\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-1",
+   "contains": "RnJvbTogQWxpY2UgRXhhbXBsZSA8YWxpY2VAZXhhbXBsZS5jb20+DQpUbzogTGFiIFVzZXIgPGxhYkBleGFtcGxlLnRlc3Q+DQpTdWJqZWN0OiBHTyBhbHQgW2dvLWFsdF0NCkRhdGU6IFRodSwgMDEgSmFuIDIwMjYgMTA6MDA6MDAgKzAwMDANCk1lc3NhZ2UtSUQ6",
+   "note": "The first 200 base64 characters are the first 150 bytes of the raw message."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-1",
+   "contains": "\"nextBodyOffset\":200"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-1",
+   "contains": "\"bodyTruncated\":true"
+  },
+  {
+   "type": "tool_ok",
+   "step": "raw-b64-2"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-2",
+   "contains": "IDxnby1hbHRAZXhhbXBsZS5jb20+DQpNSU1FLVZlcnNpb246IDEuMA0KQ29udGVudC1UeXBlOiBtdWx0aXBhcnQvYWx0ZXJuYXRpdmU7IGJvdW5kYXJ5PSJhbHQtYiINCg0KLS1hbHQtYg0KQ29udGVudC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PVVURi04DQoN"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-2",
+   "contains": "\"bodyOffset\":200"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-2",
+   "contains": "\"nextBodyOffset\":400"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-2",
+   "contains": "RnJvbTogQWxpY2UgRXhhbXBsZSA8YWxpY2VAZXhh",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "raw-b64-aligned"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-aligned",
+   "contains": "\"bodyOffset\":200"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-aligned",
+   "contains": "\"nextBodyOffset\":400"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "raw-b64-aligned",
+   "contains": "IDxnby1hbHRAZXhhbXBsZS5jb20+DQpNSU1FLVZlcnNpb246IDEuMA0KQ29udGVudC1UeXBlOiBtdWx0aXBhcnQvYWx0ZXJuYXRpdmU7IGJvdW5kYXJ5PSJhbHQtYiINCg0KLS1hbHQtYg0KQ29udGVudC1UeXBlOiB0ZXh0L3BsYWluOyBjaGFyc2V0PVVURi04DQoN"
+  },
+  {
+   "type": "tool_ok",
+   "step": "inline-default"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-default",
+   "contains": "\"name\":\"my report (final).txt\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-default",
+   "contains": "\"name\":\"data.bin\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-default",
+   "contains": "mcpImage",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-default",
+   "contains": "inlineImageContent",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "inline-images"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"inlineImageContent\":{\"included\":2,\"skipped\":1,\"totalBase64Bytes\":152"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"name\":\"second.gif\",\"contentType\":\"image/gif\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"contentId\":\"first@lab\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"status\":\"included\",\"contentBlockIndex\":1"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"status\":\"included\",\"contentBlockIndex\":2"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "Unsupported MIME type \\\"image/svg+xml\\\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-images",
+   "contains": "\"isInline\":true"
+  },
+  {
+   "type": "tool_ok",
+   "step": "inline-save"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_inline_example_com/my_report__final_.txt\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_inline_example_com/my_report__final_-1.txt\"",
+   "note": "Two attachments with one name get two files."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_inline_example_com/data.bin\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_inline_example_com/first.png\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "inline-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_inline_example_com/second.gif\""
+  },
+  {
+   "type": "tool_ok",
+   "step": "mixed-images"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "mixed-images",
+   "contains": "\"name\":\"pic.png\",\"contentType\":\"image/png\",\"size\":70"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "mixed-images",
+   "contains": "\"name\":\"blob.dat\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "mixed-images",
+   "contains": "\"inlineImageContent\":{"
+  },
+  {
+   "type": "tool_ok",
+   "step": "mixed-save"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "mixed-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_mixed_example_com/blob.dat\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "mixed-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_mixed_example_com/pic.png\""
+  },
+  {
+   "type": "tool_ok",
+   "step": "attach-saved"
+  },
+  {
+   "type": "draft_count",
+   "subject": "[go-saved]",
+   "equals": 1
+  },
+  {
+   "type": "draft_attachment",
+   "subject": "[go-saved]",
+   "filename": "blob.dat",
+   "bytes": 1000,
+   "byte": 120
+  },
+  {
+   "type": "draft_attachment",
+   "subject": "[go-saved]",
+   "filename": "pic.png",
+   "bytes": 70
+  },
+  {
+   "type": "draft_attachment",
+   "subject": "[go-saved]",
+   "filename": "data.bin",
+   "bytes": 256
+  },
+  {
+   "type": "draft_attachment",
+   "subject": "[go-saved]",
+   "filename": "first.png",
+   "bytes": 70
+  },
+  {
+   "type": "tool_ok",
+   "step": "only"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "only",
+   "contains": "\"body\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "only",
+   "contains": "multipart body extraction found no suitable text part"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "only",
+   "contains": "\"name\":\"only.dat\""
+  },
+  {
+   "type": "tool_ok",
+   "step": "only-save"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "only-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_only_example_com/only.dat\""
+  },
+  {
+   "type": "tool_ok",
+   "step": "empty"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty",
+   "contains": "\"body\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty",
+   "contains": "bodyNote",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "empty-html-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-markdown",
+   "contains": "\"body\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-markdown",
+   "contains": "\"bodyIsHtml\":false"
+  },
+  {
+   "type": "tool_ok",
+   "step": "empty-html-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-text",
+   "contains": "\"body\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-text",
+   "contains": "\"bodyIsHtml\":false"
+  },
+  {
+   "type": "tool_ok",
+   "step": "empty-html-html"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-html",
+   "contains": "\"body\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "empty-html-html",
+   "contains": "\"bodyIsHtml\":true"
+  },
+  {
+   "type": "tool_ok",
+   "step": "related-images"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "related-images",
+   "contains": "\"inlineImageContent\":{\"included\":2,\"skipped\":0,\"totalBase64Bytes\":152"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "related-images",
+   "contains": "\"name\":\"plain.gif\",\"contentType\":\"image/gif\",\"size\":null,\"partName\":\"1.1.3\",\"isInline\":true,\"contentId\":\"plain@lab\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "related-images",
+   "contains": "\"name\":\"inline_1.1.2\"",
+   "note": "An image with no name gets inline_ and its part number."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "related-images",
+   "contains": "\"contentId\":\"noname@lab\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "related-images",
+   "contains": "\"status\":\"included\",\"contentBlockIndex\":2"
+  },
+  {
+   "type": "tool_ok",
+   "step": "fancy-images"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "fancy-images",
+   "contains": "\"name\":\"pretty picture.png\"",
+   "note": "The name comes from the RFC 2231 filename*, read in the raw message."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "fancy-images",
+   "contains": "\"contentId\":\"fancy@lab\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "fancy-images",
+   "contains": "\"status\":\"included\",\"contentBlockIndex\":1"
+  },
+  {
+   "type": "tool_ok",
+   "step": "nosubject"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject",
+   "contains": "\"subject\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject",
+   "contains": "A message with neither Subject nor Date."
+  },
+  {
+   "type": "tool_ok",
+   "step": "nosubject-raw"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject-raw",
+   "contains": "\"subject\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject-raw",
+   "contains": "Message-ID: <go-nosubject@example.com>"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject-raw",
+   "contains": "Subject:",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "nosubject-raw-b64"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject-raw-b64",
+   "contains": "\"subject\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "nosubject-raw-b64",
+   "contains": "\"rawEncoding\":\"base64\""
+  },
+  {
+   "type": "tool_ok",
+   "step": "noname"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "noname",
+   "contains": "\"name\":\"Part 1.2\",\"contentType\":\"application/octet-stream\",\"size\":27"
+  },
+  {
+   "type": "tool_ok",
+   "step": "noname-save"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "noname-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_noname_example_com/Part_1.2\"",
+   "note": "An attachment with no name is called Part 1.2; its file name is made of letters, digits, dots and dashes."
+  },
+  {
+   "type": "tool_ok",
+   "step": "encrypted-bare"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted-bare",
+   "contains": "\"encrypted\":true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted-bare",
+   "contains": "\"subject\":\"\",\"author\":\"\",\"recipients\":\"\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted-bare",
+   "contains": "content not sent"
+  },
+  {
+   "type": "tool_ok",
+   "step": "encrypted"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted",
+   "contains": "\"encrypted\":true"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted",
+   "contains": "content not sent"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "encrypted",
+   "contains": "hQEMA0000000000000",
+   "present": false
+  },
+  {
+   "type": "tool_ok",
+   "step": "odd"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd",
+   "contains": "\"name\":\"garbage64.dat\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd",
+   "contains": "\"name\":\"detached.txt\",\"contentType\":\"text/plain\",\"size\":142,\"isInline\":false,\"external\":true"
+  },
+  {
+   "type": "tool_ok",
+   "step": "odd-save"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_odd_example_com/garbage64.dat\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_odd_example_com/empty.dat\""
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd-save",
+   "contains": "Not saved: the attachment is only a link to a file or web address, not part of the message (detached attachment or feed enclosure)"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "odd-save",
+   "contains": "\"filePath\":\"/tmp/commonpost-mcp/go_odd_example_com/inner.eml\""
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "odd-forward",
+   "contains": "Attachment refused, nothing was saved"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "odd-forward",
+   "contains": "detached.txt"
+  },
+  {
+   "type": "draft_count",
+   "subject": "Fwd: GO odd",
+   "equals": 0
+  },
+  {
+   "type": "tool_ok",
+   "step": "odd-reply"
+  },
+  {
+   "type": "draft_count",
+   "subject": "Re: GO odd",
+   "equals": 1
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "encrypted-reply",
+   "contains": "content not sent"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "encrypted-reply",
+   "contains": "nothing was saved"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "encrypted-forward",
+   "contains": "content not sent"
+  },
+  {
+   "type": "draft_count",
+   "subject": "Re: GO encrypted",
+   "equals": 0
+  },
+  {
+   "type": "draft_count",
+   "subject": "Fwd: GO encrypted",
+   "equals": 0
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "e-unknown-message",
+   "contains": "Message not found: go-nope@example.com"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "e-unknown-folder",
+   "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "e-max-zero",
+   "contains": "Parameter 'maxBodyChars' must be >= 1"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "e-no-folder",
+   "contains": "Missing required parameter: folderPath"
+  },
+  {
+   "type": "tool_error_contains",
+   "step": "e-bad-format",
+   "contains": "Parameter 'bodyFormat' must be one of"
+  },
+  {
+   "type": "mailpit_total",
+   "equals": 0
+  },
+  {
+   "type": "tool_ok",
+   "step": "attach-inner-eml"
+  },
+  {
+   "type": "draft_body_contains",
+   "subject": "[go-inner-eml]",
+   "contains": "Subject: Inner message"
+  },
+  {
+   "type": "draft_body_contains",
+   "subject": "[go-inner-eml]",
+   "contains": "From: Inner Sender <inner@example.com>"
+  },
+  {
+   "type": "draft_body_contains",
+   "subject": "[go-inner-eml]",
+   "contains": "Inner body text."
+  }
+ ]
+}

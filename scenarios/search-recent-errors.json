@@ -1,0 +1,614 @@
+{
+  "name": "search-recent-errors",
+  "description": "searchMessages, getRecentMessages, updateMessage and emptyTrash on four seeded POP3 messages, one of them encrypted. searchMessages: the full-text option searchBody (its refusals: empty query, terms of fewer than 3 characters, combined with threadOf or an attachment filter; with the lab's global search index off it finds nothing and warns about short terms), bad dates, format legacy with groupBy, a bare operator, an empty query that lists everything but the encrypted message, a word of the encrypted message's subject that finds nothing, a word of a body that a header search does not find. getRecentMessages: lists the encrypted message with its content withheld (encrypted true), table format with offset and hasMore, a window of days that holds nothing. updateMessage: empty folder or moveTo, both messageId and messageIds, none, an empty id next to a real one (reported in notFound), only unknown ids, invalid tag keywords dropped; the flag and the tag read back with searchMessages. emptyTrash and emptyJunk with an unknown account. Not covered: a full-text search with a working global index (it is off in the lab), a Trash folder that does not exist. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "schema_watch": [
+    "searchMessages"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: SO one [so-1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <so-1@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nFirst body with the word zebra.\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: SO two [so-2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <so-2@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nSecond body.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: SO secret [so-enc]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <so-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n",
+        "From: Carol Example <carol@example.com>\nTo: Lab User <lab@example.test>\nSubject: SO three [so-3]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <so-3@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nThird body.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "so-1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "s-body-empty",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "searchBody": true
+      }
+    },
+    {
+      "id": "s-body-short",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "ab",
+        "searchBody": true
+      }
+    },
+    {
+      "id": "s-body-thread",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "zebra",
+        "searchBody": true,
+        "threadOf": {
+          "messageId": "so-1@example.com",
+          "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+        }
+      }
+    },
+    {
+      "id": "s-body-attachment",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "zebra",
+        "searchBody": true,
+        "attachmentName": "a.txt"
+      }
+    },
+    {
+      "id": "s-body-ok",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "zebra",
+        "searchBody": true
+      }
+    },
+    {
+      "id": "s-body-warn",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "zebra ab",
+        "searchBody": true
+      }
+    },
+    {
+      "id": "s-badstart",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "startDate": "garbage"
+      }
+    },
+    {
+      "id": "s-badend",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "endDate": "garbage"
+      }
+    },
+    {
+      "id": "s-legacy-group",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "format": "legacy",
+        "groupBy": "sender"
+      }
+    },
+    {
+      "id": "s-bare-operator",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "from:"
+      }
+    },
+    {
+      "id": "s-plain",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-secret-word",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "secret",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "s-zebra",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "zebra",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "recent",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      }
+    },
+    {
+      "id": "recent-table",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "daysBack": 100000,
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "format": "table",
+        "maxResults": 2,
+        "offset": 1
+      }
+    },
+    {
+      "id": "recent-week",
+      "tool": "getRecentMessages",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "note": "The messages are from January 2026, long before the last 7 days: none."
+    },
+    {
+      "id": "um-no-folder",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "so-1@example.com",
+        "folderPath": "",
+        "read": true
+      }
+    },
+    {
+      "id": "um-moveto-empty",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "so-1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "moveTo": ""
+      }
+    },
+    {
+      "id": "um-both",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "so-1@example.com",
+        "messageIds": [
+          "so-2@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "read": true
+      }
+    },
+    {
+      "id": "um-none",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "read": true
+      }
+    },
+    {
+      "id": "um-empty-id",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageIds": [
+          "",
+          "so-1@example.com",
+          "so-nope@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "flagged": true
+      }
+    },
+    {
+      "id": "um-all-unknown",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageIds": [
+          "so-nope@example.com"
+        ],
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "flagged": true
+      }
+    },
+    {
+      "id": "um-tags",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "so-2@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "addTags": [
+          "lab-ok",
+          "bad tag",
+          "(x)"
+        ],
+        "removeTags": [
+          "nothing here"
+        ]
+      }
+    },
+    {
+      "id": "um-flagged",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "flaggedOnly": true
+      }
+    },
+    {
+      "id": "um-tagged",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "tag": "lab-ok"
+      }
+    },
+    {
+      "id": "et-unknown",
+      "tool": "emptyTrash",
+      "timeout": 60,
+      "arguments": {
+        "accountId": "account9"
+      }
+    },
+    {
+      "id": "ej-unknown",
+      "tool": "emptyJunk",
+      "timeout": 60,
+      "arguments": {
+        "accountId": "account9"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-body-empty",
+      "contains": "searchBody requires a non-empty query"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-body-short",
+      "contains": "searchBody needs a term of at least 3 characters. Terms under 3 characters are not searched: ab"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-body-thread",
+      "contains": "threadOf cannot be combined with searchBody"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-body-attachment",
+      "contains": "attachmentName / attachmentType cannot be combined with searchBody"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-body-ok"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-body-ok",
+      "contains": "\"hasMore\":false"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-body-ok",
+      "contains": "\"warning\"",
+      "present": false,
+      "note": "The global search index is off in the lab: the full-text search finds nothing, without an error."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-body-warn"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-body-warn",
+      "contains": "\"warning\":\"Terms under 3 characters are not searched: ab\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-badstart",
+      "contains": "Invalid startDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-badend",
+      "contains": "Invalid endDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "s-legacy-group",
+      "contains": "format \"legacy\" cannot be combined with groupBy"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-bare-operator"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-bare-operator",
+      "contains": "\"totalMatches\":0",
+      "note": "A bare operator matches nothing (an empty query matches everything)."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-bare-operator",
+      "contains": "\"messages\":[]"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-plain"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-plain",
+      "contains": "\"totalMatches\":3"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-plain",
+      "contains": "\"id\":\"so-1@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-plain",
+      "contains": "\"id\":\"so-3@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-plain",
+      "contains": "so-enc@example.com",
+      "present": false,
+      "note": "A search never lists an encrypted message."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-plain",
+      "contains": "SO secret",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-secret-word"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-secret-word",
+      "contains": "\"totalMatches\":0",
+      "note": "The word is in the subject of the encrypted message: a message that a query matched is not listed when it is encrypted."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-zebra"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-zebra",
+      "contains": "\"totalMatches\":0",
+      "note": "The word is in the body only: a header search does not read bodies."
+    },
+    {
+      "type": "tool_ok",
+      "step": "recent"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "\"id\":\"so-enc@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "\"encrypted\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "\"id\":\"so-3@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "\"totalMatches\":4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent",
+      "contains": "\"hasMore\":false"
+    },
+    {
+      "type": "tool_ok",
+      "step": "recent-table"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent-table",
+      "contains": "\"columns\":[\"id\",\"folderPath\",\"date\",\"author\",\"recipients\",\"subject\",\"read\",\"encrypted\"]",
+      "note": "The table has an encrypted column when a row is encrypted."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent-table",
+      "contains": "\"totalMatches\":4,\"offset\":1,\"limit\":2,\"hasMore\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent-table",
+      "contains": "so-2@example.com"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent-table",
+      "contains": "so-3@example.com",
+      "present": false,
+      "note": "Newest first: offset 1 skips the newest message."
+    },
+    {
+      "type": "tool_ok",
+      "step": "recent-week"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recent-week",
+      "contains": "\"totalMatches\":0"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "um-no-folder",
+      "contains": "folderPath must be a non-empty string"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "um-moveto-empty",
+      "contains": "moveTo must be a non-empty string"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "um-both",
+      "contains": "Specify messageId or messageIds, not both"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "um-none",
+      "contains": "messageId or messageIds is required"
+    },
+    {
+      "type": "tool_ok",
+      "step": "um-empty-id"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-empty-id",
+      "contains": "\"updated\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-empty-id",
+      "contains": "\"notFound\":[\"\",\"so-nope@example.com\"]"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "um-all-unknown",
+      "contains": "No matching messages found"
+    },
+    {
+      "type": "tool_ok",
+      "step": "um-tags"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-tags",
+      "contains": "\"actions\":[{\"type\":\"addTags\",\"value\":[\"lab-ok\"]}]",
+      "note": "Tags with a space or a parenthesis are dropped, a tag to remove that is invalid too."
+    },
+    {
+      "type": "tool_ok",
+      "step": "um-flagged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-flagged",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-flagged",
+      "contains": "\"id\":\"so-1@example.com\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "um-tagged"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-tagged",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "um-tagged",
+      "contains": "\"id\":\"so-2@example.com\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "et-unknown",
+      "contains": "Account not found: account9"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "ej-unknown",
+      "contains": "Account not found: account9"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

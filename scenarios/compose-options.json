@@ -1,0 +1,533 @@
+{
+  "name": "compose-options",
+  "description": "sendMail, replyToMessage and forwardMessage beyond the draft modes. Direct sending is allowed for this scenario only (blockSkipReview = false) and the identity has an organization, no name and an automatic Bcc. Two direct sends reach the local mailpit sink: one with an inline attachment and an attachment by path (the Organization header, the automatic Bcc, both attachments in the message), one in HTML with accents (the sender is the bare address). Errors of a direct send: unknown sender identity, a refused attachment path, an attachment that is not base64 (nothing is saved or delivered); dryRun reports the unknown identity, and for a direct send the action, the attachments and the automatic Bcc. Compose windows are opened for a new message, a message with nothing in it, a reply (reply all with explicit recipients, an HTML reply) and a forward (with an intro, cc, bcc and an extra attachment, and an HTML intro): each call answers that the window was opened, nothing is sent or saved, and the extension keeps answering. What the windows show cannot be observed here.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "mail.identity.id1.organization": "Lab Org",
+    "mail.identity.id1.fullName": "",
+    "mail.identity.id1.doBcc": true,
+    "mail.identity.id1.doBccList": "archive@example.com"
+  },
+  "schema_watch": [
+    "sendMail"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: CO thread [co-root]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <co-root@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nRoot of the thread.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: CO forward [co-fwd]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <co-fwd@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"fa\"\n\n--fa\nContent-Type: text/plain; charset=UTF-8\n\nForward me with my attachment.\n\n--fa\nContent-Type: text/plain; name=\"fwd-notes.txt\"\nContent-Disposition: attachment; filename=\"fwd-notes.txt\"\nContent-Transfer-Encoding: base64\n\nRm9yd2FyZGVkIG5vdGVzLgo=\n\n--fa--\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "co-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "send-att",
+      "tool": "sendMail",
+      "timeout": 90,
+      "arguments": {
+        "to": "dest@example.com",
+        "cc": "cc@example.com",
+        "subject": "Direct attach [co-att]",
+        "body": "Body with attachments.",
+        "from": "lab@example.test",
+        "skipReview": true,
+        "attachments": [
+          {
+            "name": "inline.txt",
+            "contentType": "text/plain",
+            "base64": "aW5saW5lIGF0dGFjaG1lbnQgdGV4dAo="
+          },
+          "/opt/tblab/user.js"
+        ]
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "send-html",
+      "tool": "sendMail",
+      "timeout": 90,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Direct html [co-html]",
+        "body": "<p>Hello <b>html</b> and d\u00e9j\u00e0 vu</p>",
+        "isHtml": true,
+        "from": "lab@example.test",
+        "skipReview": true
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "send-badfrom",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Direct bad [co-bad]",
+        "body": "x",
+        "from": "nobody@example.net",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "send-badpath",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Direct bad [co-bad]",
+        "body": "x",
+        "attachments": [
+          "/etc/passwd"
+        ],
+        "skipReview": true
+      }
+    },
+    {
+      "id": "send-badbase64",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Direct bad [co-bad]",
+        "body": "x",
+        "attachments": [
+          {
+            "name": "bad.bin",
+            "base64": "not base64 !!"
+          }
+        ],
+        "skipReview": true
+      }
+    },
+    {
+      "id": "dry-badfrom",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Dry [co-dry]",
+        "body": "x",
+        "from": "nobody@example.net",
+        "dryRun": true
+      }
+    },
+    {
+      "id": "dry-direct",
+      "tool": "sendMail",
+      "timeout": 60,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Dry [co-dry]",
+        "body": "x",
+        "from": "lab@example.test",
+        "dryRun": true,
+        "skipReview": true,
+        "attachments": [
+          {
+            "name": "d.txt",
+            "contentType": "text/plain",
+            "base64": "ZHJ5IGF0dGFjaG1lbnQK"
+          }
+        ]
+      }
+    },
+    {
+      "id": "win-send",
+      "tool": "sendMail",
+      "timeout": 90,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Window mail [co-win]",
+        "body": "Window body.",
+        "cc": "cc@example.com",
+        "bcc": "bcc@example.com",
+        "attachments": [
+          {
+            "name": "w.txt",
+            "contentType": "text/plain",
+            "base64": "d2luZG93IGF0dGFjaG1lbnQK"
+          }
+        ]
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "win-send-html",
+      "tool": "sendMail",
+      "timeout": 90,
+      "arguments": {
+        "to": "dest@example.com",
+        "subject": "Window html [co-winhtml]",
+        "body": "<html><body><p>Window <i>html</i> body.</p></body></html>",
+        "isHtml": true
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "win-empty",
+      "tool": "sendMail",
+      "timeout": 90,
+      "arguments": {
+        "to": "",
+        "subject": "",
+        "body": ""
+      },
+      "wait_after": 3,
+      "note": "A window for a message with nothing in it."
+    },
+    {
+      "id": "win-reply",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "co-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Window reply body.",
+        "replyAll": true,
+        "to": "over@example.com",
+        "cc": "occ@example.com",
+        "bcc": "obcc@example.com",
+        "attachments": [
+          {
+            "name": "rw.txt",
+            "contentType": "text/plain",
+            "base64": "cmVwbHkgd2luZG93IGF0dGFjaG1lbnQK"
+          }
+        ]
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "win-reply-html",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "co-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "<p>Window <b>html</b> reply.</p>",
+        "isHtml": true
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "win-forward",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "co-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "dest@example.com",
+        "body": "Forward window intro.",
+        "cc": "fcc@example.com",
+        "bcc": "fbcc@example.com",
+        "attachments": [
+          {
+            "name": "fw.txt",
+            "contentType": "text/plain",
+            "base64": "Zm9yd2FyZCB3aW5kb3cgYXR0YWNobWVudAo="
+          }
+        ]
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "win-forward-html",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "co-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "<b>Forward html intro</b>",
+        "isHtml": true
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "after",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {},
+      "note": "The extension still answers with compose windows open."
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "send-att"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "send-att",
+      "contains": "\"success\":true,\"message\":\"Message sent\""
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "To",
+      "contains": "dest@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "Cc",
+      "contains": "cc@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "Organization",
+      "contains": "Lab Org"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "Bcc",
+      "contains": "archive@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-att]",
+      "header": "Content-Type",
+      "contains": "multipart/mixed"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[co-att]",
+      "contains": "Body with attachments."
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[co-att]",
+      "contains": "filename=\"inline.txt\""
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[co-att]",
+      "contains": "aW5saW5lIGF0dGFjaG1lbnQgdGV4dAo="
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[co-att]",
+      "contains": "filename=\"user.js\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "send-html"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-html]",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[co-html]",
+      "header": "Organization",
+      "contains": "Lab Org"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[co-html]",
+      "contains": "<p>Hello <b>html</b> and d\u00e9j\u00e0 vu</p>"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-badfrom",
+      "contains": "unknown identity: nobody@example.net"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-badpath",
+      "contains": "Sensitive attachment path blocked: /etc/passwd"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-badbase64",
+      "contains": "must contain valid base64 data"
+    },
+    {
+      "type": "tool_ok",
+      "step": "dry-badfrom"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-badfrom",
+      "contains": "\"wouldSucceed\":false"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-badfrom",
+      "contains": "unknown identity: nobody@example.net"
+    },
+    {
+      "type": "tool_ok",
+      "step": "dry-direct"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-direct",
+      "contains": "\"wouldSucceed\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-direct",
+      "contains": "\"action\":\"send now, without a review window\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-direct",
+      "contains": "\"name\":\"d.txt\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-direct",
+      "contains": "\"bcc\":\"archive@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dry-direct",
+      "contains": "\"from\":\"lab@example.test\"",
+      "note": "The identity has no name here: the sender is the bare address."
+    },
+    {
+      "type": "draft_count",
+      "subject": "[co-bad]",
+      "equals": 0
+    },
+    {
+      "type": "draft_count",
+      "subject": "[co-dry]",
+      "equals": 0
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-send"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-send",
+      "contains": "\"success\":true,\"message\":\"Compose window opened\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-send-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-send-html",
+      "contains": "Compose window opened"
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-empty"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-empty",
+      "contains": "Compose window opened"
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-reply"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-reply",
+      "contains": "\"success\":true,\"message\":\"Reply window opened\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-reply-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-reply-html",
+      "contains": "Reply window opened"
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-forward"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-forward",
+      "contains": "\"success\":true,\"message\":\"Forward window opened\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "win-forward-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "win-forward-html",
+      "contains": "Forward window opened"
+    },
+    {
+      "type": "tool_ok",
+      "step": "after"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[co-win",
+      "equals": 0,
+      "note": "A window is only opened: nothing is saved."
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: CO thread",
+      "equals": 0
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: CO forward",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 2,
+      "note": "Only the two direct sends were delivered; the windows send nothing."
+    }
+  ]
+}

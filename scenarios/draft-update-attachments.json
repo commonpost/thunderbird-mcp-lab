@@ -1,0 +1,444 @@
+{
+  "name": "draft-update-attachments",
+  "description": "saveDraft with draftId and attachments, on drafts seeded in the Drafts folder. The attachments of the old draft are kept and a new one is added (the draft carries both, decoded byte for byte), keepAttachments false drops them (the draft becomes a single text part), keepAttachments false with a new attachment keeps only the new one, a file is attached by path to a plain draft, the body of a forward draft is replaced while the forwarded message and its attachment stay, keepQuote false replaces the whole body of a reply draft and keeps its reply headers, a draft with a detached attachment (a link to a file, which is never opened) is refused with nothing changed unless keepAttachments is false. searchMessages on the Drafts folder shows that each old version is gone and that the refused draft is still there. Not covered: what a compose window shows when it reopens the rewritten draft. Nothing is sent.",
+  "schema_watch": [
+    "saveDraft"
+  ],
+  "seed": [
+    {
+      "folder": "Local Folders/Drafts",
+      "messages": [
+        "Message-ID: <da-keep@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments keep [da-keep]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"da\"\n\n--da\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nBody of the draft with an attachment.\n\n--da\nContent-Type: text/plain; charset=UTF-8; name=\"kept.txt\"\nContent-Disposition: attachment; filename=\"kept.txt\"\nContent-Transfer-Encoding: base64\n\nS2VwdCBhdHRhY2htZW50IHRleHQuCg==\n\n--da--\n",
+        "Message-ID: <da-drop@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments drop [da-drop]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"da\"\n\n--da\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nBody of the draft with an attachment.\n\n--da\nContent-Type: text/plain; charset=UTF-8; name=\"kept.txt\"\nContent-Disposition: attachment; filename=\"kept.txt\"\nContent-Transfer-Encoding: base64\n\nS2VwdCBhdHRhY2htZW50IHRleHQuCg==\n\n--da--\n",
+        "Message-ID: <da-dropadd@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments dropadd [da-dropadd]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"da\"\n\n--da\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nBody of the draft with an attachment.\n\n--da\nContent-Type: text/plain; charset=UTF-8; name=\"kept.txt\"\nContent-Disposition: attachment; filename=\"kept.txt\"\nContent-Transfer-Encoding: base64\n\nS2VwdCBhdHRhY2htZW50IHRleHQuCg==\n\n--da--\n",
+        "Message-ID: <da-path@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments path [da-path]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nPlain draft that gets a file.\n",
+        "Message-ID: <da-fwd@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: dest@example.com\nSubject: Fwd: Draft attachments forward [da-fwd]\nReferences: <rf-fwd@example.com>\nIn-Reply-To: <rf-fwd@example.com>\nX-Forwarded-Message-Id: <rf-fwd@example.com>\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"fw\"\n\n--fw\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOld forward intro.\n\n\n-------- Forwarded Message --------\nSubject: Original forwarded subject\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nFrom: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\n\nForward me with my attachment.\n\n--fw\nContent-Type: text/plain; charset=UTF-8; name=\"fwd-notes.txt\"\nContent-Disposition: attachment; filename=\"fwd-notes.txt\"\nContent-Transfer-Encoding: base64\n\nRm9yd2FyZGVkIG5vdGVzLgo=\n\n--fw--\n",
+        "Message-ID: <da-replydrop@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: Alice Example <alice@example.com>\nSubject: Re: Draft attachments replydrop [da-replydrop]\nReferences: <orig@example.com>\nIn-Reply-To: <orig@example.com>\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOn 1/1/26 10:00 AM, Alice Example wrote:\n> Original line one.\n> Original line two.\nFirst typed reply text.\n",
+        "Message-ID: <da-det@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments detached [da-det]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"dd\"\n\n--dd\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nBody of the draft with a detached attachment.\n\n--dd\nContent-Type: text/plain; name=\"detached.txt\"\nContent-Disposition: attachment; filename=\"detached.txt\"\nX-Mozilla-External-Attachment-URL: file:///etc/hostname\nX-Mozilla-Altered: AttachmentDetached; date=\"Thu Jan 01 10:00:00 2026\"\n\nYou deleted an attachment from this message.\n\n--dd--\n",
+        "Message-ID: <da-det2@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft attachments detached2 [da-det2]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/mixed; boundary=\"dd\"\n\n--dd\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nBody of the draft with a detached attachment.\n\n--dd\nContent-Type: text/plain; name=\"detached.txt\"\nContent-Disposition: attachment; filename=\"detached.txt\"\nX-Mozilla-External-Attachment-URL: file:///etc/hostname\nX-Mozilla-Altered: AttachmentDetached; date=\"Thu Jan 01 10:00:00 2026\"\n\nYou deleted an attachment from this message.\n\n--dd--\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "drafts-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "da-keep@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "u-keep",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-keep@example.test",
+        "subject": "Draft attachments keep [da-keep] v2",
+        "attachments": [
+          {
+            "name": "added.txt",
+            "contentType": "text/plain",
+            "base64": "QWRkZWQgYXR0YWNobWVudCB0ZXh0Lgo="
+          }
+        ]
+      }
+    },
+    {
+      "id": "u-drop",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-drop@example.test",
+        "subject": "Draft attachments drop [da-drop] v2",
+        "keepAttachments": false
+      }
+    },
+    {
+      "id": "u-dropadd",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-dropadd@example.test",
+        "subject": "Draft attachments dropadd [da-dropadd] v2",
+        "keepAttachments": false,
+        "attachments": [
+          {
+            "name": "added.txt",
+            "contentType": "text/plain",
+            "base64": "QWRkZWQgYXR0YWNobWVudCB0ZXh0Lgo="
+          }
+        ]
+      }
+    },
+    {
+      "id": "u-path",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-path@example.test",
+        "subject": "Draft attachments path [da-path] v2",
+        "attachments": [
+          "/opt/tblab/user.js"
+        ]
+      }
+    },
+    {
+      "id": "u-fwd",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-fwd@example.test",
+        "subject": "Fwd: Draft attachments forward [da-fwd] v2",
+        "body": "New forward intro."
+      }
+    },
+    {
+      "id": "u-replydrop",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-replydrop@example.test",
+        "subject": "Re: Draft attachments replydrop [da-replydrop] v2",
+        "body": "Whole new text, quote dropped.",
+        "keepQuote": false
+      }
+    },
+    {
+      "id": "e-detached",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-det@example.test",
+        "subject": "Draft attachments detached [da-det] v2"
+      }
+    },
+    {
+      "id": "u-detached-drop",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "da-det2@example.test",
+        "subject": "Draft attachments detached2 [da-det2] v2",
+        "keepAttachments": false
+      }
+    },
+    {
+      "id": "after",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "Draft attachments",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "maxResults": 50
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "drafts-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-keep"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-keep",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-keep",
+      "contains": "\"replacedDraftId\":\"da-keep@example.test\""
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[da-keep] v2",
+      "filename": "kept.txt",
+      "bytes": 22
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[da-keep] v2",
+      "filename": "added.txt",
+      "bytes": 23
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-keep] v2",
+      "header": "Content-Type",
+      "contains": "multipart/mixed"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-keep] v2",
+      "contains": "Body of the draft with an attachment."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-drop"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-drop",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-drop] v2",
+      "header": "Content-Type",
+      "contains": "text/plain; charset=UTF-8; format=flowed",
+      "note": "No attachment is left: the draft is a single text part."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-drop] v2",
+      "contains": "Body of the draft with an attachment."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-dropadd"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-dropadd",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[da-dropadd] v2",
+      "filename": "added.txt",
+      "bytes": 23
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-dropadd] v2",
+      "header": "Content-Type",
+      "contains": "multipart/mixed"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-dropadd] v2",
+      "contains": "Body of the draft with an attachment."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-path"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-path",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-path] v2",
+      "header": "Content-Type",
+      "contains": "multipart/mixed"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-path] v2",
+      "contains": "filename=\"user.js\""
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-path] v2",
+      "contains": "Plain draft that gets a file."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-fwd"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-fwd",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-fwd] v2",
+      "header": "Subject",
+      "contains": "Fwd: Draft attachments forward [da-fwd] v2"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-fwd] v2",
+      "contains": "New forward intro."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-fwd] v2",
+      "contains": "-------- Forwarded Message --------"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-fwd] v2",
+      "contains": "Subject: Original forwarded subject"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-fwd] v2",
+      "contains": "Forward me with my attachment."
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[da-fwd] v2",
+      "filename": "fwd-notes.txt",
+      "bytes": 17
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-fwd] v2",
+      "header": "References",
+      "contains": "<rf-fwd@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-fwd] v2",
+      "header": "To",
+      "contains": "dest@example.com"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-replydrop"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-replydrop",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-replydrop] v2",
+      "contains": "Whole new text, quote dropped."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-replydrop] v2",
+      "header": "Subject",
+      "contains": "Re: Draft attachments replydrop [da-replydrop] v2"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-replydrop] v2",
+      "header": "References",
+      "contains": "<orig@example.com>",
+      "note": "The reply headers stay."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-detached",
+      "contains": "Attachment refused, nothing was changed"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-detached",
+      "contains": "detached.txt"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-detached",
+      "contains": "only a link to a file or web address"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[da-det] v2",
+      "equals": 0
+    },
+    {
+      "type": "draft_count",
+      "subject": "[da-det]",
+      "equals": 1
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-detached-drop"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-detached-drop",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[da-det2] v2",
+      "header": "Content-Type",
+      "contains": "text/plain; charset=UTF-8; format=flowed",
+      "note": "keepAttachments false drops the detached attachment, which cannot be kept."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[da-det2] v2",
+      "contains": "Body of the draft with a detached attachment."
+    },
+    {
+      "type": "tool_ok",
+      "step": "after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "\"totalMatches\":8"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "\"id\":\"da-det@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-keep@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-drop@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-dropadd@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-path@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-fwd@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-replydrop@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "da-det2@example.test",
+      "present": false
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

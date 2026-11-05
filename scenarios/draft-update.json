@@ -1,0 +1,676 @@
+{
+  "name": "draft-update",
+  "description": "saveDraft with draftId rewrites a draft that is in the Drafts folder (seeded here, so that its message id is known). Each update passes a new subject ending in v2 (except one), so that the new version can be told from the old one that stays in the mbox file until the folder is compacted: the changed fields replace, the omitted ones are kept (recipients, body, subject, reply headers, X-Priority, Reply-To, Content-Language), an empty cc clears the Cc line, a new body of a reply draft replaces only the typed text and keeps the cite line and the quote (plain and HTML), isHtml turns a plain draft into an HTML one when the whole body is replaced, from picks the sender. searchMessages on the Drafts folder shows that the old version is gone and lists one row per draft. Errors: unknown draft, a folder that is not a Drafts folder, an unknown folder, an attachment path that is refused, an encrypted draft (all refused without changing anything). A draft whose X-Identity-Key names an identity that no longer exists keeps the sender of its From line. Not covered: drafts of other accounts, what a compose window shows when it reopens the rewritten draft, attachments (see draft-update-attachments.json). Nothing is sent.",
+  "schema_watch": [
+    "saveDraft"
+  ],
+  "seed": [
+    {
+      "folder": "Local Folders/Drafts",
+      "messages": [
+        "Message-ID: <du-keep@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com, \"Second, Person\" <second@example.com>\nCc: copy@example.com\nBcc: hidden@example.com\nSubject: Draft update keep [du-keep]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOriginal body line one.\nOriginal body line two.\n",
+        "Message-ID: <du-recips@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nCc: copy@example.com\nBcc: hidden@example.com\nSubject: Draft update recipients [du-recips]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nRecipients draft body.\n",
+        "Message-ID: <du-body@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nCc: copy@example.com\nSubject: Draft update body [du-body]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOld body to be replaced.\n",
+        "Message-ID: <du-reply@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: Alice Example <alice@example.com>\nSubject: Re: Draft update reply [du-reply]\nReferences: <orig@example.com>\nIn-Reply-To: <orig@example.com>\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOn 1/1/26 10:00 AM, Alice Example wrote:\n> Original line one.\n> Original line two.\nFirst typed reply text.\n",
+        "Message-ID: <du-html@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update html [du-html]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 7bit\n\n<html><head><meta charset=\"UTF-8\"></head><body><p>Old <i>html</i> draft body.</p></body></html>\n",
+        "Message-ID: <du-tohtml@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update tohtml [du-tohtml]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nPlain draft to become HTML.\n",
+        "Message-ID: <du-meta@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update meta [du-meta]\nX-Priority: 2 (High)\nReply-To: Desk <desk@example.com>\nContent-Language: fr\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nDraft with priority and reply-to.\n",
+        "Message-ID: <du-htmlreply@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: Alice Example <alice@example.com>\nSubject: Re: Draft update htmlreply [du-htmlreply]\nReferences: <orig@example.com>\nIn-Reply-To: <orig@example.com>\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 7bit\n\n<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"></head><body><div class=\"moz-cite-prefix\">On 1/1/26 10:00 AM, Alice Example wrote:<br></div><blockquote type=\"cite\" cite=\"mid:orig@example.com\"><pre wrap class=\"moz-quote-pre\">\nOriginal line one.\nOriginal line two.\n</pre></blockquote><p>First html reply.</p></body></html>\n",
+        "Message-ID: <du-key99@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update key99 [du-key99]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id99\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nDraft of an identity that is gone.\n",
+        "Message-ID: <du-paths@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update paths [du-paths]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nDraft that must stay as it is.\n",
+        "Message-ID: <du-enc@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: first@example.com\nSubject: Draft update encrypted [du-enc]\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "drafts-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "du-keep@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "before",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "Draft update",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "maxResults": 50
+      }
+    },
+    {
+      "id": "u-keep",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-keep@example.test",
+        "body": "Brand new body of the kept draft.\n"
+      }
+    },
+    {
+      "id": "u-recips",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-recips@example.test",
+        "subject": "Draft update recipients [du-recips] v2",
+        "to": "New Person <new@example.com>, other@example.com",
+        "cc": "",
+        "bcc": "newbcc@example.com",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    },
+    {
+      "id": "u-body",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-body@example.test",
+        "subject": "Draft update body [du-body] v2",
+        "body": "Brand new body text.\n"
+      }
+    },
+    {
+      "id": "u-reply",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-reply@example.test",
+        "subject": "Re: Draft update reply [du-reply] v2",
+        "body": "Edited reply text."
+      }
+    },
+    {
+      "id": "u-html",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-html@example.test",
+        "subject": "Draft update html [du-html] v2",
+        "body": "<p>New <b>html</b> body.</p>",
+        "isHtml": true
+      }
+    },
+    {
+      "id": "u-tohtml",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-tohtml@example.test",
+        "subject": "Draft update tohtml [du-tohtml] v2",
+        "body": "<p>Now <b>html</b></p>",
+        "isHtml": true
+      }
+    },
+    {
+      "id": "u-meta",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-meta@example.test",
+        "subject": "Draft update meta [du-meta] v2",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "u-htmlreply",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-htmlreply@example.test",
+        "subject": "Re: Draft update htmlreply [du-htmlreply] v2",
+        "body": "<p>Edited <b>html</b> reply.</p>",
+        "isHtml": true
+      }
+    },
+    {
+      "id": "u-key99",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-key99@example.test",
+        "subject": "Draft update key99 [du-key99] v2"
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "nope@example.test",
+        "subject": "x"
+      }
+    },
+    {
+      "id": "e-not-drafts",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-paths@example.test",
+        "subject": "x",
+        "folderPath": "mailbox://nobody@Local%20Folders/Sent"
+      }
+    },
+    {
+      "id": "e-bad-folder",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-paths@example.test",
+        "subject": "x",
+        "folderPath": "mailbox://nobody@Local%20Folders/Nope"
+      }
+    },
+    {
+      "id": "e-path",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-paths@example.test",
+        "subject": "x v2",
+        "attachments": [
+          "/etc/passwd"
+        ]
+      }
+    },
+    {
+      "id": "e-encrypted",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "du-enc@example.test",
+        "subject": "x v2"
+      }
+    },
+    {
+      "id": "after",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "Draft update",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "maxResults": 50
+      }
+    },
+    {
+      "id": "keep-live",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "du-keep",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    },
+    {
+      "id": "recips-live",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "du-recips",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "drafts-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "before"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "before",
+      "contains": "\"totalMatches\":10",
+      "note": "Ten drafts are listed; the encrypted one is not (a search never lists the subject of an encrypted message)."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-keep"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-keep",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-keep",
+      "contains": "\"replacedDraftId\":\"du-keep@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-keep",
+      "contains": "\"folderPath\":\"mailbox://nobody@Local%20Folders/Drafts\""
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-keep]",
+      "contains": "Brand new body of the kept draft."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "keep-live",
+      "contains": "\"totalMatches\":1",
+      "note": "The old version is removed: one draft is listed."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "keep-live",
+      "contains": "\"subject\":\"Draft update keep [du-keep]\"",
+      "note": "The subject was not passed: it is kept."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "keep-live",
+      "contains": "\"recipients\":\"first@example.com, \\\"Second, Person\\\" <second@example.com>\"",
+      "note": "A name with a comma stays quoted."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "keep-live",
+      "contains": "du-keep@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-recips"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-recips",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-recips",
+      "contains": "\"replacedDraftId\":\"du-recips@example.test\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-recips] v2",
+      "header": "To",
+      "contains": "New Person <new@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-recips] v2",
+      "header": "To",
+      "contains": "other@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-recips] v2",
+      "header": "Bcc",
+      "contains": "newbcc@example.com"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-recips] v2",
+      "contains": "Recipients draft body.",
+      "note": "The body was not passed: it is kept."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recips-live",
+      "contains": "\"totalMatches\":1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recips-live",
+      "contains": "\"recipients\":\"New Person <new@example.com>, other@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recips-live",
+      "contains": "copy@example.com",
+      "present": false,
+      "note": "An empty cc clears the Cc line."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "recips-live",
+      "contains": "ccList",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-body"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-body",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-body] v2",
+      "contains": "Brand new body text."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-body] v2",
+      "header": "Cc",
+      "contains": "copy@example.com",
+      "note": "Recipients that were not passed are kept."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-body] v2",
+      "header": "To",
+      "contains": "first@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-body] v2",
+      "header": "Content-Type",
+      "contains": "text/plain"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-reply"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-reply",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-reply] v2",
+      "header": "Subject",
+      "contains": "Re: Draft update reply [du-reply] v2"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-reply] v2",
+      "header": "References",
+      "contains": "<orig@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-reply] v2",
+      "header": "In-Reply-To",
+      "contains": "<orig@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-reply] v2",
+      "contains": "> Original line one.\r\n> Original line two.\r\nEdited reply text.",
+      "note": "The quote stays, the typed text is replaced where it was typed."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-reply] v2",
+      "contains": "On 1/1/26 10:00 AM, Alice Example wrote:"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-html",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-html] v2",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-html] v2",
+      "contains": "<p>New <b>html</b> body.</p>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-tohtml"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-tohtml",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-tohtml] v2",
+      "header": "Content-Type",
+      "contains": "text/html",
+      "note": "isHtml with a whole new body changes the format of a plain draft."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-tohtml] v2",
+      "contains": "<p>Now <b>html</b></p>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-meta"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-meta",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-meta] v2",
+      "header": "X-Priority",
+      "contains": "2 (High)"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-meta] v2",
+      "header": "Reply-To",
+      "contains": "desk@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-meta] v2",
+      "header": "Content-Language",
+      "contains": "fr"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-meta] v2",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-meta] v2",
+      "contains": "Draft with priority and reply-to."
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-htmlreply"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-htmlreply",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-htmlreply] v2",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-htmlreply] v2",
+      "contains": "<blockquote type=\"cite\" cite=\"mid:orig@example.com\">"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-htmlreply] v2",
+      "contains": "moz-cite-prefix"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-htmlreply] v2",
+      "contains": "</blockquote><p>Edited <b>html</b> reply.</p>",
+      "note": "The cite block stays, the typed HTML replaces the old text after it."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-htmlreply] v2",
+      "header": "References",
+      "contains": "<orig@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "u-key99"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "u-key99",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-key99] v2",
+      "header": "From",
+      "contains": "Lab User <lab@example.test>",
+      "note": "The identity key of the draft is not known any more: the sender is the address of its From line."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[du-key99] v2",
+      "header": "X-Identity-Key",
+      "contains": "id1"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[du-key99] v2",
+      "contains": "Draft of an identity that is gone."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "Draft not found: nope@example.test"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-not-drafts",
+      "contains": "folderPath is not a Drafts folder"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-bad-folder",
+      "contains": "Folder not found"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-path",
+      "contains": "Sensitive attachment path blocked: /etc/passwd"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-encrypted",
+      "contains": "content not sent"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-encrypted",
+      "contains": "nothing was changed"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[du-paths]",
+      "equals": 1,
+      "note": "A refused update leaves the draft alone."
+    },
+    {
+      "type": "draft_count",
+      "subject": "[du-enc]",
+      "equals": 1
+    },
+    {
+      "type": "tool_ok",
+      "step": "after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "\"totalMatches\":10",
+      "note": "Nine drafts were rewritten (the old versions are gone), two were refused (one is not listed, being encrypted)."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "\"id\":\"du-paths@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-keep@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-recips@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-body@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-reply@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-html@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-tohtml@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-meta@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-htmlreply@example.test",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after",
+      "contains": "du-key99@example.test",
+      "present": false
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
