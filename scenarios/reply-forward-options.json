@@ -1,0 +1,1419 @@
+{
+  "name": "reply-forward-options",
+  "description": "replyToMessage and forwardMessage options on seeded messages (POP3 Inbox and Local Folders Sent). Direct sending is allowed for this scenario only (blockSkipReview = false). Reply drafts: the recipients Thunderbird computes (sender, Reply-To, reply all with the other To and Cc recipients without the user's own address, Mail-Followup-To, a mailing-list post), explicit to, cc, bcc and from, attachments (inline and by path), an HTML reply, threading headers and the quote; latestInThread answers the newest message of the conversation, here the user's own answer in Sent (repliedTo says so), or the message itself when it is the newest; a reply to an own message goes to its recipients. Forward drafts: to, cc, bcc, an intro, the original's attachment, X-Forwarded-Message-Id, an HTML intro with no recipient. Direct modes: a reply and a forward sent to the local mailpit sink with their headers, quote, forwarded and extra attachments. Errors: latestInThread with send, send without to or from, a direct reply or forward of an encrypted message, a message with no subject, unknown message or folder, unknown sender identity, a refused attachment path. Not covered: the compose window of a reply or forward (see compose-options.json), several identities (the lab has one), a message without Message-ID. Nothing else is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.blockSkipReview": false
+  },
+  "schema_watch": [
+    "replyToMessage",
+    "forwardMessage"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF encrypted [rf-enc]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nMessage-ID: <rf-nosubject@example.com>\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\nA message with no subject.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF plain [rf-plain]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-plain@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>, Dave Example <dave@example.com>\nSubject: RF all [rf-all]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-all@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF replyto [rf-replyto]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-replyto@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nReply-To: Support Desk <desk@example.com>\nCc: Carol Example <carol@example.com>, lab@example.test\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF replytoall [rf-replytoall]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-replytoall@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nReply-To: Support Desk <desk@example.com>\nCc: Carol Example <carol@example.com>, lab@example.test\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF mft [rf-mft]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-mft@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nMail-Followup-To: Team List <team@lists.example.com>\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF list [rf-list]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-list@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nList-Post: <mailto:dev@lists.example.com>\nList-Id: <dev.lists.example.com>\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF override [rf-override]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-override@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF attach [rf-attach]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-attach@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF html [rf-html]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-html@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/html; charset=UTF-8\n\n<html><body><p>Original <b>html</b> line.</p></body></html>\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF send [rf-send]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-send@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Carol Example <carol@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: LT solo [lt-solo]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-solo@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF forward [rf-fwd]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-fwd@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"fa\"\n\n--fa\nContent-Type: text/plain; charset=UTF-8\n\nForward me with my attachment.\n\n--fa\nContent-Type: text/plain; name=\"fwd-notes.txt\"\nContent-Disposition: attachment; filename=\"fwd-notes.txt\"\nContent-Transfer-Encoding: base64\n\nRm9yd2FyZGVkIG5vdGVzLgo=\n\n--fa--\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF forward html [rf-fwd-html]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-fwd-html@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nPlain message to forward with an HTML introduction.\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RF forward send [rf-fwd-send]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rf-fwd-send@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"fa\"\n\n--fa\nContent-Type: text/plain; charset=UTF-8\n\nForward me with my attachment.\n\n--fa\nContent-Type: text/plain; name=\"fwd-notes.txt\"\nContent-Disposition: attachment; filename=\"fwd-notes.txt\"\nContent-Transfer-Encoding: base64\n\nRm9yd2FyZGVkIG5vdGVzLgo=\n\n--fa--\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: LT thread [lt-root]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <lt-root@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nRoot of the thread.\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: Re: LT thread [lt-root]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <lt-follow@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nIn-Reply-To: <lt-root@example.com>\nReferences: <lt-root@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nFollow-up from Bob.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Sent",
+      "messages": [
+        "From: Lab User <lab@example.test>\nTo: Bob Example <bob@example.com>\nSubject: Re: LT thread [lt-root]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <lt-sent@example.test>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nIn-Reply-To: <lt-follow@example.com>\nReferences: <lt-root@example.com> <lt-follow@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nMy own answer to Bob.\n",
+        "From: Lab User <lab@example.test>\nTo: Carol Example <carol@example.com>\nSubject: Own message [own-1]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <own-1@example.test>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nA message I wrote to Carol.\n",
+        "From: Lab User <lab@example.test>\nTo: Carol Example <carol@example.com>\nSubject: Own all [own-2]\nDate: Mon, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <own-2@example.test>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: Dave Example <dave@example.com>\nContent-Type: text/plain; charset=UTF-8\n\nA message I wrote to Carol and Dave.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "rf-plain@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "sent-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "lt-sent@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Sent",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "r-plain",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-plain@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-all",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-all@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "replyAll": true
+      }
+    },
+    {
+      "id": "r-replyto",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-replyto@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-replyto-all",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-replytoall@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "replyAll": true
+      }
+    },
+    {
+      "id": "r-mft-all",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-mft@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "replyAll": true
+      }
+    },
+    {
+      "id": "r-list",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-list@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-override",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-override@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "to": "over@example.com",
+        "cc": "occ@example.com",
+        "bcc": "obcc@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "r-attach",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-attach@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "attachments": [
+          {
+            "name": "reply-notes.txt",
+            "contentType": "text/plain",
+            "base64": "QXR0YWNoZWQgdG8gdGhlIHJlcGx5Lgo="
+          },
+          "/opt/tblab/user.js"
+        ]
+      }
+    },
+    {
+      "id": "r-html",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-html@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "<p>HTML <b>reply</b></p>",
+        "mode": "draft",
+        "isHtml": true
+      }
+    },
+    {
+      "id": "r-latest",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "lt-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "latestInThread": true
+      }
+    },
+    {
+      "id": "r-solo",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-solo@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "latestInThread": true
+      }
+    },
+    {
+      "id": "r-own",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "own-1@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Sent",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "r-own-all",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "own-2@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Sent",
+        "body": "My reply text.",
+        "mode": "draft",
+        "replyAll": true
+      }
+    },
+    {
+      "id": "f-att",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "to": "dest@example.com",
+        "body": "Please see below.",
+        "cc": "fcc@example.com",
+        "bcc": "fbcc@example.com"
+      }
+    },
+    {
+      "id": "f-html",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd-html@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "isHtml": true,
+        "body": "<b>HTML intro</b>"
+      }
+    },
+    {
+      "id": "e-latest-send",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "lt-root@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "send",
+        "latestInThread": true,
+        "to": "a@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "e-send-noto",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-send@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "send",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "e-send-nofrom",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-send@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "send",
+        "to": "a@example.com"
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "no-such@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "e-folder",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-plain@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Nope",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "e-from",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-plain@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "from": "nobody@example.net"
+      }
+    },
+    {
+      "id": "e-path",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-plain@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft",
+        "attachments": [
+          "/etc/passwd"
+        ]
+      }
+    },
+    {
+      "id": "e-send-enc",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-enc@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "send",
+        "to": "a@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "e-f-send-enc",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-enc@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "send",
+        "to": "a@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "r-nosubject",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-nosubject@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "f-nosubject",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-nosubject@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "to": "dest@example.com"
+      }
+    },
+    {
+      "id": "e-f-noto",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "send",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "e-f-nofrom",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "send",
+        "to": "a@example.com"
+      }
+    },
+    {
+      "id": "e-f-unknown",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "no-such@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "to": "a@example.com"
+      }
+    },
+    {
+      "id": "e-f-folder",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Nope",
+        "mode": "draft",
+        "to": "a@example.com"
+      }
+    },
+    {
+      "id": "e-f-from",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "to": "a@example.com",
+        "from": "nobody@example.net"
+      }
+    },
+    {
+      "id": "e-f-path",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "draft",
+        "to": "a@example.com",
+        "attachments": [
+          "/etc/passwd"
+        ]
+      }
+    },
+    {
+      "id": "s-reply",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-send@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply text.",
+        "mode": "send",
+        "to": "bob@example.com",
+        "cc": "cc@example.com",
+        "bcc": "bcc@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "s-forward",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "rf-fwd-send@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "mode": "send",
+        "to": "dest@example.com",
+        "cc": "fcc@example.com",
+        "body": "Forward intro.",
+        "from": "lab@example.test",
+        "attachments": [
+          {
+            "name": "extra.txt",
+            "contentType": "text/plain",
+            "base64": "ZXh0cmEgYXR0YWNobWVudAo="
+          }
+        ]
+      },
+      "wait_after": 3
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "sent-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-plain"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-plain",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-plain",
+      "contains": "\"to\":\"Alice Example <alice@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-plain",
+      "contains": "\"subject\":\"Re: RF plain [rf-plain]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF plain [rf-plain]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "header": "To",
+      "contains": "Alice Example <alice@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-plain",
+      "contains": "\"cc\":",
+      "present": false
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "header": "References",
+      "contains": "<rf-plain@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "header": "In-Reply-To",
+      "contains": "<rf-plain@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "contains": "> Original line one.\r\n> Original line two.",
+      "note": "The original is quoted, the reply comes after the quote."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF plain [rf-plain]",
+      "contains": "wrote:"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-all",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-all",
+      "contains": "\"to\":\"Alice Example <alice@example.com>, Dave Example <dave@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-all",
+      "contains": "\"subject\":\"Re: RF all [rf-all]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF all [rf-all]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF all [rf-all]",
+      "header": "To",
+      "contains": "Alice Example <alice@example.com>, Dave Example <dave@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF all [rf-all]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-all",
+      "contains": "\"cc\":\"Carol Example <carol@example.com>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF all [rf-all]",
+      "header": "Cc",
+      "contains": "Carol Example <carol@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF all [rf-all]",
+      "header": "References",
+      "contains": "<rf-all@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF all [rf-all]",
+      "header": "In-Reply-To",
+      "contains": "<rf-all@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-replyto"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto",
+      "contains": "\"to\":\"Support Desk <desk@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto",
+      "contains": "\"subject\":\"Re: RF replyto [rf-replyto]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF replyto [rf-replyto]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replyto [rf-replyto]",
+      "header": "To",
+      "contains": "Support Desk <desk@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF replyto [rf-replyto]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto",
+      "contains": "\"cc\":",
+      "present": false
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replyto [rf-replyto]",
+      "header": "References",
+      "contains": "<rf-replyto@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replyto [rf-replyto]",
+      "header": "In-Reply-To",
+      "contains": "<rf-replyto@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-replyto-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto-all",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto-all",
+      "contains": "\"to\":\"Support Desk <desk@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto-all",
+      "contains": "\"subject\":\"Re: RF replytoall [rf-replytoall]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "header": "To",
+      "contains": "Support Desk <desk@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto-all",
+      "contains": "\"cc\":\"Carol Example <carol@example.com>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "header": "Cc",
+      "contains": "Carol Example <carol@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "header": "References",
+      "contains": "<rf-replytoall@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF replytoall [rf-replytoall]",
+      "header": "In-Reply-To",
+      "contains": "<rf-replytoall@example.com>"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-replyto-all",
+      "contains": "\"cc\":\"Carol Example <carol@example.com>\",\"subject\"",
+      "note": "The original Cc lists the user's own address too: it is not in the reply-all recipients."
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-mft-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-mft-all",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-mft-all",
+      "contains": "\"to\":\"Team List <team@lists.example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-mft-all",
+      "contains": "\"subject\":\"Re: RF mft [rf-mft]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF mft [rf-mft]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF mft [rf-mft]",
+      "header": "To",
+      "contains": "Team List <team@lists.example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF mft [rf-mft]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-mft-all",
+      "contains": "\"cc\":",
+      "present": false
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF mft [rf-mft]",
+      "header": "References",
+      "contains": "<rf-mft@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF mft [rf-mft]",
+      "header": "In-Reply-To",
+      "contains": "<rf-mft@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-list"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-list",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-list",
+      "contains": "\"to\":\"Alice Example <alice@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-list",
+      "contains": "\"subject\":\"Re: RF list [rf-list]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF list [rf-list]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF list [rf-list]",
+      "header": "To",
+      "contains": "Alice Example <alice@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF list [rf-list]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-list",
+      "contains": "\"cc\":",
+      "present": false
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF list [rf-list]",
+      "header": "References",
+      "contains": "<rf-list@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF list [rf-list]",
+      "header": "In-Reply-To",
+      "contains": "<rf-list@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-override"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-override",
+      "contains": "\"to\":\"over@example.com\",\"cc\":\"occ@example.com\",\"bcc\":\"obcc@example.com\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF override [rf-override]",
+      "header": "To",
+      "contains": "over@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF override [rf-override]",
+      "header": "Cc",
+      "contains": "occ@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF override [rf-override]",
+      "header": "Bcc",
+      "contains": "obcc@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF override [rf-override]",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF override [rf-override]",
+      "equals": 1
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-attach"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF attach [rf-attach]",
+      "equals": 1
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "Re: RF attach [rf-attach]",
+      "filename": "reply-notes.txt",
+      "bytes": 23
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF attach [rf-attach]",
+      "contains": "filename=\"user.js\""
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF attach [rf-attach]",
+      "contains": "> Original line one."
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-html",
+      "contains": "\"message\":\"Reply draft saved\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: RF html [rf-html]",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF html [rf-html]",
+      "contains": "<p>HTML <b>reply</b></p>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: RF html [rf-html]",
+      "contains": "<blockquote type=\"cite\" cite=\"mid:rf-html@example.com\">"
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: RF html [rf-html]",
+      "equals": 1
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-latest"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-latest",
+      "contains": "\"repliedTo\":{\"messageId\":\"lt-sent@example.test\",\"folderPath\":\"mailbox://nobody@Local%20Folders/Sent\",\"date\":\"2026-01-03T10:00:00.000Z\"}",
+      "note": "The newest message of the conversation is the user's own answer in Sent: it is answered, and the reply goes to its recipient."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-latest",
+      "contains": "\"to\":\"Bob Example <bob@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-latest",
+      "contains": "\"threadIncomplete\"",
+      "present": false
+    },
+    {
+      "type": "draft_count",
+      "subject": "Re: LT thread [lt-root]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: LT thread [lt-root]",
+      "header": "To",
+      "contains": "Bob Example <bob@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: LT thread [lt-root]",
+      "header": "In-Reply-To",
+      "contains": "<lt-sent@example.test>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: LT thread [lt-root]",
+      "header": "References",
+      "contains": "<lt-follow@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: LT thread [lt-root]",
+      "contains": "> My own answer to Bob."
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-solo"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-solo",
+      "contains": "\"repliedTo\"",
+      "present": false,
+      "note": "The message is the newest of its conversation: it is answered itself."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-solo",
+      "contains": "\"to\":\"Alice Example <alice@example.com>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: LT solo [lt-solo]",
+      "header": "In-Reply-To",
+      "contains": "<rf-solo@example.com>"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-own"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-own",
+      "contains": "\"to\":\"Carol Example <carol@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-own",
+      "contains": "\"from\":\"Lab User <lab@example.test>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: Own message [own-1]",
+      "header": "To",
+      "contains": "carol@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: Own message [own-1]",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-own",
+      "contains": "\"cc\":",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-own-all"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-own-all",
+      "contains": "\"to\":\"Carol Example <carol@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-own-all",
+      "contains": "\"cc\":\"Dave Example <dave@example.com>\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Re: Own all [own-2]",
+      "header": "Cc",
+      "contains": "dave@example.com"
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-att"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-att",
+      "contains": "\"message\":\"Forward draft saved with 1 attachment(s)\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-att",
+      "contains": "\"to\":\"dest@example.com\",\"cc\":\"fcc@example.com\",\"bcc\":\"fbcc@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-att",
+      "contains": "\"subject\":\"Fwd: RF forward [rf-fwd]\""
+    },
+    {
+      "type": "draft_count",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "equals": 1
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "header": "To",
+      "contains": "dest@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "header": "Cc",
+      "contains": "fcc@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "header": "Bcc",
+      "contains": "fbcc@example.com"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "header": "References",
+      "contains": "<rf-fwd@example.com>"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "header": "X-Forwarded-Message-Id",
+      "contains": "<rf-fwd@example.com>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "contains": "Please see below."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "contains": "-------- Forwarded Message --------"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "contains": "Forward me with my attachment."
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "Fwd: RF forward [rf-fwd]",
+      "filename": "fwd-notes.txt",
+      "bytes": 17
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-html",
+      "contains": "\"message\":\"Forward draft saved with 0 attachment(s)\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-html",
+      "contains": "\"to\":",
+      "present": false,
+      "note": "A forward draft needs no recipient."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "Fwd: RF forward html [rf-fwd-html]",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward html [rf-fwd-html]",
+      "contains": "<b>HTML intro</b>"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward html [rf-fwd-html]",
+      "contains": "moz-forward-container"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: RF forward html [rf-fwd-html]",
+      "contains": "Plain message to forward with an HTML introduction."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-send-enc",
+      "contains": "content not sent"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-send-enc",
+      "contains": "nothing was sent"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-send-enc",
+      "contains": "content not sent"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-send-enc",
+      "contains": "nothing was sent"
+    },
+    {
+      "type": "tool_ok",
+      "step": "r-nosubject"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-nosubject",
+      "contains": "\"subject\":\"Re: \""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r-nosubject",
+      "contains": "\"to\":\"Alice Example <alice@example.com>\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "f-nosubject"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-nosubject",
+      "contains": "\"subject\":\"Fwd: \""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "f-nosubject",
+      "contains": "\"to\":\"dest@example.com\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-latest-send",
+      "contains": "latestInThread cannot be combined with mode \"send\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-send-noto",
+      "contains": "needs explicit to and from"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-send-nofrom",
+      "contains": "needs explicit to and from"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "Message not found: no-such@example.com"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-folder",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-from",
+      "contains": "unknown identity: nobody@example.net"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-path",
+      "contains": "Sensitive attachment path blocked: /etc/passwd"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-noto",
+      "contains": "needs explicit to and from"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-nofrom",
+      "contains": "needs explicit to and from"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-unknown",
+      "contains": "Message not found: no-such@example.com"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-folder",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-from",
+      "contains": "unknown identity: nobody@example.net"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-f-path",
+      "contains": "Sensitive attachment path blocked: /etc/passwd"
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-reply"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-reply",
+      "contains": "\"message\":\"Reply sent\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-reply",
+      "contains": "\"to\":\"bob@example.com\",\"cc\":\"cc@example.com\",\"bcc\":\"bcc@example.com\""
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Re: RF send [rf-send]",
+      "header": "To",
+      "contains": "bob@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Re: RF send [rf-send]",
+      "header": "Cc",
+      "contains": "cc@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Re: RF send [rf-send]",
+      "header": "In-Reply-To",
+      "contains": "<rf-send@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Re: RF send [rf-send]",
+      "header": "References",
+      "contains": "<rf-send@example.com>"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Re: RF send [rf-send]",
+      "header": "From",
+      "contains": "lab@example.test"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Re: RF send [rf-send]",
+      "contains": "My reply text."
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Re: RF send [rf-send]",
+      "contains": "> Original line one."
+    },
+    {
+      "type": "tool_ok",
+      "step": "s-forward"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "s-forward",
+      "contains": "\"message\":\"Forward sent with 2 attachment(s)\""
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "header": "To",
+      "contains": "dest@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "header": "Cc",
+      "contains": "fcc@example.com"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "header": "X-Forwarded-Message-Id",
+      "contains": "<rf-fwd-send@example.com>"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "contains": "Forward intro."
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "contains": "-------- Forwarded Message --------"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "contains": "filename=\"fwd-notes.txt\""
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "Fwd: RF forward send [rf-fwd-send]",
+      "contains": "filename=\"extra.txt\""
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 2
+    }
+  ]
+}

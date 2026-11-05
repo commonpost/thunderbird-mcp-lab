@@ -1,0 +1,252 @@
+{
+  "name": "signature-file",
+  "description": "An identity whose signature is a text file (attach_signature and sig_file; the file is seeded in the profile, sig_on_reply and sig_on_fwd are on). The signature is added after the separator line to a new draft (plain text, and HTML in a pre block of class moz-signature), to a reply draft after the reply and the quote (plain and HTML) and to a forward draft after the forwarded message. saveDraft with draftId on a reply draft that already carries the signature replaces only the typed text and keeps the quote and the signature. Not covered: an HTML or an image signature file, a signature on a message of a plain-text identity that composes HTML. Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "mail.identity.id1.attach_signature": true,
+    "mail.identity.id1.sig_file": "/lab/profile/Mail/labsig/msgFilterRules.dat",
+    "mail.identity.id1.sig_on_reply": true,
+    "mail.identity.id1.sig_on_fwd": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labsig/msgFilterRules.dat",
+      "content": "Lab Signature line one\nLab Signature line two\n"
+    }
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: SIG original [sg-orig]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <sg-orig@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nOriginal line one.\nOriginal line two.\n"
+      ]
+    },
+    {
+      "folder": "Local Folders/Drafts",
+      "messages": [
+        "Message-ID: <sg-draft@example.test>\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMIME-Version: 1.0\nUser-Agent: Mozilla Thunderbird\nTo: Alice Example <alice@example.com>\nSubject: Re: SIG draft [sg-draft]\nReferences: <sg-orig@example.com>\nIn-Reply-To: <sg-orig@example.com>\nFrom: Lab User <lab@example.test>\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nX-Identity-Key: id1\nFcc: mailbox://nobody@Local%20Folders/Sent\nContent-Type: text/plain; charset=UTF-8; format=flowed\nContent-Transfer-Encoding: 7bit\n\nOn 1/1/26 10:00 AM, Alice Example wrote:\n> Original line one.\n> Original line two.\nMy first reply.\n\n-- \nLab Signature line one\nLab Signature line two\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sg-orig@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "drafts-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "sg-draft@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Drafts",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "new",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "x@example.com",
+        "subject": "SIG new [sg-new]",
+        "body": "Hello new."
+      }
+    },
+    {
+      "id": "new-html",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "x@example.com",
+        "subject": "SIG newhtml [sg-newhtml]",
+        "body": "<p>Hello html.</p>",
+        "isHtml": true
+      }
+    },
+    {
+      "id": "reply",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "sg-orig@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "My reply.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "reply-html",
+      "tool": "replyToMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "sg-orig@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "<p>My html reply.</p>",
+        "isHtml": true,
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "forward",
+      "tool": "forwardMessage",
+      "timeout": 90,
+      "arguments": {
+        "messageId": "sg-orig@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "d@example.com",
+        "body": "Intro.",
+        "mode": "draft"
+      }
+    },
+    {
+      "id": "update",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "draftId": "sg-draft@example.test",
+        "subject": "Re: SIG draft [sg-draft] v2",
+        "body": "Edited reply."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "drafts-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "new"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[sg-new]",
+      "contains": "Hello new.\r\n-- \r\nLab Signature line one\r\nLab Signature line two",
+      "note": "The signature file follows the text, after the separator line."
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[sg-new]",
+      "header": "Content-Type",
+      "contains": "text/plain"
+    },
+    {
+      "type": "tool_ok",
+      "step": "new-html"
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[sg-newhtml]",
+      "header": "Content-Type",
+      "contains": "text/html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[sg-newhtml]",
+      "contains": "<p>Hello html.</p><pre class=\"moz-signature\" cols=72>-- \r\nLab Signature line one\r\nLab Signature line two"
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: SIG original [sg-orig]",
+      "contains": "> Original line two.\r\nMy reply.\r\n\r\n-- \r\nLab Signature line one\r\nLab Signature line two",
+      "note": "sig_on_reply: the signature comes after the reply, which comes after the quote."
+    },
+    {
+      "type": "tool_ok",
+      "step": "reply-html"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Re: SIG original [sg-orig]",
+      "contains": "</blockquote><p>My html reply.</p><pre class=\"moz-signature\" cols=72>-- \r\nLab Signature line one\r\nLab Signature line two"
+    },
+    {
+      "type": "tool_ok",
+      "step": "forward"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: SIG original [sg-orig]",
+      "contains": "Intro.\r\n"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: SIG original [sg-orig]",
+      "contains": "-------- Forwarded Message --------"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "Fwd: SIG original [sg-orig]",
+      "contains": "Original line two.\r\n\r\n-- \r\nLab Signature line one\r\nLab Signature line two",
+      "note": "sig_on_fwd: the signature follows the forwarded message."
+    },
+    {
+      "type": "tool_ok",
+      "step": "update"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "update",
+      "contains": "\"message\":\"Draft updated\""
+    },
+    {
+      "type": "draft_header_contains",
+      "subject": "[sg-draft] v2",
+      "header": "Subject",
+      "contains": "Re: SIG draft [sg-draft] v2"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[sg-draft] v2",
+      "contains": "> Original line two.\r\nEdited reply.\r\n\r\n-- \r\nLab Signature line one\r\nLab Signature line two",
+      "note": "Only the typed text is replaced: the quote and the signature stay."
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[sg-draft] v2",
+      "contains": "wrote:"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

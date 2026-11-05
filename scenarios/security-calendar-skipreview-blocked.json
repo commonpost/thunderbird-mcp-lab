@@ -1,0 +1,124 @@
+{
+  "name": "security-calendar-skipreview-blocked",
+  "description": "Direct creation is blocked by default (blockSkipReview is not set, so it keeps its default, true) for the calendar tools too: createEvent and createTask with skipReview are refused before anything is looked up, and nothing is created; without skipReview createEvent still opens its review dialog (not driven).",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true
+  },
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "event-skip",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab blocked event",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "task-skip",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab blocked task",
+        "dueDate": "2026-12-31",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "event-dialog",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab dialog event",
+        "startDate": "2026-12-11T14:00:00Z",
+        "calendarId": "labstore"
+      },
+      "wait_after": 3,
+      "note": "Without skipReview the review dialog is opened (it is not driven: nothing is created until the user confirms)."
+    },
+    {
+      "id": "events",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "tasks",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "event-skip",
+      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review dialog instead."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "task-skip",
+      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review dialog instead."
+    },
+    {
+      "type": "tool_ok",
+      "step": "event-dialog"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "event-dialog",
+      "contains": "Event dialog opened"
+    },
+    {
+      "type": "tool_ok",
+      "step": "events"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab blocked event",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab dialog event",
+      "present": false,
+      "note": "The dialog was only opened."
+    },
+    {
+      "type": "tool_ok",
+      "step": "tasks"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "tasks",
+      "contains": "Lab blocked task",
+      "present": false
+    }
+  ]
+}

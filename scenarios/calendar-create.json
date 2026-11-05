@@ -1,0 +1,574 @@
+{
+  "name": "calendar-create",
+  "description": "createEvent with skipReview (the setting blockSkipReview is turned off for this scenario) in an empty ics calendar, read back with listEvents and in the .ics file Thunderbird wrote: every field (location, description, status, showAs free, categories, online meeting), an upper-case status, all-day events (one day, a same-day end, an end day after the start, which is the last day of the event), the default calendar when none is named. Errors: bad dates, an end that is not after the start (timed and all-day), unknown, read-only and disabled calendars, a status out of the list, a negative reminder, no title. The review dialog of createEvent is covered by calendar-reminders.json, the refusal of skipReview by security-calendar-skipreview-blocked.json. Nothing is sent.",
+  "prefs": {
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "calendar.list.sortOrder": "labstore labnew labro labdis",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "calendar.registry.labnew.type": "ics",
+    "calendar.registry.labnew.uri": "file:///lab/profile/Mail/labnew/msgFilterRules.dat",
+    "calendar.registry.labnew.name": "Lab new",
+    "calendar.registry.labnew.disabled": false,
+    "calendar.registry.labnew.calendar-main-in-composite": true,
+    "calendar.registry.labro.type": "ics",
+    "calendar.registry.labro.uri": "file:///lab/profile/Mail/labro/msgFilterRules.dat",
+    "calendar.registry.labro.name": "Lab read-only",
+    "calendar.registry.labro.disabled": false,
+    "calendar.registry.labro.calendar-main-in-composite": true,
+    "calendar.registry.labro.readOnly": true,
+    "calendar.registry.labdis.type": "storage",
+    "calendar.registry.labdis.uri": "moz-storage-calendar://",
+    "calendar.registry.labdis.name": "Lab disabled",
+    "calendar.registry.labdis.disabled": true,
+    "calendar.registry.labdis.calendar-main-in-composite": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labnew/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Update//EN\r\nEND:VCALENDAR\r\n"
+    },
+    {
+      "path": "Mail/labro/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Lab//Update//EN\r\nBEGIN:VEVENT\r\nUID:lab-ro-event@example.test\r\nDTSTAMP:20261101T120000Z\r\nDTSTART:20261216T150000Z\r\nDTEND:20261216T160000Z\r\nSUMMARY:Read only event\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    }
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "c-full",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "Created full",
+        "startDate": "2026-12-10T14:00:00Z",
+        "endDate": "2026-12-10T15:30:00Z",
+        "location": "Lab room",
+        "description": "Created by the lab",
+        "status": "tentative",
+        "showAs": "free",
+        "categories": [
+          "Work"
+        ],
+        "onlineMeeting": true
+      }
+    },
+    {
+      "id": "c-cancelled",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "Created cancelled",
+        "startDate": "2026-12-09T14:00:00Z",
+        "status": "CANCELLED",
+        "showAs": "busy"
+      }
+    },
+    {
+      "id": "c-allday",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "Created allday",
+        "startDate": "2026-12-11",
+        "allDay": true
+      }
+    },
+    {
+      "id": "c-allday-range",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "Created allday range",
+        "startDate": "2026-12-12",
+        "endDate": "2026-12-14",
+        "allDay": true
+      },
+      "note": "An all-day event from the 12th to the 14th: listEvents and updateEvent give the last day of an all-day event as endDate."
+    },
+    {
+      "id": "c-allday-same",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "Created allday same",
+        "startDate": "2026-12-16",
+        "endDate": "2026-12-16",
+        "allDay": true
+      }
+    },
+    {
+      "id": "c-default",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Created default calendar",
+        "startDate": "2026-12-17T09:00:00Z",
+        "skipReview": true
+      },
+      "note": "No calendarId: the first writable calendar that is turned on."
+    },
+    {
+      "id": "e-badstart",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "garbage"
+      }
+    },
+    {
+      "id": "e-badend",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z",
+        "endDate": "garbage"
+      }
+    },
+    {
+      "id": "e-endbefore",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z",
+        "endDate": "2026-12-10T13:00:00Z"
+      }
+    },
+    {
+      "id": "e-endsame",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z",
+        "endDate": "2026-12-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "e-allday-before",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10",
+        "endDate": "2026-12-08",
+        "allDay": true
+      }
+    },
+    {
+      "id": "e-nocal",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "nope",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "e-readonly",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labro",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "e-disabled",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labdis",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "e-status",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z",
+        "status": "maybe"
+      }
+    },
+    {
+      "id": "e-reminder",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "title": "x",
+        "startDate": "2026-12-10T14:00:00Z",
+        "reminders": [
+          -1
+        ]
+      }
+    },
+    {
+      "id": "e-title",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labnew",
+        "skipReview": true,
+        "startDate": "2026-12-10T14:00:00Z"
+      }
+    },
+    {
+      "id": "list-new",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labnew"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "list-ro",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labro"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labdis\",\"name\":\"Lab disabled\",\"type\":\"storage\",\"readOnly\":false,\"disabled\":true"
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-full"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-full",
+      "contains": "Event \\\"Created full\\\" added to calendar \\\"Lab new\\\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-cancelled"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-cancelled",
+      "contains": "Event \\\"Created cancelled\\\" added to calendar \\\"Lab new\\\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-allday"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-allday",
+      "contains": "Event \\\"Created allday\\\" added to calendar \\\"Lab new\\\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-allday-range"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-allday-range",
+      "contains": "Event \\\"Created allday range\\\" added to calendar \\\"Lab new\\\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-allday-same"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-allday-same",
+      "contains": "Event \\\"Created allday same\\\" added to calendar \\\"Lab new\\\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "c-default"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "c-default",
+      "contains": "Event \\\"Created default calendar\\\" added to calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-badstart",
+      "contains": "Invalid startDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-badend",
+      "contains": "Invalid endDate: garbage"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-endbefore",
+      "contains": "endDate must be after startDate"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-endsame",
+      "contains": "endDate must be after startDate"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-allday-before",
+      "contains": "endDate must not be before startDate"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-nocal",
+      "contains": "Calendar not found: nope"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-readonly",
+      "contains": "Calendar is read-only: Lab read-only"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-disabled",
+      "contains": "Calendar is disabled: Lab disabled"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-status",
+      "contains": "Parameter 'status' must be one of"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-reminder",
+      "contains": "Parameter 'reminders[0]' must be >= 0"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-title",
+      "contains": "Missing required parameter: title"
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-new"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "Created full"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"status\":\"tentative\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"status\":\"cancelled\"",
+      "note": "STATUS is case-insensitive."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"categories\":[\"Work\"]"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "Lab room"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"startDate\":\"2026-12-11T00:00:00.000Z\",\"endDate\":\"2026-12-11T00:00:00.000Z\"",
+      "note": "An all-day event without endDate lasts that one day."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"startDate\":\"2026-12-16T00:00:00.000Z\",\"endDate\":\"2026-12-16T00:00:00.000Z\"",
+      "note": "endDate equal to startDate: still that one day."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "\"startDate\":\"2026-12-12T00:00:00.000Z\",\"endDate\":\"2026-12-14T00:00:00.000Z\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-new",
+      "contains": "Created default calendar",
+      "present": false,
+      "note": "The event of the default calendar is not in this one."
+    },
+    {
+      "type": "tool_ok",
+      "step": "list-ro"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ro",
+      "contains": "Read only event"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "list-ro",
+      "contains": "Created",
+      "present": false,
+      "note": "Nothing was created in the read-only calendar."
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "SUMMARY:Created full"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "STATUS:TENTATIVE"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "STATUS:CANCELLED"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "TRANSP:TRANSPARENT"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "TRANSP:OPAQUE"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "CATEGORIES:Work"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "LOCATION:Lab room"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DESCRIPTION:Created by the lab"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "X-ONLINE-MEETING-PROVIDER:TeamsForBusiness"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTSTART;VALUE=DATE:20261211"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTEND;VALUE=DATE:20261212"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTSTART;VALUE=DATE:20261216"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTEND;VALUE=DATE:20261217"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "STATUS:CONFIRMED"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTSTART:20261210T140000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTEND:20261210T153000Z"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "Created default calendar",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labnew/msgFilterRules.dat",
+      "contains": "DTEND;VALUE=DATE:20261215"
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/labnew/msgFilterRules.dat"
+    ]
+  }
+}

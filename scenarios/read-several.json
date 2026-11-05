@@ -1,0 +1,2304 @@
+{
+  "name": "read-several",
+  "description": "Reading several messages in one call. getMessages (the add-on setting getMessagesLimit is 5) on seeded POP3 messages: plain, HTML, with attachments and encrypted (content withheld), with bodyFormat, a body cut by maxBodyChars and continued with getMessage bodyOffset, rawSource as text and as base64, saveAttachments with the saved files attached again to a draft; the errors of single items (empty id, empty folder, unknown message, unknown folder) are reported next to the messages that were read, and a call above the limit, an empty list and an item without folderPath are refused. getMessages with headersOnly: the headers of three messages, the same item errors, and a call of 200 references to a message with very long headers that runs out of its result budget (the rest is reported as not read, incomplete is true); 201 items are refused. Not covered: messages that are not stored locally (IMAP), the JSON-string form of the messages argument (the extension turns it into an array first). Nothing is sent.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+    "extensions.commonpost-mcp.getMessagesLimit": 5
+  },
+  "schema_watch": [
+    "getMessages"
+  ],
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RS plain [rs-1]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <rs-1@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nFirst message: the body is long enough to be cut by a small limit.\n",
+        "From: Bob Example <bob@example.com>\nTo: Lab User <lab@example.test>\nSubject: RS html [rs-2]\nDate: Fri, 02 Jan 2026 10:00:00 +0000\nMessage-ID: <rs-2@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/html; charset=UTF-8\n\n<html><body><h2>Second</h2><p>HTML <b>message</b>.</p></body></html>\n",
+        "From: Carol Example <carol@example.com>\nTo: Lab User <lab@example.test>\nSubject: RS attachments [rs-3]\nDate: Sat, 03 Jan 2026 10:00:00 +0000\nMessage-ID: <rs-3@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/mixed; boundary=\"ra\"\n\n--ra\nContent-Type: text/plain; charset=UTF-8\n\nBody of the message with two attachments.\n\n--ra\nContent-Type: text/plain; name=\"rs-notes.txt\"\nContent-Disposition: attachment; filename=\"rs-notes.txt\"\nContent-Transfer-Encoding: base64\n\neHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHg=\n\n--ra\nContent-Type: application/octet-stream; name=\"rs-data.bin\"\nContent-Disposition: attachment; filename=\"rs-data.bin\"\nContent-Transfer-Encoding: base64\n\nAAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsc=\n\n--ra--\n",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: RS encrypted [rs-enc]\nDate: Sun, 04 Jan 2026 10:00:00 +0000\nMessage-ID: <rs-enc@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/encrypted; protocol=\"application/pgp-encrypted\"; boundary=\"enc\"\n\n--enc\nContent-Type: application/pgp-encrypted\n\nVersion: 1\n\n--enc\nContent-Type: application/octet-stream; name=\"encrypted.asc\"\n\n-----BEGIN PGP MESSAGE-----\n\nhQEMA0000000000000\n=abcd\n-----END PGP MESSAGE-----\n\n--enc--\n",
+        "From: Alice Example <alice@example.com>\nTo: recipient001@example.com, recipient002@example.com, recipient003@example.com, recipient004@example.com, recipient005@example.com, recipient006@example.com, recipient007@example.com, recipient008@example.com, recipient009@example.com, recipient010@example.com, recipient011@example.com, recipient012@example.com, recipient013@example.com, recipient014@example.com, recipient015@example.com, recipient016@example.com, recipient017@example.com, recipient018@example.com, recipient019@example.com, recipient020@example.com, recipient021@example.com, recipient022@example.com, recipient023@example.com, recipient024@example.com, recipient025@example.com, recipient026@example.com, recipient027@example.com, recipient028@example.com, recipient029@example.com, recipient030@example.com, recipient031@example.com, recipient032@example.com, recipient033@example.com, recipient034@example.com, recipient035@example.com, recipient036@example.com, recipient037@example.com, recipient038@example.com, recipient039@example.com, recipient040@example.com, recipient041@example.com, recipient042@example.com, recipient043@example.com, recipient044@example.com, recipient045@example.com, recipient046@example.com, recipient047@example.com, recipient048@example.com, recipient049@example.com, recipient050@example.com, recipient051@example.com, recipient052@example.com, recipient053@example.com, recipient054@example.com, recipient055@example.com, recipient056@example.com, recipient057@example.com, recipient058@example.com, recipient059@example.com, recipient060@example.com, recipient061@example.com, recipient062@example.com, recipient063@example.com, recipient064@example.com, recipient065@example.com, recipient066@example.com, recipient067@example.com, recipient068@example.com, recipient069@example.com, recipient070@example.com, recipient071@example.com, recipient072@example.com, recipient073@example.com, recipient074@example.com, recipient075@example.com, recipient076@example.com, recipient077@example.com, recipient078@example.com, recipient079@example.com, recipient080@example.com, recipient081@example.com, recipient082@example.com, recipient083@example.com, recipient084@example.com, recipient085@example.com, recipient086@example.com, recipient087@example.com, recipient088@example.com, recipient089@example.com, recipient090@example.com, recipient091@example.com, recipient092@example.com, recipient093@example.com, recipient094@example.com, recipient095@example.com, recipient096@example.com, recipient097@example.com, recipient098@example.com, recipient099@example.com, recipient100@example.com, recipient101@example.com, recipient102@example.com, recipient103@example.com, recipient104@example.com, recipient105@example.com, recipient106@example.com, recipient107@example.com, recipient108@example.com, recipient109@example.com, recipient110@example.com, recipient111@example.com, recipient112@example.com, recipient113@example.com, recipient114@example.com, recipient115@example.com, recipient116@example.com, recipient117@example.com, recipient118@example.com, recipient119@example.com\nSubject: RS big headers [rs-big]\nDate: Mon, 05 Jan 2026 10:00:00 +0000\nMessage-ID: <rs-big@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nCc: recipient001@example.com, recipient002@example.com, recipient003@example.com, recipient004@example.com, recipient005@example.com, recipient006@example.com, recipient007@example.com, recipient008@example.com, recipient009@example.com, recipient010@example.com, recipient011@example.com, recipient012@example.com, recipient013@example.com, recipient014@example.com, recipient015@example.com, recipient016@example.com, recipient017@example.com, recipient018@example.com, recipient019@example.com, recipient020@example.com, recipient021@example.com, recipient022@example.com, recipient023@example.com, recipient024@example.com, recipient025@example.com, recipient026@example.com, recipient027@example.com, recipient028@example.com, recipient029@example.com, recipient030@example.com, recipient031@example.com, recipient032@example.com, recipient033@example.com, recipient034@example.com, recipient035@example.com, recipient036@example.com, recipient037@example.com, recipient038@example.com, recipient039@example.com, recipient040@example.com, recipient041@example.com, recipient042@example.com, recipient043@example.com, recipient044@example.com, recipient045@example.com, recipient046@example.com, recipient047@example.com, recipient048@example.com, recipient049@example.com, recipient050@example.com, recipient051@example.com, recipient052@example.com, recipient053@example.com, recipient054@example.com, recipient055@example.com, recipient056@example.com, recipient057@example.com, recipient058@example.com, recipient059@example.com, recipient060@example.com, recipient061@example.com, recipient062@example.com, recipient063@example.com, recipient064@example.com, recipient065@example.com, recipient066@example.com, recipient067@example.com, recipient068@example.com, recipient069@example.com, recipient070@example.com, recipient071@example.com, recipient072@example.com, recipient073@example.com, recipient074@example.com, recipient075@example.com, recipient076@example.com, recipient077@example.com, recipient078@example.com, recipient079@example.com, recipient080@example.com, recipient081@example.com, recipient082@example.com, recipient083@example.com, recipient084@example.com, recipient085@example.com, recipient086@example.com, recipient087@example.com, recipient088@example.com, recipient089@example.com, recipient090@example.com, recipient091@example.com, recipient092@example.com, recipient093@example.com, recipient094@example.com, recipient095@example.com, recipient096@example.com, recipient097@example.com, recipient098@example.com, recipient099@example.com, recipient100@example.com, recipient101@example.com, recipient102@example.com, recipient103@example.com, recipient104@example.com, recipient105@example.com, recipient106@example.com, recipient107@example.com, recipient108@example.com, recipient109@example.com, recipient110@example.com, recipient111@example.com, recipient112@example.com, recipient113@example.com, recipient114@example.com, recipient115@example.com, recipient116@example.com, recipient117@example.com, recipient118@example.com, recipient119@example.com\nReferences: <ref001@example.com> <ref002@example.com> <ref003@example.com> <ref004@example.com> <ref005@example.com> <ref006@example.com> <ref007@example.com> <ref008@example.com> <ref009@example.com> <ref010@example.com> <ref011@example.com> <ref012@example.com> <ref013@example.com> <ref014@example.com> <ref015@example.com> <ref016@example.com> <ref017@example.com> <ref018@example.com> <ref019@example.com> <ref020@example.com> <ref021@example.com> <ref022@example.com> <ref023@example.com> <ref024@example.com> <ref025@example.com> <ref026@example.com> <ref027@example.com> <ref028@example.com> <ref029@example.com> <ref030@example.com> <ref031@example.com> <ref032@example.com> <ref033@example.com> <ref034@example.com> <ref035@example.com> <ref036@example.com> <ref037@example.com> <ref038@example.com> <ref039@example.com> <ref040@example.com> <ref041@example.com> <ref042@example.com> <ref043@example.com> <ref044@example.com> <ref045@example.com> <ref046@example.com> <ref047@example.com> <ref048@example.com> <ref049@example.com> <ref050@example.com> <ref051@example.com> <ref052@example.com> <ref053@example.com> <ref054@example.com> <ref055@example.com> <ref056@example.com> <ref057@example.com> <ref058@example.com> <ref059@example.com> <ref060@example.com> <ref061@example.com> <ref062@example.com> <ref063@example.com> <ref064@example.com> <ref065@example.com> <ref066@example.com> <ref067@example.com> <ref068@example.com> <ref069@example.com> <ref070@example.com> <ref071@example.com> <ref072@example.com> <ref073@example.com> <ref074@example.com> <ref075@example.com> <ref076@example.com> <ref077@example.com> <ref078@example.com> <ref079@example.com> <ref080@example.com> <ref081@example.com> <ref082@example.com> <ref083@example.com> <ref084@example.com> <ref085@example.com> <ref086@example.com> <ref087@example.com> <ref088@example.com> <ref089@example.com> <ref090@example.com> <ref091@example.com> <ref092@example.com> <ref093@example.com> <ref094@example.com> <ref095@example.com> <ref096@example.com> <ref097@example.com> <ref098@example.com> <ref099@example.com>\nList-Id: <xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.example.com>\nContent-Type: text/plain; charset=UTF-8\n\nBody.\n"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "rs-1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "index-ready-big",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "rs-big@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "several",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-2@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-3@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-enc@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ],
+        "bodyFormat": "text",
+        "maxBodyChars": 20
+      },
+      "note": "The limit set below is 5 messages per call; a body is cut at 20 characters."
+    },
+    {
+      "id": "several-markdown",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-2@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    },
+    {
+      "id": "several-raw",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-2@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ],
+        "rawSource": true,
+        "maxBodyChars": 300
+      }
+    },
+    {
+      "id": "several-raw-b64",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ],
+        "rawSource": true,
+        "rawEncoding": "base64",
+        "maxBodyChars": 100
+      }
+    },
+    {
+      "id": "several-save",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-3@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ],
+        "saveAttachments": true,
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "rest-of-body",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "rs-1@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text",
+        "maxBodyChars": 100,
+        "bodyOffset": 20
+      },
+      "note": "getMessages cut the body of rs-1 at 20 characters: getMessage with bodyOffset reads the rest."
+    },
+    {
+      "id": "attach-saved",
+      "tool": "saveDraft",
+      "timeout": 90,
+      "arguments": {
+        "to": "x@example.com",
+        "subject": "RS saved attachments [rs-saved]",
+        "body": "Saved by getMessages, attached again.",
+        "attachments": [
+          "/tmp/commonpost-mcp/rs_3_example_com/rs-notes.txt",
+          "/tmp/commonpost-mcp/rs_3_example_com/rs-data.bin"
+        ]
+      },
+      "draft_subject": "[rs-saved]",
+      "draft_wait": 60
+    },
+    {
+      "id": "item-errors",
+      "tool": "getMessages",
+      "timeout": 90,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": ""
+          },
+          {
+            "messageId": "rs-nope@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Nope"
+          }
+        ],
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "too-many",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-list",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "messages": []
+      }
+    },
+    {
+      "id": "bad-item",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "messages": [
+          {
+            "messageId": "rs-1@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "headers",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "headersOnly": true,
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-3@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-enc@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    },
+    {
+      "id": "headers-errors",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "headersOnly": true,
+        "messages": [
+          {
+            "messageId": "",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": ""
+          },
+          {
+            "messageId": "rs-nope@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Nope"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    },
+    {
+      "id": "headers-budget",
+      "tool": "getMessages",
+      "timeout": 120,
+      "arguments": {
+        "headersOnly": true,
+        "messages": [
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-big@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      },
+      "note": "Each entry is several thousand characters (headers are cut at 2000): the 400000-character budget runs out and the remaining messages are reported as not read."
+    },
+    {
+      "id": "headers-too-many",
+      "tool": "getMessages",
+      "timeout": 60,
+      "arguments": {
+        "headersOnly": true,
+        "messages": [
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          },
+          {
+            "messageId": "rs-1@example.com",
+            "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready-big"
+    },
+    {
+      "type": "tool_ok",
+      "step": "several"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"requested\":4,\"succeeded\":4,\"failed\":0,\"max\":5"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"index\":0,\"messageId\":\"rs-1@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"index\":3,\"messageId\":\"rs-enc@example.com\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"bodyTotalChars\":",
+      "note": "Bodies are cut at 20 characters."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"bodyTruncated\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"nextBodyOffset\":20"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"encrypted\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"name\":\"rs-notes.txt\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "\"name\":\"rs-data.bin\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "hQEMA0000000000000",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "First message: the b"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several",
+      "contains": "is long enough to be cut",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "several-markdown"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-markdown",
+      "contains": "## Second"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-markdown",
+      "contains": "HTML **message**."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-markdown",
+      "contains": "\"succeeded\":2,\"failed\":0,\"max\":5"
+    },
+    {
+      "type": "tool_ok",
+      "step": "several-raw"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw",
+      "contains": "\"rawCharset\":\"utf-8\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw",
+      "contains": "Message-ID: <rs-1@example.com>"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw",
+      "contains": "Message-ID: <rs-2@example.com>"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw",
+      "contains": "\"bodyIsHtml\"",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "several-raw-b64"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw-b64",
+      "contains": "\"rawEncoding\":\"base64\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw-b64",
+      "contains": "RnJvbTogQWxpY2UgRXhhbXBsZSA8YWxpY2VAZXhhbXBsZS5jb20+DQpUbzogTGFiIFVzZXIgPGxhYkBleGFtcGxlLnRlc3Q+DQpT"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-raw-b64",
+      "contains": "\"nextBodyOffset\":100"
+    },
+    {
+      "type": "tool_ok",
+      "step": "several-save"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-save",
+      "contains": "\"filePath\":\"/tmp/commonpost-mcp/rs_3_example_com/rs-notes.txt\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "several-save",
+      "contains": "\"filePath\":\"/tmp/commonpost-mcp/rs_3_example_com/rs-data.bin\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "rest-of-body"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "rest-of-body",
+      "contains": "\"bodyOffset\":20"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "rest-of-body",
+      "contains": "is long enough to be cut by a small limit."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "rest-of-body",
+      "contains": "First message:",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "attach-saved"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[rs-saved]",
+      "equals": 1
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[rs-saved]",
+      "filename": "rs-notes.txt",
+      "bytes": 500,
+      "byte": 120
+    },
+    {
+      "type": "draft_attachment",
+      "subject": "[rs-saved]",
+      "filename": "rs-data.bin",
+      "bytes": 200
+    },
+    {
+      "type": "tool_ok",
+      "step": "item-errors"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "\"requested\":5,\"succeeded\":1,\"failed\":4,\"max\":5"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "messageId must be a non-empty string"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "folderPath must be a non-empty string"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "Message not found: rs-nope@example.com"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "item-errors",
+      "contains": "First message: the body is long enough to be cut by a small limit."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "too-many",
+      "contains": "getMessages accepts at most 5 messages per call"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "empty-list",
+      "contains": "Parameter 'messages' must contain at least 1 item(s)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "bad-item",
+      "contains": "Missing required parameter: messages[0].folderPath"
+    },
+    {
+      "type": "tool_ok",
+      "step": "headers"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"requested\":3,\"succeeded\":3,\"failed\":0"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"headerSource\":\"message\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"messageId\":\"<rs-3@example.com>\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"subject\":\"RS attachments [rs-3]\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers",
+      "contains": "\"subject\":\"RS encrypted [rs-enc]\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "headers-errors"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "\"requested\":5,\"succeeded\":1,\"failed\":4"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "Each item needs a non-empty messageId and folderPath"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "Message not found: rs-nope@example.com"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "Folder not found: mailbox://lab@127.0.0.1/Nope"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "\"subject\":\"RS plain [rs-1]\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-errors",
+      "contains": "\"incomplete\"",
+      "present": false
+    },
+    {
+      "type": "tool_ok",
+      "step": "headers-budget"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-budget",
+      "contains": "\"requested\":200"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-budget",
+      "contains": "\"incomplete\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-budget",
+      "contains": "Not read: the result reached its size limit; ask for the rest in another call"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-budget",
+      "contains": "... (truncated)",
+      "note": "Long header values are cut at 2000 characters."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "headers-budget",
+      "contains": "\"messageId\":\"<rs-big@example.com>\""
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "headers-too-many",
+      "contains": "Parameter 'messages' must contain at most 200 item(s)"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
