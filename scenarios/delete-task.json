@@ -1,0 +1,527 @@
+{
+  "name": "delete-task",
+  "description": "deleteTask (new in 0.19.0) in an ics calendar seeded with an event and four tasks (one completed, one that recurs weekly). A task is deleted by taskId and calendarId with no review dialog and with the default blockSkipReview, and it is gone from listTasks and from the .ics file Thunderbird wrote, while the other tasks stay; a recurring task goes with its whole series and a warning. The id of an event is refused (Task not found) by deleteTask and by updateTask, and the event stays unchanged in listEvents and in the file. Errors: a task already deleted, an unknown task, a task looked up in another calendar, an unknown calendar, a read-only calendar (its task stays), no taskId, no calendarId. The definition of the tool in tools/list (required parameters, destructive, not read-only) and the pointer from updateTask. A task created by a tool gets a generated id that a scenario cannot pass to a later step (see tasks-categories.json), so the tasks deleted here are seeded ones. The tool disabled by an earlier restriction is covered by new-tools-disabled.json. Nothing is sent.",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore labdel labro",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "calendar.registry.labdel.type": "ics",
+    "calendar.registry.labdel.uri": "file:///lab/profile/Mail/labdel/msgFilterRules.dat",
+    "calendar.registry.labdel.name": "Lab delete",
+    "calendar.registry.labdel.disabled": false,
+    "calendar.registry.labdel.calendar-main-in-composite": true,
+    "calendar.registry.labro.type": "ics",
+    "calendar.registry.labro.uri": "file:///lab/profile/Mail/labrodel/msgFilterRules.dat",
+    "calendar.registry.labro.name": "Lab read-only",
+    "calendar.registry.labro.disabled": false,
+    "calendar.registry.labro.calendar-main-in-composite": true,
+    "calendar.registry.labro.readOnly": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labdel/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Lab//DeleteTask//EN\nBEGIN:VEVENT\nUID:lab-del-evt-1@example.test\nDTSTAMP:20261101T120000Z\nDTSTART:20261215T150000Z\nDTEND:20261215T160000Z\nSUMMARY:Seeded event one\nLOCATION:Room 1\nDESCRIPTION:Event description\nEND:VEVENT\nBEGIN:VTODO\nUID:lab-del-todo-1@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task one\nDUE:20261220T120000Z\nPRIORITY:5\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-todo-2@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task two\nDUE:20261225T120000Z\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-todo-3@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task three\nDUE:20261230T120000Z\nSTATUS:COMPLETED\nPERCENT-COMPLETE:100\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-weekly@example.test\nDTSTAMP:20261101T120000Z\nDTSTART:20261201T100000Z\nDUE:20261201T110000Z\nSUMMARY:Seeded weekly task\nRRULE:FREQ=WEEKLY;COUNT=4\nEND:VTODO\nEND:VCALENDAR\n"
+    },
+    {
+      "path": "Mail/labrodel/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Lab//DeleteTask//EN\nBEGIN:VTODO\nUID:lab-del-ro-todo@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Read only task\nDUE:20261222T120000Z\nEND:VTODO\nEND:VCALENDAR\n"
+    }
+  ],
+  "schema_watch": [
+    "deleteTask"
+  ],
+  "tools_dump": [
+    "deleteTask",
+    "updateTask"
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "lt-before",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labdel"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      },
+      "note": "The ics calendars load asynchronously; retried only on error."
+    },
+    {
+      "id": "dt-one",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-1@example.test",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "lt-after",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "dt-again",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-1@example.test",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "dt-done-task",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-3@example.test",
+        "calendarId": "labdel"
+      },
+      "note": "A completed task is deleted like any other."
+    },
+    {
+      "id": "dt-weekly",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-weekly@example.test",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "dt-event",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-evt-1@example.test",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "ut-event",
+      "tool": "updateTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-evt-1@example.test",
+        "calendarId": "labdel",
+        "title": "Renamed by updateTask",
+        "priority": 1
+      }
+    },
+    {
+      "id": "le-after",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "e-no-task",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "e-no-calendar",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-2@example.test"
+      }
+    },
+    {
+      "id": "e-calendar",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-2@example.test",
+        "calendarId": "no-such-calendar"
+      }
+    },
+    {
+      "id": "e-unknown",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "no-such-task",
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "e-other-calendar",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-2@example.test",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "e-readonly",
+      "tool": "deleteTask",
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-ro-todo@example.test",
+        "calendarId": "labro"
+      }
+    },
+    {
+      "id": "lt-final",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labdel"
+      }
+    },
+    {
+      "id": "lt-ro",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labro"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "deleteTask"
+    },
+    {
+      "type": "schema_has",
+      "tool": "deleteTask",
+      "property": "taskId"
+    },
+    {
+      "type": "schema_has",
+      "tool": "deleteTask",
+      "property": "calendarId"
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "deleteTask",
+      "path": "inputSchema.required",
+      "equals": [
+        "taskId",
+        "calendarId"
+      ]
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "deleteTask",
+      "path": "annotations.destructiveHint",
+      "equals": true
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "deleteTask",
+      "path": "annotations.readOnlyHint",
+      "equals": false
+    },
+    {
+      "type": "tool_json_contains",
+      "tool": "updateTask",
+      "path": "description",
+      "contains": "deleteTask"
+    },
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "cals",
+      "contains": "\"id\":\"labdel\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-before"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded task two"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded task three"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded weekly task"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded event one",
+      "present": false,
+      "note": "listTasks lists tasks only."
+    },
+    {
+      "type": "tool_ok",
+      "step": "dt-one",
+      "note": "A deletion has no review dialog and is no skipReview: it works with the default blockSkipReview."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-one",
+      "contains": "\"success\":true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-one",
+      "contains": "\"deleted\":\"lab-del-todo-1@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-one",
+      "contains": "recurring",
+      "present": false,
+      "note": "No warning for a task that does not recur."
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Seeded task one",
+      "present": false,
+      "note": "The deleted task is gone from listTasks."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Seeded task two",
+      "note": "The other tasks are untouched."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Seeded task three"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "dt-again",
+      "contains": "Task not found: lab-del-todo-1@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "dt-done-task"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-done-task",
+      "contains": "\"deleted\":\"lab-del-todo-3@example.test\""
+    },
+    {
+      "type": "tool_ok",
+      "step": "dt-weekly"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-weekly",
+      "contains": "\"deleted\":\"lab-del-weekly@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dt-weekly",
+      "contains": "This was a recurring task -- the entire series was deleted."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "dt-event",
+      "contains": "Task not found: lab-del-evt-1@example.test",
+      "note": "An event's id is refused: deleteTask only deletes tasks."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "ut-event",
+      "contains": "Task not found: lab-del-evt-1@example.test",
+      "note": "updateTask refuses the id of an event too (0.19.0)."
+    },
+    {
+      "type": "tool_ok",
+      "step": "le-after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "\"id\":\"lab-del-evt-1@example.test\"",
+      "note": "The event is still there, with its title, location and description."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Seeded event one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Room 1"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Event description"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "le-after",
+      "contains": "Renamed by updateTask",
+      "present": false
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-no-task",
+      "contains": "Missing required parameter: taskId"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-no-calendar",
+      "contains": "Missing required parameter: calendarId"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-calendar",
+      "contains": "Calendar not found: no-such-calendar"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-unknown",
+      "contains": "Task not found: no-such-task"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-other-calendar",
+      "contains": "Task not found: lab-del-todo-2@example.test",
+      "note": "Only the named calendar is searched."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "e-readonly",
+      "contains": "Calendar is read-only: Lab read-only"
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-final"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "Seeded task two",
+      "note": "Still there after every refusal."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "Seeded task one",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "Seeded task three",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-final",
+      "contains": "Seeded weekly task",
+      "present": false,
+      "note": "The whole series is gone."
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-ro"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-ro",
+      "contains": "Read only task",
+      "note": "The read-only calendar keeps its task."
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "UID:lab-del-todo-1@example.test",
+      "present": false,
+      "note": "The deleted task is gone from the file Thunderbird wrote."
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "UID:lab-del-todo-3@example.test",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "UID:lab-del-weekly@example.test",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "UID:lab-del-todo-2@example.test"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "UID:lab-del-evt-1@example.test",
+      "note": "The event is still in the file, as seeded."
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "SUMMARY:Seeded event one"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "LOCATION:Room 1"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labdel/msgFilterRules.dat",
+      "contains": "Renamed by updateTask",
+      "present": false
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/labdel/msgFilterRules.dat"
+    ]
+  }
+}
