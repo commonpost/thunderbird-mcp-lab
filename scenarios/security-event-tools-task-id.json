@@ -1,0 +1,198 @@
+{
+  "name": "security-event-tools-task-id",
+  "description": "With updateTask and deleteTask turned off in the add-on settings, updateEvent and deleteEvent given the id of a task refuse it (Event not found): the tasks stay unchanged in listTasks and in the .ics file. deleteEvent still deletes an event. Fixed in Commonpost 0.19.1 (GHSA-8v8g-5qhh-q3wr).",
+  "prefs": {
+    "extensions.commonpost-mcp.disabledTools": "[\"updateTask\",\"deleteTask\"]",
+    "calendar.list.sortOrder": "labevtask",
+    "calendar.registry.labevtask.type": "ics",
+    "calendar.registry.labevtask.uri": "file:///lab/profile/Mail/labevtask/msgFilterRules.dat",
+    "calendar.registry.labevtask.name": "Lab event tools",
+    "calendar.registry.labevtask.disabled": false,
+    "calendar.registry.labevtask.calendar-main-in-composite": true
+  },
+  "seed_files": [
+    {
+      "path": "Mail/labevtask/msgFilterRules.dat",
+      "content": "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Lab//EventTaskId//EN\nBEGIN:VEVENT\nUID:lab-del-evt-1@example.test\nDTSTAMP:20261101T120000Z\nDTSTART:20261215T150000Z\nDTEND:20261215T160000Z\nSUMMARY:Seeded event one\nLOCATION:Room 1\nDESCRIPTION:Event description\nEND:VEVENT\nBEGIN:VTODO\nUID:lab-del-todo-1@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task one\nDUE:20261220T120000Z\nPRIORITY:5\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-todo-2@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task two\nDUE:20261225T120000Z\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-todo-3@example.test\nDTSTAMP:20261101T120000Z\nSUMMARY:Seeded task three\nDUE:20261230T120000Z\nSTATUS:COMPLETED\nPERCENT-COMPLETE:100\nEND:VTODO\nBEGIN:VTODO\nUID:lab-del-weekly@example.test\nDTSTAMP:20261101T120000Z\nDTSTART:20261201T100000Z\nDUE:20261201T110000Z\nSUMMARY:Seeded weekly task\nRRULE:FREQ=WEEKLY;COUNT=4\nEND:VTODO\nEND:VCALENDAR\n"
+    }
+  ],
+  "schema_watch": [
+    "deleteEvent",
+    "updateEvent"
+  ],
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "lt-before",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labevtask"
+      },
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "de-task",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-del-todo-1@example.test",
+        "calendarId": "labevtask"
+      }
+    },
+    {
+      "id": "ue-task",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-del-todo-2@example.test",
+        "calendarId": "labevtask",
+        "title": "Renamed by updateEvent"
+      }
+    },
+    {
+      "id": "ut-refused",
+      "tool": "updateTask",
+      "force_call": true,
+      "timeout": 30,
+      "arguments": {
+        "taskId": "lab-del-todo-3@example.test",
+        "calendarId": "labevtask",
+        "title": "Renamed by updateTask"
+      }
+    },
+    {
+      "id": "de-event",
+      "tool": "deleteEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": "lab-del-evt-1@example.test",
+        "calendarId": "labevtask"
+      }
+    },
+    {
+      "id": "lt-after",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labevtask"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "updateTask",
+      "present": false,
+      "note": "Turned off by the user."
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteTask",
+      "present": false,
+      "note": "Turned off by the user."
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateEvent"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteEvent"
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-before"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-before",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "de-task",
+      "contains": "Event not found: lab-del-todo-1@example.test"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "ue-task",
+      "contains": "Event not found: lab-del-todo-2@example.test"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "ut-refused",
+      "contains": "is disabled in the add-on settings"
+    },
+    {
+      "type": "tool_ok",
+      "step": "de-event"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "de-event",
+      "contains": "lab-del-evt-1@example.test"
+    },
+    {
+      "type": "tool_ok",
+      "step": "lt-after"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Seeded task one"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Seeded task two"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "lt-after",
+      "contains": "Renamed by updateEvent",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labevtask/msgFilterRules.dat",
+      "contains": "UID:lab-del-todo-1@example.test"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labevtask/msgFilterRules.dat",
+      "contains": "UID:lab-del-todo-2@example.test"
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labevtask/msgFilterRules.dat",
+      "contains": "Renamed by updateEvent",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labevtask/msgFilterRules.dat",
+      "contains": "UID:lab-del-evt-1@example.test",
+      "present": false
+    },
+    {
+      "type": "file_contains",
+      "file": "Mail/labevtask/msgFilterRules.dat",
+      "contains": "Renamed by updateTask",
+      "present": false
+    }
+  ],
+  "inspect": {
+    "files": [
+      "Mail/labevtask/msgFilterRules.dat"
+    ]
+  }
+}
