@@ -252,7 +252,7 @@ PREF_RE = re.compile(r"[A-Za-z0-9._@{}-]{1,200}")   # fullmatch
 # mbox folder to seed, relative to <profile>/Mail: 2 to 4 segments, no leading dot (e.g. "Local Folders/Inbox").
 SEED_FOLDER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}){1,3}")   # fullmatch
 # Environment passed to the bridge only: the project's own namespace (no NODE_OPTIONS, LD_*, PATH...).
-BRIDGE_ENV_RE = re.compile(r"THUNDERBIRD_MCP_[A-Z0-9_]{1,64}")   # fullmatch ("$" would accept a trailing \n)
+BRIDGE_ENV_RE = re.compile(r"(?:COMMONPOST|THUNDERBIRD)_MCP_[A-Z0-9_]{1,64}")   # fullmatch ("$" would accept a trailing \n)
 PRINTABLE_RE = re.compile(r"[ -~]{0,500}")
 XPI_REL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9._-]{0,63}){0,3}\.xpi")      # fullmatch
 SEED_FILE_RE = re.compile(r"Mail/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}/msgFilterRules\.dat")                       # fullmatch
@@ -330,7 +330,7 @@ def load_scenario(raw):
     be = sc.get("bridge_env", {})
     if not isinstance(be, dict) or len(be) > 10 or not all(
             BRIDGE_ENV_RE.fullmatch(str(k)) and isinstance(v, str) and PRINTABLE_RE.fullmatch(v) for k, v in be.items()):
-        raise ValueError("bridge_env: at most 10 THUNDERBIRD_MCP_[A-Z0-9_] variables, printable ASCII values <= 500")
+        raise ValueError("bridge_env: at most 10 COMMONPOST_MCP_[A-Z0-9_] or THUNDERBIRD_MCP_[A-Z0-9_] variables, printable ASCII values <= 500")
     for key in ("tools_dump", "schema_watch"):
         td = sc.get(key, [])
         if not isinstance(td, list) or len(td) > 20 or not all(isinstance(t, str) and TOOL_RE.fullmatch(t) for t in td):
@@ -626,7 +626,7 @@ class Bridge:
         env = {"HOME": os.environ.get("HOME", "/home/tblab"), "PATH": "/usr/local/bin:/usr/bin:/bin",
                "LANG": "C.UTF-8", "TMPDIR": "/tmp", "TZ": "UTC"}
         if extra_env:
-            # "bridge_env": THUNDERBIRD_MCP_* variables (validated at load time) for the BRIDGE only;
+            # "bridge_env": COMMONPOST_MCP_* or THUNDERBIRD_MCP_* variables (validated at load time) for the BRIDGE only;
             # Thunderbird and its extension do not see them.
             env.update(extra_env)
             phase("bridge", env=dict(sorted(extra_env.items())))

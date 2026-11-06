@@ -1,0 +1,494 @@
+{
+  "name": "read-only-mode",
+  "description": "With COMMONPOST_MCP_READ_ONLY=1 for the bridge, tools/list keeps only the 14 tools that change nothing (getMessage and getMessages without saveAttachments) and drops the 27 others; the read tools work; getMessage with saveAttachments, and the write tools and an unknown tool called anyway, are refused by the bridge before they reach Thunderbird, and nothing is saved, sent, created or deleted.",
+  "bridge_env": {
+    "COMMONPOST_MCP_READ_ONLY": "1"
+  },
+  "tools_dump": [
+    "getMessage",
+    "getMessages"
+  ],
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "arguments": {},
+      "timeout": 60
+    },
+    {
+      "id": "folders",
+      "tool": "listFolders",
+      "arguments": {},
+      "timeout": 60
+    },
+    {
+      "id": "recent",
+      "tool": "getRecentMessages",
+      "arguments": {
+        "maxResults": 5
+      },
+      "timeout": 60
+    },
+    {
+      "id": "contacts",
+      "tool": "searchContacts",
+      "arguments": {
+        "query": "example"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "calendars",
+      "tool": "listCalendars",
+      "arguments": {},
+      "timeout": 60
+    },
+    {
+      "id": "get-save",
+      "tool": "getMessage",
+      "arguments": {
+        "messageId": "ro-none@example.test",
+        "folderPath": "mailbox://nobody@Local%20Folders/Inbox",
+        "saveAttachments": true
+      },
+      "note": "Kept in read-only mode, but not with saveAttachments, its only write.",
+      "timeout": 60
+    },
+    {
+      "id": "draft",
+      "tool": "saveDraft",
+      "force_call": true,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab read-only [ro-draft]",
+        "body": "Must not be saved.\n"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "send",
+      "tool": "sendMail",
+      "force_call": true,
+      "arguments": {
+        "to": "recipient@example.com",
+        "subject": "Lab read-only [ro-send]",
+        "body": "Must not be sent.\n",
+        "skipReview": true
+      },
+      "timeout": 60
+    },
+    {
+      "id": "folder",
+      "tool": "createFolder",
+      "force_call": true,
+      "arguments": {
+        "parentFolderPath": "mailbox://nobody@Local%20Folders",
+        "name": "lab-read-only-folder"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "contact",
+      "tool": "createContact",
+      "force_call": true,
+      "arguments": {
+        "email": "ro-contact@example.com",
+        "displayName": "Read Only Contact"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "filter",
+      "tool": "createFilter",
+      "force_call": true,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-read-only-filter",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "ro"
+          }
+        ],
+        "actions": [
+          {
+            "type": "markRead"
+          }
+        ]
+      },
+      "timeout": 60
+    },
+    {
+      "id": "delete",
+      "tool": "deleteMessages",
+      "force_call": true,
+      "arguments": {
+        "messageIds": [
+          "ro-none@example.test"
+        ],
+        "folderPath": "mailbox://nobody@Local%20Folders/Inbox"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "trash",
+      "tool": "emptyTrash",
+      "force_call": true,
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "task",
+      "tool": "deleteTask",
+      "force_call": true,
+      "arguments": {
+        "taskId": "ro-none@example.test",
+        "calendarId": "none"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "unknown",
+      "tool": "labNoSuchTool",
+      "force_call": true,
+      "arguments": {},
+      "note": "A name the add-on does not list is refused too.",
+      "timeout": 60
+    },
+    {
+      "id": "folders-after",
+      "tool": "listFolders",
+      "arguments": {},
+      "timeout": 60
+    },
+    {
+      "id": "contacts-after",
+      "tool": "searchContacts",
+      "arguments": {
+        "query": "ro-contact"
+      },
+      "timeout": 60
+    },
+    {
+      "id": "filters-after",
+      "tool": "listFilters",
+      "arguments": {
+        "accountId": "account2"
+      },
+      "timeout": 60
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "getAccountAccess"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "getContact"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "getMessage"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "getMessages"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "getRecentMessages"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listAccounts"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listCalendars"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listCategories"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listEvents"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listFilters"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listFolders"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "listTasks"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "searchContacts"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "searchMessages"
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "applyFilters",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "createContact",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "createEvent",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "createFilter",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "createFolder",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "createTask",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteContact",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteEvent",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteFilter",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteFolder",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteMessages",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "deleteTask",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "displayMessage",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "emptyJunk",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "emptyTrash",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "forwardMessage",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "moveFolder",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "renameFolder",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "reorderFilters",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "replyToMessage",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "saveDraft",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "sendMail",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateContact",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateEvent",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateFilter",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateMessage",
+      "present": false
+    },
+    {
+      "type": "tools_list_has",
+      "tool": "updateTask",
+      "present": false
+    },
+    {
+      "type": "tool_json_equals",
+      "tool": "getMessage",
+      "path": "annotations.readOnlyHint",
+      "equals": true,
+      "note": "Without saveAttachments, getMessage only reads."
+    },
+    {
+      "type": "tool_json_contains",
+      "tool": "getMessage",
+      "path": "description",
+      "contains": "Read-only mode (COMMONPOST_MCP_READ_ONLY): saveAttachments is not available."
+    },
+    {
+      "type": "tool_json_contains",
+      "tool": "getMessages",
+      "path": "description",
+      "contains": "saveAttachments is not available"
+    },
+    {
+      "type": "tool_ok",
+      "step": "accounts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "folders"
+    },
+    {
+      "type": "tool_ok",
+      "step": "recent"
+    },
+    {
+      "type": "tool_ok",
+      "step": "contacts"
+    },
+    {
+      "type": "tool_ok",
+      "step": "calendars"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "get-save",
+      "contains": "saveAttachments is not available: the bridge runs in read-only mode"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "draft",
+      "contains": "The tool saveDraft is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send",
+      "contains": "The tool sendMail is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "folder",
+      "contains": "The tool createFolder is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "contact",
+      "contains": "The tool createContact is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "filter",
+      "contains": "The tool createFilter is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "delete",
+      "contains": "The tool deleteMessages is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "trash",
+      "contains": "The tool emptyTrash is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "task",
+      "contains": "The tool deleteTask is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "unknown",
+      "contains": "The tool labNoSuchTool is not available: the bridge runs in read-only mode (COMMONPOST_MCP_READ_ONLY)"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[ro-draft]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0,
+      "note": "Nothing was sent."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "folders-after",
+      "contains": "lab-read-only-folder",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "contacts-after",
+      "contains": "ro-contact@example.com",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "filters-after",
+      "contains": "lab-read-only-filter",
+      "present": false
+    }
+  ]
+}
