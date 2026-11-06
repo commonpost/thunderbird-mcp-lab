@@ -43,6 +43,7 @@ URI is `mailbox://lab@127.0.0.1/Inbox`.
 | `seed_files` | list (<= 5) | `{"path": "Mail/<server folder>/msgFilterRules.dat", "content": "..."}` (<= 200 000 characters): filter rules written before Thunderbird starts, e.g. a rule made "by hand" in the filter editor. |
 | `watch_prefs` | list of prefixes (<= 20) | Re-reads `prefs.js` every 0.2 s and records every change of matching lines (`prefs_timeline`); steps get `prefs_before`, `prefs_at_response` and `prefs_after_wait`. Thunderbird writes `prefs.js` about 0.5 s after a change, so shorter-lived states can be missed. |
 | `inspect` | object | `{"prefs": [prefixes], "files": [paths]}`, see below. |
+| `bridge_first` | `true`, `false` or seconds 0-60 | The MCP client starts before Thunderbird: the bridge is started and gets `initialize` and `tools/list` before Thunderbird. With `true`, Thunderbird is started once that `tools/list` is answered; with a number, that many seconds after it was sent, while it may still wait. The harness then waits up to 15 s for `notifications/tools/list_changed` and records it all in `cold_start` (see the `cold_start` check); the steps follow without a second `initialize`. |
 | `xpi` | string | Path, relative to the received tree, of a prebuilt XPI to install instead of zipping `extension/` (e.g. a release artifact). |
 
 Seeded mbox files have no `.msf` summary and Thunderbird does not index them by itself. A reliable recipe: an
@@ -97,6 +98,7 @@ fails the run. The run passes when no check has status `fail` and the harness re
 | `tool_ok` | `step` | the step succeeded |
 | `tool_error_contains` | `step`, `contains` | the step failed and its error or text contains the text |
 | `tool_result_contains` | `step`, `contains`, `present` (default true) | the step succeeded and its full response text contains (or does not contain) the text |
+| `cold_start` | any of `answered`, `tools`, `min_tools`, `max_seconds`, `list_changed`, `capability_list_changed` (needs `bridge_first`) | the first `tools/list` of a `bridge_first` run was answered with a list (`answered`), of exactly `tools` or at least `min_tools` tools, within `max_seconds` of the request; `notifications/tools/list_changed` came after Thunderbird was up (`list_changed`); `initialize` declared `tools.listChanged` (`capability_list_changed`) |
 | `tools_list_has` | `tool`, `present` (default true) | the tool is in `tools/list` (or, with `present: false`, is not) |
 | `schema_has` | `tool`, `property` | the property is in the tool's `inputSchema` (tool listed in `schema_watch`) |
 | `tool_json_equals` / `tool_json_contains` | `tool`, `path` (dotted, empty = whole tool), `equals` / `contains` | the value at that path of the tool definition equals / contains the value |
