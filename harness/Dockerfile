@@ -23,6 +23,8 @@ RUN sed -i 's#^URIs: http://#URIs: https://#' /etc/apt/sources.list.d/debian.sou
  && grep -q '^URIs: https://deb.debian.org/debian$' /etc/apt/sources.list.d/debian.sources
 
 # --- Stage 3: VERIFIED download of Thunderbird (GPG signature of SHA512SUMS, then SHA512 of the archive).
+# TB_VERSION names the release directory: 156.0.1, 153.6.0esr or 160.0b5. application.ini of an ESR or a beta says
+# Version=153.6.0 or Version=160.0, so the check drops the "esr" and "bN" suffixes.
 FROM debian-https AS tbdl
 ARG TB_VERSION=156.0.1
 ARG TB_BASE=https://archive.mozilla.org/pub/thunderbird/releases
@@ -51,7 +53,8 @@ RUN set -eu; \
     get tb.tar.xz "$f"; \
     printf '%s  tb.tar.xz\n' "$expected" | sha512sum -c -; \
     mkdir -p /opt/tb; tar -xJf tb.tar.xz -C /opt/tb --no-same-owner; \
-    grep -qx "Version=$TB_VERSION" /opt/tb/thunderbird/application.ini; \
+    v="${TB_VERSION%esr}"; if [[ "$v" =~ ^([0-9]+(\.[0-9]+)+)b[0-9]+$ ]]; then v="${BASH_REMATCH[1]}"; fi; \
+    grep -qxF "Version=$v" /opt/tb/thunderbird/application.ini; \
     echo "Thunderbird $TB_VERSION: GPG signature and SHA512 verified."
 
 # --- Stage 4: runtime image.
