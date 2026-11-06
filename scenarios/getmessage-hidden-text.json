@@ -1,0 +1,399 @@
+{
+  "name": "getmessage-hidden-text",
+  "description": "getMessage removes from an HTML body the text a reader does not see, and keeps the text a reader sees, in the markdown and text formats. An MJML layout, whose column wrappers have font-size:0px and whose text sets its own size, is returned whole. Small but readable sizes and opacities (0.875rem, 0.9em, opacity:0.8) are kept; a child that sets its own font-size or visibility:visible is shown. Removed: tiny and zero sizes, an opacity product below 0.1, an override Gecko drops (display:block\\9, opacity:1.), a hidden child of <pre>, and the URL of a link whose text is hidden. The html format returns the body unchanged. Inline styles only: rules in <style> blocks are not covered here.",
+  "prefs": {
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "seed": [
+    {
+      "folder": "127.0.0.1/Inbox",
+      "messages": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HT mjml [ht-mjml]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ht-mjml@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<!doctype html><html><body style=\"word-spacing:normal;\"><div style=\"\">\n<div style=\"margin:0px auto;max-width:600px;\"><table align=\"center\" border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"width:100%;\"><tbody><tr><td style=\"direction:ltr;font-size:0px;padding:20px 0;text-align:center;\">\n<div class=\"mj-column-per-100 mj-outlook-group-fix\" style=\"font-size:0px;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;\">\n<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" role=\"presentation\" style=\"vertical-align:top;\" width=\"100%\"><tbody>\n<tr><td align=\"left\" style=\"font-size:0px;padding:10px 25px;word-break:break-word;\"><div style=\"font-family:Ubuntu, Helvetica, Arial, sans-serif;font-size:13px;line-height:1;text-align:left;color:#000000;\">VISIBLE-MJML-COLUMN Welcome to the newsletter</div></td></tr>\n<tr><td align=\"left\" style=\"font-size:0px;padding:10px 25px;word-break:break-word;\"><div style=\"font-family:Ubuntu, Helvetica, Arial, sans-serif;font:14px/1.5 Ubuntu, Arial;text-align:left;color:#555555;\">VISIBLE-MJML-SHORTHAND Read the full story</div></td></tr>\n</tbody></table></div></td></tr></tbody></table></div></div>\n</body></html>",
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HT styles [ht-styles]\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <ht-styles@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body>\n<p>VISIBLE-START</p>\n<p><span style=\"font-size:0.875rem\">VISIBLE-REM</span> <span style=\"font-size: 0.9em\">VISIBLE-EM</span> <span style=\"opacity:0.8\">VISIBLE-OPACITY</span></p>\n<div style=\"font-size:0\"><span style=\"font-size:13px\">VISIBLE-RESIZED</span></div>\n<div style=\"visibility:hidden\">LEAK-VISIBILITY <span style=\"visibility:visible\">VISIBLE-VISIBILITY</span></div>\n<p><span style=\"display:none;display:block\">VISIBLE-OVERRIDE</span></p>\n<p><span style=\"font-size:1px\">LEAK-TINY</span><span style=\"font-size:0px\">LEAK-ZERO</span></p>\n<div style=\"opacity:0.3\"><div style=\"opacity:0.3\">LEAK-OPACITY-PRODUCT</div></div>\n<p><span style=\"display:none;display:block\\9\">LEAK-DROPPED-OVERRIDE</span><span style=\"opacity:0;opacity:1.\">LEAK-DROPPED-OPACITY</span></p>\n<pre>PRE-A<span style=\"display:none\">LEAK-PRE</span>PRE-B</pre>\n<div style=\"font-size:0\"><a href=\"https://example.com/LEAK-LINK-URL\">read</a></div>\n<p>VISIBLE-END</p>\n</body></html>"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "index-trigger",
+      "tool": "applyFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+      },
+      "wait_after": 3,
+      "note": "Seeded mbox files have no .msf summary; running the (empty) filter list over the folder makes Thunderbird parse it.",
+      "retry": {
+        "attempts": 10,
+        "delay": 2
+      }
+    },
+    {
+      "id": "index-ready",
+      "tool": "getMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "ht-mjml@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "html"
+      },
+      "retry": {
+        "attempts": 12,
+        "delay": 3
+      }
+    },
+    {
+      "id": "mjml-markdown",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "ht-mjml@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "markdown"
+      }
+    },
+    {
+      "id": "mjml-text",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "ht-mjml@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "styles-markdown",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "ht-styles@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "markdown"
+      }
+    },
+    {
+      "id": "styles-text",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "ht-styles@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "text"
+      }
+    },
+    {
+      "id": "styles-html",
+      "tool": "getMessage",
+      "timeout": 60,
+      "arguments": {
+        "messageId": "ht-styles@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "bodyFormat": "html"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "index-trigger"
+    },
+    {
+      "type": "tool_ok",
+      "step": "index-ready"
+    },
+    {
+      "type": "tool_ok",
+      "step": "mjml-markdown"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-markdown",
+      "contains": "VISIBLE-MJML-COLUMN",
+      "note": "Up to 0.19.1 the column was dropped with its font-size:0px wrapper."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-markdown",
+      "contains": "VISIBLE-MJML-SHORTHAND",
+      "note": "The size comes from the font shorthand."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-markdown",
+      "contains": "bodyNote",
+      "present": false,
+      "note": "Nothing is hidden, so nothing is counted."
+    },
+    {
+      "type": "tool_ok",
+      "step": "mjml-text"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-text",
+      "contains": "VISIBLE-MJML-COLUMN",
+      "note": "Up to 0.19.1 the column was dropped with its font-size:0px wrapper."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-text",
+      "contains": "VISIBLE-MJML-SHORTHAND",
+      "note": "The size comes from the font shorthand."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "mjml-text",
+      "contains": "bodyNote",
+      "present": false,
+      "note": "Nothing is hidden, so nothing is counted."
+    },
+    {
+      "type": "tool_ok",
+      "step": "styles-markdown"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-START"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-REM",
+      "note": "Up to 0.19.1 a fractional size such as 0.875rem was read as 0."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-EM"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-OPACITY",
+      "note": "Up to 0.19.1 opacity:0.8 was read as 0."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-RESIZED",
+      "note": "font-size is inherited: a child that sets its own size is shown."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-VISIBILITY",
+      "note": "visibility is inherited: a child that sets visibility:visible is shown."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-OVERRIDE"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "VISIBLE-END"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-VISIBILITY",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-TINY",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-ZERO",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-OPACITY-PRODUCT",
+      "present": false,
+      "note": "0.3 x 0.3 = 0.09, below 0.1."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-DROPPED-OVERRIDE",
+      "present": false,
+      "note": "Gecko drops display:block\\9, so display:none applies."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-DROPPED-OPACITY",
+      "present": false,
+      "note": "Gecko drops opacity:1., so opacity:0 applies."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-PRE",
+      "present": false,
+      "note": "A hidden child of <pre> is removed."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "LEAK-LINK-URL",
+      "present": false,
+      "note": "A link whose text is hidden gives nothing, not its URL."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "PRE-APRE-B",
+      "note": "The hidden child of <pre> is cut out, the code block stays."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-markdown",
+      "contains": "were removed from the HTML body",
+      "note": "The hidden elements are counted in bodyNote."
+    },
+    {
+      "type": "tool_ok",
+      "step": "styles-text"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-START"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-REM",
+      "note": "Up to 0.19.1 a fractional size such as 0.875rem was read as 0."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-EM"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-OPACITY",
+      "note": "Up to 0.19.1 opacity:0.8 was read as 0."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-RESIZED",
+      "note": "font-size is inherited: a child that sets its own size is shown."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-VISIBILITY",
+      "note": "visibility is inherited: a child that sets visibility:visible is shown."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-OVERRIDE"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "VISIBLE-END"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-VISIBILITY",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-TINY",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-ZERO",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-OPACITY-PRODUCT",
+      "present": false,
+      "note": "0.3 x 0.3 = 0.09, below 0.1."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-DROPPED-OVERRIDE",
+      "present": false,
+      "note": "Gecko drops display:block\\9, so display:none applies."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-DROPPED-OPACITY",
+      "present": false,
+      "note": "Gecko drops opacity:1., so opacity:0 applies."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-PRE",
+      "present": false,
+      "note": "A hidden child of <pre> is removed."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "LEAK-LINK-URL",
+      "present": false,
+      "note": "A link whose text is hidden gives nothing, not its URL."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "PRE-A"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "PRE-B"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-text",
+      "contains": "were removed from the HTML body",
+      "note": "The hidden elements are counted in bodyNote."
+    },
+    {
+      "type": "tool_ok",
+      "step": "styles-html"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-html",
+      "contains": "LEAK-OPACITY-PRODUCT",
+      "note": "The html format returns the body as it is."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "styles-html",
+      "contains": "bodyNote",
+      "present": false
+    }
+  ]
+}
