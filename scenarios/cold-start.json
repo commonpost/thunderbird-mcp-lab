@@ -16,8 +16,7 @@
       "answered": true,
       "tools": 0,
       "capability_list_changed": true,
-      "list_changed": true,
-      "xfail": "commonpost/thunderbird-mcp#132: up to 0.19.1, tools/list fails when the client starts before Thunderbird; fixed on main, strict once a release has the fix"
+      "list_changed": true
     },
     {
       "type": "tools_list_has",
