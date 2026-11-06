@@ -38,7 +38,7 @@ URI is `mailbox://lab@127.0.0.1/Inbox`.
 | `tb_sandbox` | boolean | `false` disables Thunderbird's own process sandbox (default `true`; the container is the boundary either way). |
 | `schema_watch` | list of tool names | Records the `inputSchema` property names of these tools (`phases.mcp.schemas`). |
 | `tools_dump` | list of tool names | Records the full `tools/list` definitions (`tools_detail`) and a canonical SHA-256 of each (`tools_detail_sha256`), e.g. to compare a pull request with a release. |
-| `bridge_env` | object (<= 10) | Environment variables for the bridge process only. Names must match `THUNDERBIRD_MCP_[A-Z0-9_]+`; values are printable ASCII (<= 500). |
+| `bridge_env` | object (<= 10) | Environment variables for the bridge process only. Names must match `COMMONPOST_MCP_[A-Z0-9_]+` (e.g. `COMMONPOST_MCP_READ_ONLY`) or `THUNDERBIRD_MCP_[A-Z0-9_]+`; values are printable ASCII (<= 500). |
 | `seed` | list (<= 10) | `{"folder": "127.0.0.1/Inbox", "messages": ["raw RFC 5322 message", ...]}` (1 to 20 messages, 5 MB in total): appended to mbox files of the profile before Thunderbird starts. |
 | `seed_files` | list (<= 5) | `{"path": "Mail/<server folder>/msgFilterRules.dat", "content": "..."}` (<= 200 000 characters): filter rules written before Thunderbird starts, e.g. a rule made "by hand" in the filter editor. |
 | `watch_prefs` | list of prefixes (<= 20) | Re-reads `prefs.js` every 0.2 s and records every change of matching lines (`prefs_timeline`); steps get `prefs_before`, `prefs_at_response` and `prefs_after_wait`. Thunderbird writes `prefs.js` about 0.5 s after a change, so shorter-lived states can be missed. |

@@ -746,10 +746,10 @@ class BridgeTests(LabCase):
         self.assertIs(br.p, proc)
 
     def test_bridge_env_variables_reach_the_bridge_only_and_are_recorded(self):
-        br, _ = self.bridge(extra_env={"THUNDERBIRD_MCP_B": "2", "THUNDERBIRD_MCP_A": "1"})
+        br, _ = self.bridge(extra_env={"THUNDERBIRD_MCP_B": "2", "COMMONPOST_MCP_A": "1"})
         env = br.start_call[1]["env"]
-        self.assertEqual((env["THUNDERBIRD_MCP_A"], env["THUNDERBIRD_MCP_B"]), ("1", "2"))
-        self.assertEqual(list(lab.R["phases"]["bridge"]["env"]), ["THUNDERBIRD_MCP_A", "THUNDERBIRD_MCP_B"])
+        self.assertEqual((env["COMMONPOST_MCP_A"], env["THUNDERBIRD_MCP_B"]), ("1", "2"))
+        self.assertEqual(list(lab.R["phases"]["bridge"]["env"]), ["COMMONPOST_MCP_A", "THUNDERBIRD_MCP_B"])
 
     def test_requests_are_numbered_and_written_as_json_lines(self):
         br, proc = self.bridge()
