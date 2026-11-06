@@ -265,13 +265,13 @@ FILES_FULL = {}  # full content of inspected profile files (for checks), not cop
 MAILPIT_FULL = []  # raw messages captured by mailpit (for checks), not copied into the result
 
 TOP_KEYS = {"name", "description", "tb_sandbox", "startup_timeout", "prefs", "schema_watch", "steps", "inspect",
-            "checks", "seed", "watch_prefs", "bridge_env", "tools_dump", "xpi", "seed_files"}
+            "checks", "seed", "watch_prefs", "bridge_env", "tools_dump", "xpi", "seed_files", "bridge_first"}
 STEP_KEYS = {"id", "tool", "arguments", "timeout", "force_call", "batch", "wait_after", "retry", "draft_subject",
              "draft_wait", "probes", "part_probes", "note"}
 CHECK_TYPES = {"tool_ok", "tools_list_has", "draft_exists", "draft_header_contains", "schema_has", "mailpit_total",
                "tool_error_contains", "draft_count", "draft_body_contains", "prefs_js_line", "tool_json_equals",
                "tool_json_contains", "tool_result_contains", "listed_filter", "filter_rule", "file_contains",
-               "draft_attachment", "mailpit_header_contains", "mailpit_body_contains"}
+               "draft_attachment", "mailpit_header_contains", "mailpit_body_contains", "cold_start"}
 
 
 def load_scenario(raw):
@@ -327,6 +327,9 @@ def load_scenario(raw):
             if not isinstance(pp, list) or len(pp) > 10 or not all(
                     isinstance(p, dict) and isinstance(p.get("header"), str) and isinstance(p.get("needle"), str) for p in pp):
                 raise ValueError("step %s: %s = at most 10 {header, needle}" % (st["id"], key))
+    bf = sc.get("bridge_first", False)
+    if not (isinstance(bf, bool) or isinstance(bf, int) and 0 <= bf <= 60):
+        raise ValueError("bridge_first: true, false or seconds 0-60")
     be = sc.get("bridge_env", {})
     if not isinstance(be, dict) or len(be) > 10 or not all(
             BRIDGE_ENV_RE.fullmatch(str(k)) and isinstance(v, str) and PRINTABLE_RE.fullmatch(v) for k, v in be.items()):
@@ -382,6 +385,8 @@ def load_scenario(raw):
     for c in checks:
         if not isinstance(c, dict) or not isinstance(c.get("type"), str) or c["type"] not in CHECK_TYPES:
             raise ValueError("unknown check type: %r" % (c.get("type") if isinstance(c, dict) else c))
+        if c["type"] == "cold_start" and not bf:
+            raise ValueError("check cold_start: needs \"bridge_first\"")
         if "step" in c and (not isinstance(c["step"], str) or c["step"] not in ids):
             raise ValueError("check %s: unknown step %r" % (c["type"], c["step"]))
         for k in ("xfail", "note"):
@@ -634,6 +639,7 @@ class Bridge:
                        stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         self.q = queue.Queue()
         self.notes = []
+        self.notifications = []   # {"method", "at"}: messages from the bridge with a method and no id
         self.next_id = 1
         threading.Thread(target=self._reader, daemon=True).start()
 
@@ -671,18 +677,47 @@ class Bridge:
                 for r in want - set(got):
                     got[r] = ({"_bridge_exit": self.p.poll()}, None)
                 break
-            try:
-                msg = json.loads(line)
-            except ValueError:
-                self.notes.append(clip(line.decode("utf-8", "replace"), 500))
-                continue
+            msg = self._parse(line)
             if isinstance(msg, dict) and msg.get("id") in want and msg.get("id") not in got:
                 got[msg["id"]] = (msg, round(time.monotonic() - T0, 2))
-                continue
-            self.notes.append(clip(json.dumps(msg, ensure_ascii=True), 1000))
+            elif msg is not None:
+                self._note(msg)
         for r in want - set(got):
             got[r] = ({"_timeout": True}, None)
         return got
+
+    def wait_notification(self, method, timeout):
+        """Waits for a notification with that method: its arrival time (seconds since the start), or None."""
+        end = time.monotonic() + left(timeout)
+        while True:
+            for n in self.notifications:
+                if n["method"] == method:
+                    return n["at"]
+            rem = end - time.monotonic()
+            if rem <= 0:
+                return None
+            try:
+                line = self.q.get(timeout=rem)
+            except queue.Empty:
+                return None
+            if line is None:
+                return None
+            msg = self._parse(line)
+            if msg is not None:
+                self._note(msg)
+
+    def _parse(self, line):
+        """The JSON message of a line, or None (the line is kept as a note)."""
+        try:
+            return json.loads(line)
+        except ValueError:
+            self.notes.append(clip(line.decode("utf-8", "replace"), 500))
+            return None
+
+    def _note(self, msg):
+        if isinstance(msg, dict) and "id" not in msg and isinstance(msg.get("method"), str):
+            self.notifications.append({"method": clip(msg["method"], 200), "at": round(time.monotonic() - T0, 2)})
+        self.notes.append(clip(json.dumps(msg, ensure_ascii=True), 1000))
 
     def request(self, method, params, timeout):
         rid = self.send_request(method, params)
@@ -1006,12 +1041,52 @@ def node_version():
         return None
 
 
-def run_mcp(sc, br):
+def initialize(br):
     init = br.request("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                      "clientInfo": {"name": "thunderbird-mcp-lab", "version": "1"}}, 30)
     if "result" not in init:
         raise RuntimeError("initialize failed: " + clip(json.dumps(init, ensure_ascii=True), 2000))
     br.send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+    return init
+
+
+# Scenario option "bridge_first": the MCP client starts before Thunderbird. The bridge gets initialize and tools/list
+# before Thunderbird is started: once that tools/list is answered with true, or that many seconds after it was sent
+# with a number (the answer may still be pending then). Then up to LIST_CHANGED_WAIT seconds for
+# notifications/tools/list_changed after Thunderbird is up. R["cold_start"]: the capabilities, the number of tools of
+# that first answer (null and "error" when it was not a list), after how many seconds it came, and how long after
+# Thunderbird was up the notification arrived (null: it did not).
+LIST_CHANGED_WAIT = 15
+
+
+def run_cold_start(sc, br):
+    init = initialize(br)
+    asked = time.monotonic()
+    rid = br.send_request("tools/list", {})
+    if sc["bridge_first"] is not True:
+        time.sleep(max(asked + sc["bridge_first"] - time.monotonic(), 0))
+        start_tb(sc)
+    resp, at = br.wait_responses([rid], 90)[rid]
+    res = resp.get("result")
+    tools = res.get("tools") if isinstance(res, dict) else None
+    cs = {"mode": sc["bridge_first"], "capabilities": init["result"].get("capabilities"),
+          "tools": len(tools) if isinstance(tools, list) else None,
+          "seconds": None if at is None else round(at - (asked - T0), 1)}
+    if cs["tools"] is None:
+        cs["error"] = clip(json.dumps(resp, ensure_ascii=True), 500)
+    if sc["bridge_first"] is True:
+        start_tb(sc)
+    up = time.monotonic() - T0
+    at = br.wait_notification("notifications/tools/list_changed", LIST_CHANGED_WAIT)
+    cs["list_changed_after"] = None if at is None else round(max(at - up, 0), 1)
+    R["cold_start"] = cs
+    phase("cold_start", **cs)
+    return init
+
+
+def run_mcp(sc, br, init=None):
+    if init is None:
+        init = initialize(br)
     ires = init["result"]
     tl = br.request("tools/list", {}, 60)
     tools = (tl.get("result") or {}).get("tools") or []
@@ -1388,6 +1463,20 @@ def evaluate(c, steps):
         e = steps.get(c.get("step"))
         ok = bool(e and e.get("ok"))
         return ok, (e or {}).get("text", "") if ok else json.dumps(e, ensure_ascii=True)[:500]
+    if typ == "cold_start":
+        cs = R.get("cold_start")
+        if not cs:
+            return False, "no cold start was run"
+        tools_caps = (cs.get("capabilities") or {}).get("tools") if isinstance(cs.get("capabilities"), dict) else None
+        got = {"answered": cs.get("tools") is not None, "tools": cs.get("tools"),
+               "list_changed": cs.get("list_changed_after") is not None,
+               "capability_list_changed": isinstance(tools_caps, dict) and tools_caps.get("listChanged") is True}
+        wrong = [k for k in ("answered", "tools", "list_changed", "capability_list_changed") if k in c and got[k] != c[k]]
+        if "min_tools" in c and not (isinstance(cs.get("tools"), int) and cs["tools"] >= c["min_tools"]):
+            wrong.append("min_tools")
+        if "max_seconds" in c and not (isinstance(cs.get("seconds"), (int, float)) and cs["seconds"] <= c["max_seconds"]):
+            wrong.append("max_seconds")
+        return not wrong, ("wrong: %s; " % ", ".join(wrong) if wrong else "") + json.dumps(cs, ensure_ascii=True)
     if typ == "tools_list_has":
         listed = c.get("tool") in R.get("tools", [])
         return listed == bool(c.get("present", True)), "listed=%s" % listed
@@ -1518,9 +1607,14 @@ def main():
         make_profile(sc)
         if sc.get("watch_prefs"):
             PW = PrefWatch(sc["watch_prefs"])
-        start_tb(sc)
-        br = Bridge(sc.get("bridge_env"))
-        run_mcp(sc, br)
+        if sc.get("bridge_first"):
+            br = Bridge(sc.get("bridge_env"))
+            init = run_cold_start(sc, br)
+        else:
+            start_tb(sc)
+            br = Bridge(sc.get("bridge_env"))
+            init = None
+        run_mcp(sc, br, init)
         inspect(sc)
         checks_ok = run_checks(sc)
         R["ok"] = checks_ok and not R["errors"]

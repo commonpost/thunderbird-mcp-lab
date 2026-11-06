@@ -503,6 +503,19 @@ class ScenarioTests(LabCase):
         sc = lab.load_scenario(json.dumps(SCENARIO))
         self.assertEqual(sc["steps"][0]["id"], "s1")
 
+    def test_load_scenario_takes_bridge_first_as_a_boolean_or_seconds(self):
+        cold = {"type": "cold_start", "answered": True}
+        for value in (True, False, 0, 10, 60):
+            with self.subTest(value=value):
+                lab.load_scenario(json.dumps(dict(SCENARIO, bridge_first=value)))
+        for value in ("during", 61, -1, 1.5, None, [1]):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "^bridge_first: true, false or seconds"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, bridge_first=value)))
+        lab.load_scenario(json.dumps(dict(SCENARIO, bridge_first=5, checks=[cold])))
+        for sc in (dict(SCENARIO, checks=[cold]), dict(SCENARIO, bridge_first=False, checks=[cold])):
+            with self.assertRaisesRegex(ValueError, 'check cold_start: needs "bridge_first"'):
+                lab.load_scenario(json.dumps(sc))
+
     def test_load_scenario_refuses_more_than_5_mb_of_seed_messages(self):
         sc = dict(SCENARIO, seed=[{"folder": "127.0.0.1/Inbox", "messages": ["x" * 260000] * 20}])
         with self.assertRaisesRegex(ValueError, "seed: at most 5 MB"):
@@ -794,6 +807,37 @@ class BridgeTests(LabCase):
         br, _ = self.bridge(json.dumps({"id": 1, "result": "one"}).encode() + b"\n")
         with mock.patch.object(lab, "left", return_value=0):
             self.assertEqual(br.wait_responses([1], 5), {1: ({"_timeout": True}, None)})
+
+    def test_notifications_are_kept_with_their_arrival_time_and_as_notes(self):
+        lines = [json.dumps({"jsonrpc": "2.0", "method": "notifications/tools/list_changed"}).encode() + b"\n",
+                 json.dumps({"id": 9, "method": "roots/list"}).encode() + b"\n",
+                 json.dumps({"id": 1, "result": "one"}).encode() + b"\n"]
+        br, _ = self.bridge(b"".join(lines))
+        br.wait_responses([1], 5)
+        self.assertEqual([n["method"] for n in br.notifications], ["notifications/tools/list_changed"])
+        self.assertIsInstance(br.notifications[0]["at"], float)
+        self.assertEqual(len(br.notes), 2, "a request from the bridge (with an id) is a note, not a notification")
+
+    def test_wait_notification_returns_the_arrival_time_of_the_first_match(self):
+        lines = [b"junk\n", json.dumps({"method": "notifications/other"}).encode() + b"\n",
+                 json.dumps({"method": "notifications/tools/list_changed"}).encode() + b"\n"]
+        br, _ = self.bridge(b"".join(lines))
+        at = br.wait_notification("notifications/tools/list_changed", 5)
+        self.assertEqual(at, br.notifications[-1]["at"])
+        self.assertEqual(br.notes[0], "junk\n")
+        self.assertEqual(br.wait_notification("notifications/other", 5), br.notifications[0]["at"])
+
+    def test_wait_notification_gives_none_when_the_bridge_exits_or_the_time_is_over(self):
+        br, _ = self.bridge(json.dumps({"id": 1, "result": "one"}).encode() + b"\n")
+        self.assertIsNone(br.wait_notification("notifications/tools/list_changed", 5))
+        self.assertEqual(br.notes, ['{"id": 1, "result": "one"}'])
+        with mock.patch.object(lab, "left", return_value=0):
+            self.assertIsNone(br.wait_notification("notifications/x", 5))
+        out = BlockingOut()
+        self.addCleanup(out.release.set)
+        blocked, _ = self.bridge(stdout=out)
+        with mock.patch.object(lab, "left", return_value=0.2):
+            self.assertIsNone(blocked.wait_notification("notifications/x", 5))
 
     def test_full_text_joins_the_text_blocks_of_a_response(self):
         resp = {"result": {"content": [{"type": "text", "text": "a"}, {"type": "image", "data": "x"}, "junk",
@@ -1333,6 +1377,14 @@ class McpTests(LabCase):
         self.assertEqual(lab.R["tools_detail_sha256"], {"listFolders": expected, "absent": None})
         self.assertEqual(lab.R["steps"], [])
 
+    def test_run_mcp_does_not_initialize_again_after_a_cold_start(self):
+        br = FakeBridge(rpc=self.rpc())
+        with mock.patch.object(lab, "node_version", return_value="v22"), mock.patch.object(lab, "run_group"):
+            lab.run_mcp({}, br, {"result": {"serverInfo": {"name": "cold"}, "protocolVersion": "2025-06-18"}})
+        self.assertEqual([r[0] for r in br.requests], ["tools/list"])
+        self.assertEqual(br.sent, [])
+        self.assertEqual(lab.R["phases"]["mcp"]["server"], {"name": "cold"})
+
     def test_run_mcp_fails_when_initialize_does_not_return_a_result(self):
         br = FakeBridge(rpc=self.rpc({"error": {"code": -1, "message": "no"}}))
         with self.assertRaisesRegex(RuntimeError, r'^initialize failed: \{"error": \{"code": -1'):
@@ -1353,6 +1405,71 @@ class McpTests(LabCase):
         self.run_mcp({}, br)
         self.assertEqual(lab.PW.stage, "after_steps")
         self.assertEqual(lab.R["bridge_other_messages"], br.notes[:20])
+
+
+class ColdBridge:
+    """The part of Bridge that run_cold_start uses; records the order of what happens in `events`."""
+
+    def __init__(self, events, answer, at=3.5, notified=None):
+        self.events, self.answer, self.at, self.notified = events, answer, at, notified
+        self.sent = []
+
+    def request(self, method, params, timeout):
+        self.events.append(method)
+        return {"result": {"capabilities": {"tools": {"listChanged": True}}, "serverInfo": {"name": "s"}}}
+
+    def send(self, obj):
+        self.sent.append(obj)
+
+    def send_request(self, method, params):
+        self.events.append("send " + method)
+        return 7
+
+    def wait_responses(self, rids, timeout):
+        self.events.append("answer")
+        return {7: (self.answer, self.at)}
+
+    def wait_notification(self, method, timeout):
+        self.events.append("wait " + method)
+        return self.notified
+
+
+class ColdStartTests(LabCase):
+    def run_cold(self, bridge_first, answer, **kw):
+        events = []
+        br = ColdBridge(events, answer, **kw)
+        with mock.patch.object(lab, "start_tb", side_effect=lambda sc: events.append("start_tb")), \
+                mock.patch.object(lab, "T0", 100.0), \
+                mock.patch.object(lab, "time", types.SimpleNamespace(
+                    monotonic=lambda: 101.0, sleep=lambda s: events.append("sleep %s" % s))):
+            init = lab.run_cold_start({"bridge_first": bridge_first}, br)
+        return init, events, br
+
+    def test_with_true_thunderbird_starts_once_tools_list_is_answered(self):
+        init, events, br = self.run_cold(True, {"result": {"tools": []}}, notified=4.0)
+        self.assertEqual(events, ["initialize", "send tools/list", "answer", "start_tb",
+                                  "wait notifications/tools/list_changed"])
+        self.assertEqual(br.sent, [{"jsonrpc": "2.0", "method": "notifications/initialized"}])
+        self.assertEqual(init["result"]["serverInfo"], {"name": "s"})
+        self.assertEqual(lab.R["cold_start"], {"mode": True, "capabilities": {"tools": {"listChanged": True}},
+                                               "tools": 0, "seconds": 2.5, "list_changed_after": 3.0})
+        self.assertEqual(lab.R["phases"]["cold_start"]["tools"], 0)
+
+    def test_with_seconds_thunderbird_starts_while_tools_list_waits(self):
+        _, events, _ = self.run_cold(10, {"result": {"tools": [{"name": "a"}, {"name": "b"}]}})
+        self.assertEqual(events, ["initialize", "send tools/list", "sleep 10.0", "start_tb", "answer",
+                                  "wait notifications/tools/list_changed"])
+        self.assertEqual((lab.R["cold_start"]["tools"], lab.R["cold_start"]["list_changed_after"]), (2, None))
+
+    def test_an_answer_that_is_not_a_tool_list_is_recorded_as_an_error(self):
+        self.run_cold(True, {"error": {"code": -32603, "message": "Bridge error: Connection discovery failed"}})
+        cs = lab.R["cold_start"]
+        self.assertIsNone(cs["tools"])
+        self.assertIn("Connection discovery failed", cs["error"])
+        self.run_cold(True, {"result": "odd"})
+        self.assertIsNone(lab.R["cold_start"]["tools"])
+        self.run_cold(True, {"_timeout": True}, at=None)
+        self.assertEqual((lab.R["cold_start"]["tools"], lab.R["cold_start"]["seconds"]), (None, None))
 
 
 class GroupTests(LabCase):
@@ -1763,6 +1880,26 @@ class EvaluateTests(LabCase):
     def ev(self, **c):
         return lab.evaluate(c, self.steps)
 
+    def test_cold_start_compares_each_given_key_with_the_first_answer(self):
+        self.assertEqual(self.ev(type="cold_start", answered=True), (False, "no cold start was run"))
+        lab.R["cold_start"] = {"mode": True, "capabilities": {"tools": {"listChanged": True}}, "tools": 0,
+                               "seconds": 20.0, "list_changed_after": 2.0}
+        self.assertTrue(self.ev(type="cold_start", answered=True, tools=0, list_changed=True,
+                                capability_list_changed=True, max_seconds=25)[0])
+        for wrong in ({"answered": False}, {"tools": 41}, {"list_changed": False}, {"capability_list_changed": False},
+                      {"max_seconds": 10}, {"min_tools": 1}):
+            with self.subTest(wrong=wrong):
+                ok, detail = self.ev(type="cold_start", **wrong)
+                self.assertFalse(ok)
+                self.assertTrue(detail.startswith("wrong: %s; " % next(iter(wrong))))
+        lab.R["cold_start"] = {"mode": 10, "capabilities": {"tools": {}}, "tools": None, "seconds": None,
+                               "list_changed_after": None, "error": "boom"}
+        self.assertTrue(self.ev(type="cold_start", answered=False, list_changed=False, capability_list_changed=False)[0])
+        self.assertFalse(self.ev(type="cold_start", max_seconds=60)[0])
+        self.assertFalse(self.ev(type="cold_start", min_tools=0)[0])
+        lab.R["cold_start"] = {"capabilities": "odd", "tools": 41}
+        self.assertTrue(self.ev(type="cold_start", min_tools=10, capability_list_changed=False)[0])
+
     def test_tool_ok_needs_a_successful_step(self):
         self.assertEqual(self.ev(type="tool_ok", step="s1"), (True, "good"))
         ok, detail = self.ev(type="tool_ok", step="s2")
@@ -2002,14 +2139,15 @@ class MainTests(LabCase):
             calls.append("read_header")
             lab.NONCE, lab.SCENARIO_RAW = NONCE, raw if raw is not None else json.dumps(SCENARIO).encode()
 
-        def run_mcp(sc, br):
-            calls.append("run_mcp")
+        def run_mcp(sc, br, init=None):
+            calls.append("run_mcp" if init is None else "run_mcp after " + init)
             lab.R["steps"] = [{"id": "s1", "ok": True, "text": "t"}]
         fakes = {"run_as_init": stage("run_as_init", as_init), "read_header": read_header,
                  "extract_source": stage("extract_source"), "build_xpi": stage("build_xpi", ("id@x.y", "1.0")),
                  "start_mailpit": stage("start_mailpit"), "start_xvfb": stage("start_xvfb"),
                  "make_profile": stage("make_profile"), "start_tb": stage("start_tb"),
                  "Bridge": lambda env=None: calls.append("Bridge") or ("bridge", env), "run_mcp": run_mcp,
+                 "run_cold_start": lambda sc, br: calls.append("run_cold_start") or "cold init",
                  "inspect": stage("inspect"), "stop": lambda name, sig=None: calls.append("stop " + name),
                  "time": types.SimpleNamespace(monotonic=time.monotonic, sleep=lambda s: calls.append("sleep %s" % s))}
         fakes.update(stages)
@@ -2031,6 +2169,13 @@ class MainTests(LabCase):
         self.assertEqual(res["scenario"]["sha256"], hashlib.sha256(json.dumps(SCENARIO).encode()).hexdigest())
         self.assertEqual(res["summary"], {"pass": 1, "fail": 0, "xfail": 0, "xpass": 0})
         self.assertTrue(any(l.startswith("warning: PID 1 is not the harness") for l in self.logs))
+
+    def test_with_bridge_first_the_bridge_starts_before_thunderbird(self):
+        sc = dict(SCENARIO, bridge_first=True)
+        status, _, calls = self.run_main(raw=json.dumps(sc).encode())
+        self.assertEqual(status, 0)
+        self.assertEqual(calls[calls.index("make_profile") + 1:calls.index("inspect")],
+                         ["Bridge", "run_cold_start", "run_mcp after cold init"])
 
     def test_running_as_the_pid_1_init_child_is_recorded_without_a_warning(self):
         status, out, _ = self.run_main(as_init=True)

@@ -1,0 +1,1 @@
+{"bridge_first": "during", "checks": [{"type": "tools_list_has", "tool": "listFolders"}]}

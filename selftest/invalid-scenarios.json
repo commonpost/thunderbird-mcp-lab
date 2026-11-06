@@ -51,5 +51,7 @@
  "check-unknown-step.json": "check tool_ok: unknown step 's9'",
  "check-step-not-a-string.json": "check tool_ok: unknown step ['s1']",
  "check-xfail-empty.json": "check tool_ok: xfail must be a string of 1-500 characters",
- "check-note-not-string.json": "check tool_ok: note must be a string of 1-500 characters"
+ "check-note-not-string.json": "check tool_ok: note must be a string of 1-500 characters",
+ "bridge-first-not-valid.json": "bridge_first: true, false or seconds 0-60",
+ "check-cold-start-without-bridge-first.json": "check cold_start: needs \"bridge_first\""
 }
