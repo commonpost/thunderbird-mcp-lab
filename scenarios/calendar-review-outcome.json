@@ -1,0 +1,351 @@
+{
+  "name": "calendar-review-outcome",
+  "description": "The dialogs of createEvent and createTask are driven with the keyboard, as a user would (labKeys): createEvent and createTask return a reviewId, and listEvents or listTasks with it tell what became of the dialog. A dialog closed with Escape reads as closed and creates nothing; an event saved with Ctrl+S then Ctrl+L (Save, then Save and Close) reads as saved, with an eventId that updateEvent accepts, and exists once; a task saved with Ctrl+L reads as saved with its taskId. An unknown reviewId is refused, and listTasks does not read the dialog of an event.",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true
+  },
+  "steps": [
+    {
+      "id": "closed-open",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab review closed",
+        "startDate": "2026-12-15T14:00:00Z",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "closed-state-open",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "closed-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    },
+    {
+      "id": "closed-esc",
+      "tool": "labKeys",
+      "arguments": {
+        "window": "New Event: Lab review closed",
+        "keys": [
+          "Escape"
+        ],
+        "gone": true
+      }
+    },
+    {
+      "id": "closed-state",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "closed-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    },
+    {
+      "id": "saved-open",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab review saved twice",
+        "startDate": "2026-12-16T14:00:00Z",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "saved-ctrl-s",
+      "tool": "labKeys",
+      "wait_after": 3,
+      "arguments": {
+        "window": "New Event: Lab review saved twice",
+        "keys": [
+          "ctrl+s"
+        ]
+      }
+    },
+    {
+      "id": "saved-state-open",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "saved-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    },
+    {
+      "id": "saved-ctrl-l",
+      "tool": "labKeys",
+      "wait_after": 2,
+      "arguments": {
+        "window": "Lab review saved twice",
+        "keys": [
+          "ctrl+l"
+        ],
+        "gone": true
+      }
+    },
+    {
+      "id": "saved-state",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "saved-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    },
+    {
+      "id": "update-saved",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": {
+          "$lab_value": {
+            "step": "saved-state",
+            "path": "review.eventId"
+          }
+        },
+        "calendarId": "labstore",
+        "location": "Lab room 2"
+      }
+    },
+    {
+      "id": "events",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-14",
+        "endDate": "2026-12-17",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "task-open",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab review task",
+        "dueDate": "2026-12-20",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "task-save",
+      "tool": "labKeys",
+      "wait_after": 2,
+      "arguments": {
+        "window": "New Task: Lab review task",
+        "keys": [
+          "ctrl+l"
+        ],
+        "gone": true
+      }
+    },
+    {
+      "id": "task-state",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "task-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    },
+    {
+      "id": "tasks",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "unknown",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": "rv-000000000000000000000000"
+      }
+    },
+    {
+      "id": "wrong-kind",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "reviewId": {
+          "$lab_value": {
+            "step": "saved-open",
+            "path": "reviewId"
+          }
+        }
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_result_contains",
+      "step": "closed-open",
+      "contains": "Event dialog opened for \\\"Lab review closed\\\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "closed-open",
+      "contains": "\"reviewId\":\"rv-",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "closed-state-open",
+      "contains": "\"status\":\"open\",\"dialogOpen\":true",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "closed-esc",
+      "contains": "\"closed\": true",
+      "note": "Escape closed the dialog."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "closed-state",
+      "contains": "\"status\":\"closed\",\"dialogOpen\":false",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "closed-state",
+      "contains": "\"message\":\"The dialog was closed without saving: nothing was created.",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-ctrl-s",
+      "contains": "\"window\": \"New Event: Lab review saved twice\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-state-open",
+      "contains": "\"status\":\"saved\",\"dialogOpen\":true",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-state-open",
+      "contains": "\"eventId\":\"",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-ctrl-l",
+      "contains": "\"window\": \"Edit Event: Lab review saved twice\"",
+      "note": "After the first save the dialog edits the saved event (0.19.2: still \"New Event\", and the second save adds it again).",
+      "xfail": "Until the release after 0.19.2: a second save in the event dialog of createEvent added the event again."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-ctrl-l",
+      "contains": "\"closed\": true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-state",
+      "contains": "\"status\":\"saved\",\"dialogOpen\":false",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "saved-state",
+      "contains": "\"calendarId\":\"labstore\"",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_ok",
+      "step": "update-saved",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab review closed",
+      "present": false
+    },
+    {
+      "type": "tool_result_count",
+      "step": "events",
+      "contains": "Lab review saved twice",
+      "equals": 1,
+      "xfail": "Until the release after 0.19.2: a second save in the event dialog of createEvent added the event again."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab room 2",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task-open",
+      "contains": "Task dialog opened for \\\"Lab review task\\\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task-save",
+      "contains": "\"closed\": true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task-state",
+      "contains": "\"kind\":\"task\"",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task-state",
+      "contains": "\"taskId\":\"",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "tasks",
+      "contains": "Lab review task"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "unknown",
+      "contains": "Unknown reviewId for createEvent: rv-000000000000000000000000",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "wrong-kind",
+      "contains": "Unknown reviewId for createTask: rv-",
+      "xfail": "Until the release after 0.19.2: the reviewId of the event and task dialogs.",
+      "note": "listTasks does not read the dialog of an event (tool settings may hide listEvents)."
+    }
+  ]
+}

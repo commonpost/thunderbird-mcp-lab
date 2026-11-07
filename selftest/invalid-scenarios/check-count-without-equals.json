@@ -1,0 +1,15 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts"
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_result_count",
+   "step": "s1",
+   "contains": "x"
+  }
+ ]
+}
