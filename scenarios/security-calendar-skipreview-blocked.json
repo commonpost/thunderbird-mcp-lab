@@ -77,12 +77,12 @@
     {
       "type": "tool_error_contains",
       "step": "event-skip",
-      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review dialog instead."
+      "contains": "Retry with skipReview: false (or omitted) to open the review dialog instead."
     },
     {
       "type": "tool_error_contains",
       "step": "task-skip",
-      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review dialog instead."
+      "contains": "Retry with skipReview: false (or omitted) to open the review dialog instead."
     },
     {
       "type": "tool_ok",

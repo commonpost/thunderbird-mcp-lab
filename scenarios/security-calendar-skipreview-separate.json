@@ -1,0 +1,173 @@
+{
+  "name": "security-calendar-skipreview-separate",
+  "description": "The block of skipReview for events and tasks (blockCalendarSkipReview) is turned off and the one for mail (blockSkipReview) keeps its default, on: createEvent and createTask with skipReview add the event and the task at once, while sendMail with skipReview and replyToMessage and forwardMessage with mode \"send\" are still refused before any message lookup, and nothing reaches the local SMTP sink.",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "extensions.commonpost-mcp.blockCalendarSkipReview": false
+  },
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "event-skip",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab direct event",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "task-skip",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab direct task",
+        "dueDate": "2026-12-31",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "send-skipreview",
+      "tool": "sendMail",
+      "timeout": 30,
+      "arguments": {
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab blocked send [cs2]",
+        "body": "Must not be sent.",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "reply-send",
+      "tool": "replyToMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "absent@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "body": "Must not be sent.",
+        "mode": "send",
+        "to": "someone@example.com",
+        "from": "lab@example.test"
+      }
+    },
+    {
+      "id": "forward-send",
+      "tool": "forwardMessage",
+      "timeout": 30,
+      "arguments": {
+        "messageId": "absent@example.com",
+        "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "mode": "send"
+      }
+    },
+    {
+      "id": "events",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "tasks",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_ok",
+      "step": "event-skip",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "event-skip",
+      "contains": "Event \\\"Lab direct event\\\" added to calendar \\\"Lab store\\\"",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_ok",
+      "step": "task-skip",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task-skip",
+      "contains": "Task \\\"Lab direct task\\\" created in calendar \\\"Lab store\\\"",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send-skipreview",
+      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review window instead.",
+      "note": "The block for mail is untouched by the one for events and tasks."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "reply-send",
+      "contains": "blocks direct sending",
+      "note": "Refused before the message lookup: the message does not exist."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "forward-send",
+      "contains": "blocks direct sending",
+      "note": "Refused before the message lookup: the message does not exist."
+    },
+    {
+      "type": "tool_ok",
+      "step": "events"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab direct event",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_ok",
+      "step": "tasks"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "tasks",
+      "contains": "Lab direct task",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "draft_count",
+      "subject": "[cs2]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
