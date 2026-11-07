@@ -440,7 +440,8 @@
       "timeout": 30,
       "arguments": {
         "title": "Lab task dialog",
-        "calendarId": "labstore"
+        "calendarId": "labstore",
+        "skipReview": false
       },
       "wait_after": 3
     }
@@ -866,7 +867,7 @@
       "type": "tool_result_contains",
       "step": "ct-dialog",
       "contains": "Task dialog opened",
-      "note": "without skipReview a review dialog is opened (not driven here)"
+      "note": "with skipReview: false a review dialog is opened (not driven here)"
     },
     {
       "type": "file_contains",

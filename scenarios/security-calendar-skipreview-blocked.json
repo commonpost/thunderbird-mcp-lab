@@ -1,13 +1,14 @@
 {
   "name": "security-calendar-skipreview-blocked",
-  "description": "Direct creation is blocked by default (blockSkipReview is not set, so it keeps its default, true) for the calendar tools too: createEvent and createTask with skipReview are refused before anything is looked up, and nothing is created; without skipReview createEvent still opens its review dialog (not driven).",
+  "description": "While the block of skipReview for events and tasks is on (blockCalendarSkipReview true; a new install starts with it off, see calendar-direct-default.json), createEvent and createTask with skipReview are refused before anything is looked up, and nothing is created; without skipReview createEvent opens its review dialog (not driven). On 0.19.2 the one block for mail (default on) refuses them the same way.",
   "prefs": {
     "calendar.list.sortOrder": "labstore",
     "calendar.registry.labstore.type": "storage",
     "calendar.registry.labstore.uri": "moz-storage-calendar://",
     "calendar.registry.labstore.name": "Lab store",
     "calendar.registry.labstore.disabled": false,
-    "calendar.registry.labstore.calendar-main-in-composite": true
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "extensions.commonpost-mcp.blockCalendarSkipReview": true
   },
   "steps": [
     {

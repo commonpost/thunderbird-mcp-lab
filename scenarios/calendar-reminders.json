@@ -82,7 +82,8 @@
         "calendarId": "labstore",
         "reminders": [
           30
-        ]
+        ],
+        "skipReview": false
       }
     },
     {
