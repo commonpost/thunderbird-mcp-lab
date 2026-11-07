@@ -1,0 +1,736 @@
+{
+ "name": "getmessage-hidden-text-engine",
+ "description": "getMessage judges hidden text on the message as Thunderbird's message pane renders it.",
+ "prefs": {
+  "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1",
+  "extensions.commonpost-mcp.hiddenTextDiagnostics": true
+ },
+ "seed": [
+  {
+   "folder": "127.0.0.1/Inbox",
+   "messages": [
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE wrapper\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-wrapper@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html lang=\"fr\"><head><style>\n.moz-text-html > .w1 {display:none}\nbody > div.moz-text-html .w2 {display:none}\n.w3 {display:none}\nhtml:has(meta[http-equiv]) .w3 {display:block}\ntable.moz-header-part1 ~ div .w4 {display:none}\nhtml { overflow: hidden !important; height: 300px }\n</style></head><body>\n<p>VISIBLE-START</p>\n<div class=\"w1\">LEAK-WRAPPER-CHILD</div>\n<div><span class=\"w2\">LEAK-WRAPPER-DESC</span></div>\n<div class=\"w3\">LEAK-HAS-META</div>\n<div><span class=\"w4\">LEAK-HEADER-SIBLING</span></div>\n<div class=\"moz-print-only\">LEAK-PRINT-ONLY</div>\n<p>VISIBLE-END</p>\n<div style=\"position:absolute;top:600px\">VISIBLE-AT-600</div><div style=\"position:absolute;top:750px\">LEAK-AT-750</div><div style=\"position:absolute;top:3000px\">LEAK-AT-3000</div>\n</body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE gradient\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-gradient@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><head><style>.g{background:linear-gradient(90deg,#667ddf,#1a2e89);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}.u{background:var(--undefined-gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}</style></head><body><h1 class=\"g\">VISIBLE-GRADIENT</h1><div class=\"g\"><span>VISIBLE-GRADIENT-CHILD</span></div><p class=\"u\">LEAK-NO-GRADIENT</p><p style=\"color:transparent\">LEAK-PLAIN-TRANSPARENT</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE images\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-images@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body><table width=\"600\"><tr><td style=\"padding:25px;text-align:center;\"><img src=\"https://example.com/x.png\" alt=\"ALT-WIDTH100\" style=\"width:100%;max-width:230px;border-radius:10px\"><p>VISIBLE-IMAGES</p><img src=\"https://example.com/y.png\" alt=\"ALT-PLAIN\"><img src=\"https://example.com/z.png\" alt=\"ALT-SIZED\" width=\"120\" height=\"40\"><a href=\"https://example.com/with-alt\"><img src=\"https://example.com/b.png\" alt=\"ALT-IN-LINK\"></a><a href=\"https://example.com/no-alt-link\"><img src=\"https://example.com/c.png\" alt=\"\"></a><span style=\"overflow:hidden\">VISIBLE-SPAN-OVERFLOW</span><div style=\"overflow:hidden;height:0\">LEAK-DIV-OVERFLOW</div><div style=\"display:none\"><img src=\"https://example.com/d.png\" alt=\"LEAK-ALT-HIDDEN\"></div></td></tr></table></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE related\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-related@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/related; boundary=\"REL\"\n\n--REL\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body><p>VISIBLE-RELATED</p>\n<div style=\"height:100px;overflow:hidden\"><img src=\"cid:logo@example.com\" alt=\"LOGO\"><p>LEAK-PUSHED-BY-CID</p></div>\n<p>VISIBLE-AFTER</p></body></html>\n--REL\nContent-Type: image/png\nContent-ID: <logo@example.com>\nContent-Transfer-Encoding: base64\nContent-Disposition: inline\n\niVBORw0KGgoAAAANSUhEUgAAAMgAAAEsCAIAAAAJmGvpAAACI0lEQVR42u3SQQkAAAwDsSqpfymT\nNRODfQJRcFymhXORAGNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2Es\njAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2Nh\nLDAWxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlgYSwWMhbEwFhgL\nY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgY\nC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJY\nGAuMhbEwFhgLY2EsMBbGwlhgLIyFsTCWChgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXG\nwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAW\nxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjYSwJ\nMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OB\nsTAWxgJjYSyMBcbi3wKMGBdzHiX5sQAAAABJRU5ErkJggg==\n--REL--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE plain\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-plain@example.com>\nMIME-Version: 1.0\nContent-Type: multipart/alternative; boundary=\"ALT\"\n\n--ALT\nContent-Type: text/plain; charset=UTF-8\n\nVISIBLE-PLAIN-PART\n--ALT\nContent-Type: text/html; charset=UTF-8\n\n<html><body><p>VISIBLE-HTML-PART</p><p style=\"display:none\">LEAK-HTML-HIDDEN</p></body></html>\n--ALT--\n",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE mjml\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-mjml@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<!doctype html><html><head><style>@media only screen and (min-width:480px){.mj-col{width:100%!important}} .mj-col{display:inline-block}</style></head><body style=\"background:#fff\"><div style=\"font-size:0px\"><div class=\"mj-col\" style=\"font-size:14px\">VISIBLE-MJML-COLUMN</div></div><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAEElEQVR42mM4IScHRwzEcQCxYxBB00rMDQAAAABJRU5ErkJggg==\" width=\"4\" height=\"4\" alt=\"\"><p style=\"color:#ffffff;background:#ffffff\">LEAK-WHITE</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE message URLs\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-urls@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body><p>VISIBLE-URLS-START</p><img src=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\" alt=\"ALT-MAILBOX\" width=\"20\" height=\"20\"><img srcset=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2 1x\" width=\"20\" height=\"20\"><picture><source srcset=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\"><img width=\"20\" height=\"20\"></picture><audio src=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\"></audio><iframe src=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\"></iframe><img src=\"imap://lab@127.0.0.1:143/fetch%3EUID%3E/INBOX%3E1?part=1.2\" width=\"20\" height=\"20\"><img src=\"cid:missing@example.com\" alt=\"ALT-CID\" width=\"20\" height=\"20\"><p style=\"display:none\">LEAK-URLS-HIDDEN</p><p>VISIBLE-URLS-END</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE animation\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-smil@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body><p>VISIBLE-SMIL</p><svg width=\"20\" height=\"20\"><image href=\"data:,\" width=\"10\" height=\"10\"><set attributeName=\"href\" to=\"mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\" begin=\"0s\"/></image></svg><p style=\"display:none\">LEAK-SMIL-HIDDEN</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE refresh\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-refresh@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><head><meta http-equiv=\"refresh\" content=\"0;url=mailbox:///nowhere/Mail/Local%20Folders/Inbox?number=1&amp;part=1.2\"></head><body><p>VISIBLE-REFRESH</p><p style=\"display:none\">LEAK-REFRESH-HIDDEN</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: HE receipt\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-mdn@example.com>\nDisposition-Notification-To: Alice Example <alice@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n\n<html><body><p>VISIBLE-RECEIPT</p></body></html>",
+    "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: last\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <he-last@example.com>\nMIME-Version: 1.0\nContent-Type: text/html; charset=UTF-8\n\n<p>LAST</p>"
+   ]
+  }
+ ],
+ "steps": [
+  {
+   "id": "index-trigger",
+   "tool": "applyFilters",
+   "timeout": 30,
+   "arguments": {
+    "accountId": "account2",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   },
+   "wait_after": 3,
+   "retry": {
+    "attempts": 10,
+    "delay": 2
+   }
+  },
+  {
+   "id": "index-ready",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-last@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "html"
+   },
+   "retry": {
+    "attempts": 12,
+    "delay": 3
+   }
+  },
+  {
+   "id": "he-wrapper-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-wrapper@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-wrapper-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-wrapper@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-related-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-related@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-related-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-related@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-mjml-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-mjml@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-mjml-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-mjml@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-images-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-images@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-images-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-images@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-gradient-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-gradient@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-gradient-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-gradient@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-urls-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-urls@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "markdown"
+   }
+  },
+  {
+   "id": "he-urls-text",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-urls@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox",
+    "bodyFormat": "text"
+   }
+  },
+  {
+   "id": "he-plain-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-plain@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "he-smil-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-smil@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "he-refresh-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-refresh@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "he-mdn-markdown",
+   "tool": "getMessage",
+   "timeout": 120,
+   "arguments": {
+    "messageId": "he-mdn@example.com",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  },
+  {
+   "id": "he-mdn-after",
+   "tool": "searchMessages",
+   "timeout": 60,
+   "arguments": {
+    "query": "subject:\"HE receipt\"",
+    "folderPath": "mailbox://lab@127.0.0.1/Inbox"
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "index-trigger"
+  },
+  {
+   "type": "tool_ok",
+   "step": "index-ready"
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-wrapper-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "VISIBLE-START"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "VISIBLE-END"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "LEAK-WRAPPER-CHILD",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "LEAK-WRAPPER-DESC",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "LEAK-HEADER-SIBLING",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-markdown",
+   "contains": "LEAK-PRINT-ONLY",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-wrapper-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "VISIBLE-START"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "VISIBLE-END"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "LEAK-WRAPPER-CHILD",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "LEAK-WRAPPER-DESC",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "LEAK-HEADER-SIBLING",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-wrapper-text",
+   "contains": "LEAK-PRINT-ONLY",
+   "present": false,
+   "note": "Selectors on Thunderbird's own wrapper (div.moz-text-html), header tables and print-only class hide this text in the message pane.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-related-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-markdown",
+   "contains": "VISIBLE-RELATED"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-markdown",
+   "contains": "VISIBLE-AFTER"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-markdown",
+   "contains": "LEAK-PUSHED-BY-CID",
+   "present": false,
+   "note": "The message's own image (cid:) pushes this text out of a box that clips.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-related-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-text",
+   "contains": "VISIBLE-RELATED"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-text",
+   "contains": "VISIBLE-AFTER"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-related-text",
+   "contains": "LEAK-PUSHED-BY-CID",
+   "present": false,
+   "note": "The message's own image (cid:) pushes this text out of a box that clips.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-mjml-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-markdown",
+   "contains": "VISIBLE-MJML-COLUMN"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-markdown",
+   "contains": "LEAK-WHITE",
+   "present": false,
+   "note": "White text on a white background.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-mjml-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-text",
+   "contains": "VISIBLE-MJML-COLUMN"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mjml-text",
+   "contains": "LEAK-WHITE",
+   "present": false,
+   "note": "White text on a white background.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-images-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-markdown",
+   "contains": "VISIBLE-IMAGES"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-markdown",
+   "contains": "VISIBLE-SPAN-OVERFLOW"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-markdown",
+   "contains": "LEAK-DIV-OVERFLOW",
+   "present": false,
+   "note": "overflow:hidden on a box of height 0; an image inside display:none.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-markdown",
+   "contains": "LEAK-ALT-HIDDEN",
+   "present": false,
+   "note": "overflow:hidden on a box of height 0; an image inside display:none."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-images-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-text",
+   "contains": "VISIBLE-IMAGES"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-text",
+   "contains": "VISIBLE-SPAN-OVERFLOW"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-text",
+   "contains": "LEAK-DIV-OVERFLOW",
+   "present": false,
+   "note": "overflow:hidden on a box of height 0; an image inside display:none.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-images-text",
+   "contains": "LEAK-ALT-HIDDEN",
+   "present": false,
+   "note": "overflow:hidden on a box of height 0; an image inside display:none."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-gradient-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-markdown",
+   "contains": "VISIBLE-GRADIENT"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-markdown",
+   "contains": "VISIBLE-GRADIENT-CHILD"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-markdown",
+   "contains": "LEAK-NO-GRADIENT",
+   "present": false,
+   "note": "Transparent text is hidden unless a background is painted through it (background-clip: text).",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-markdown",
+   "contains": "LEAK-PLAIN-TRANSPARENT",
+   "present": false,
+   "note": "Transparent text is hidden unless a background is painted through it (background-clip: text).",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-gradient-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-text",
+   "contains": "VISIBLE-GRADIENT"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-text",
+   "contains": "VISIBLE-GRADIENT-CHILD"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-text",
+   "contains": "LEAK-NO-GRADIENT",
+   "present": false,
+   "note": "Transparent text is hidden unless a background is painted through it (background-clip: text).",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-gradient-text",
+   "contains": "LEAK-PLAIN-TRANSPARENT",
+   "present": false,
+   "note": "Transparent text is hidden unless a background is painted through it (background-clip: text).",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-urls-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "VISIBLE-URLS-START"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "VISIBLE-URLS-END"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "LEAK-URLS-HIDDEN",
+   "present": false,
+   "note": "URLs of Thunderbird's message protocols in a message never reach the frame that renders it: they must not be loaded outside Thunderbird's main process."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-urls-text"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-text",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "The layout engine decided, not the inline-style reading.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-text",
+   "contains": "VISIBLE-URLS-START"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-text",
+   "contains": "VISIBLE-URLS-END"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-text",
+   "contains": "LEAK-URLS-HIDDEN",
+   "present": false,
+   "note": "URLs of Thunderbird's message protocols in a message never reach the frame that renders it: they must not be loaded outside Thunderbird's main process."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-plain-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-plain-markdown",
+   "contains": "VISIBLE-HTML-PART"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-plain-markdown",
+   "contains": "LEAK-HTML-HIDDEN",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "ALT-MAILBOX",
+   "note": "The alt text of an image that does not load shows in its place."
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-urls-markdown",
+   "contains": "ALT-CID",
+   "note": "The alt text of an image that does not load shows in its place."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-smil-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-smil-markdown",
+   "contains": "VISIBLE-SMIL"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-smil-markdown",
+   "contains": "LEAK-SMIL-HIDDEN",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-smil-markdown",
+   "contains": "\"hiddenTextJudge\":\"fallback: SVG animation\"",
+   "note": "Such a message is not rendered: it would bring a message URL to the frame after the checks.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-refresh-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-refresh-markdown",
+   "contains": "VISIBLE-REFRESH"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-refresh-markdown",
+   "contains": "LEAK-REFRESH-HIDDEN",
+   "present": false
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-refresh-markdown",
+   "contains": "\"hiddenTextJudge\":\"layout\"",
+   "note": "A message with a refresh to a message URL renders without a crash and without following the refresh.",
+   "xfail": "Until the release after 0.19.2: hidden text judged by Thunderbird's layout engine (2nd hidden-text change)."
+  },
+  {
+   "type": "tool_ok",
+   "step": "he-mdn-markdown"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mdn-markdown",
+   "contains": "VISIBLE-RECEIPT"
+  },
+  {
+   "type": "tool_result_contains",
+   "step": "he-mdn-after",
+   "contains": "\"read\":false",
+   "note": "Rendering a message for the engine does not mark it read."
+  },
+  {
+   "type": "mailpit_total",
+   "equals": 0,
+   "note": "Nothing is sent: no read receipt for a message that asks for one."
+  }
+ ]
+}
