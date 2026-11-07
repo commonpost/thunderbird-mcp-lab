@@ -1,0 +1,209 @@
+{
+  "name": "calendar-direct-default",
+  "description": "A new install, with no setting of its own for Send Safety: createEvent and createTask without skipReview add the event and the task at once (the block of skipReview for events and tasks starts off on a new install), with eventId or taskId, calendarId and the dates in the result; updateEvent accepts the eventId, and listEvents and listTasks show both. createEvent with skipReview: false still opens the dialog, which Escape closes without creating anything. Mail keeps its block: sendMail with skipReview is refused and nothing reaches the local SMTP sink.",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true
+  },
+  "steps": [
+    {
+      "id": "ev",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab direct default",
+        "startDate": "2026-12-15T14:00:00Z",
+        "endDate": "2026-12-15T15:00:00Z",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "task",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab direct default task",
+        "dueDate": "2026-12-20T10:00:00Z",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "update",
+      "tool": "updateEvent",
+      "timeout": 30,
+      "arguments": {
+        "eventId": {
+          "$lab_value": {
+            "step": "ev",
+            "path": "eventId"
+          }
+        },
+        "calendarId": "labstore",
+        "location": "Lab room 3"
+      }
+    },
+    {
+      "id": "dialog",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab asked for the dialog",
+        "startDate": "2026-12-16T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": false
+      }
+    },
+    {
+      "id": "dialog-esc",
+      "tool": "labKeys",
+      "arguments": {
+        "window": "New Event: Lab asked for the dialog",
+        "keys": [
+          "Escape"
+        ],
+        "gone": true
+      }
+    },
+    {
+      "id": "events",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-14",
+        "endDate": "2026-12-17",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "tasks",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "send",
+      "tool": "sendMail",
+      "timeout": 30,
+      "arguments": {
+        "to": "someone@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab blocked send [cd1]",
+        "body": "Must not be sent.",
+        "skipReview": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_result_contains",
+      "step": "ev",
+      "contains": "Event \\\"Lab direct default\\\" added to calendar \\\"Lab store\\\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ev",
+      "contains": "\"eventId\":\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ev",
+      "contains": "\"calendarId\":\"labstore\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ev",
+      "contains": "\"startDate\":\"2026-12-15T14:00:00.000Z\",\"endDate\":\"2026-12-15T15:00:00.000Z\",\"allDay\":false",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "ev",
+      "contains": "Event dialog opened",
+      "present": false,
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task",
+      "contains": "Task \\\"Lab direct default task\\\" created in calendar \\\"Lab store\\\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task",
+      "contains": "\"taskId\":\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "task",
+      "contains": "\"dueDate\":\"2026-12-20T10:00:00.000Z\"",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_ok",
+      "step": "update",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dialog",
+      "contains": "Event dialog opened for \\\"Lab asked for the dialog\\\"",
+      "note": "skipReview: false still asks for the dialog."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "dialog-esc",
+      "contains": "\"closed\": true",
+      "note": "Escape closed the dialog."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab direct default",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab room 3",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab asked for the dialog",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "tasks",
+      "contains": "Lab direct default task",
+      "xfail": "Until the release after 0.19.2: a new install adds events and tasks at once."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "send",
+      "contains": "User preference blocks skipReview. Retry with skipReview: false (or omitted) to open the review window instead.",
+      "note": "A new install keeps the block for mail on."
+    },
+    {
+      "type": "draft_count",
+      "subject": "[cd1]",
+      "equals": 0
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
