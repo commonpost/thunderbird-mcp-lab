@@ -1,6 +1,6 @@
 {
   "name": "calendar-review-outcome",
-  "description": "The dialogs of createEvent and createTask are driven with the keyboard, as a user would (labKeys): createEvent and createTask return a reviewId, and listEvents or listTasks with it tell what became of the dialog. A dialog closed with Escape reads as closed and creates nothing; an event saved with Ctrl+S then Ctrl+L (Save, then Save and Close) reads as saved, with an eventId that updateEvent accepts, and exists once; a task saved with Ctrl+L reads as saved with its taskId. An unknown reviewId is refused, and listTasks does not read the dialog of an event.",
+  "description": "The dialogs of createEvent and createTask, asked for with skipReview: false (a new install adds events and tasks at once), are driven with the keyboard, as a user would (labKeys): createEvent and createTask return a reviewId, and listEvents or listTasks with it tell what became of the dialog. A dialog closed with Escape reads as closed and creates nothing; an event saved with Ctrl+S then Ctrl+L (Save, then Save and Close) reads as saved, with an eventId that updateEvent accepts, and exists once; a task saved with Ctrl+L reads as saved with its taskId. An unknown reviewId is refused, and listTasks does not read the dialog of an event.",
   "prefs": {
     "calendar.list.sortOrder": "labstore",
     "calendar.registry.labstore.type": "storage",
@@ -17,7 +17,8 @@
       "arguments": {
         "title": "Lab review closed",
         "startDate": "2026-12-15T14:00:00Z",
-        "calendarId": "labstore"
+        "calendarId": "labstore",
+        "skipReview": false
       }
     },
     {
@@ -64,7 +65,8 @@
       "arguments": {
         "title": "Lab review saved twice",
         "startDate": "2026-12-16T14:00:00Z",
-        "calendarId": "labstore"
+        "calendarId": "labstore",
+        "skipReview": false
       }
     },
     {
@@ -148,7 +150,8 @@
       "arguments": {
         "title": "Lab review task",
         "dueDate": "2026-12-20",
-        "calendarId": "labstore"
+        "calendarId": "labstore",
+        "skipReview": false
       }
     },
     {
