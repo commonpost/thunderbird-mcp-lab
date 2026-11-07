@@ -87,6 +87,11 @@ def ok_reply(text):
     return {"result": {"content": [{"type": "text", "text": text}]}}
 
 
+def lab_ref(step, path="reviewId"):
+    """A $lab_value object: the value at `path` of the JSON that starts the result of the earlier step `step`."""
+    return {"$lab_value": {"step": step, "path": path}}
+
+
 def result_block(text, nonce=NONCE):
     begin = lab.MARK_BEGIN % nonce + "\n"
     start = text.index(begin) + len(begin)
@@ -493,6 +498,89 @@ class ScenarioTests(LabCase):
         with self.assertRaisesRegex(ValueError, r"^a\.b\[1\]: "):
             lab.expand_args({"a": {"b": [1, {"$lab_base64": {"bytes": 0}}]}}, "", None)
 
+    def test_expand_args_replaces_a_value_object_with_a_value_of_an_earlier_result(self):
+        lab.FULLTEXT["open"] = '{"reviewId": "rv-1", "count": 3, "ratio": 1.5, "review": {"eventId": "ev-9"}}'
+        obj = {"a": lab_ref("open"), "b": [lab_ref("open", "review.eventId")], "c": {"d": lab_ref("open", "count")},
+               "e": lab_ref("open", "ratio"), "f": 5}
+        self.assertEqual(lab.expand_args(obj, "", []), {"a": "rv-1", "b": ["ev-9"], "c": {"d": 3}, "e": 1.5, "f": 5})
+        self.assertEqual(obj["a"], lab_ref("open"))      # the scenario itself is not modified
+
+    def test_expand_args_reads_the_json_value_that_starts_the_text_and_ignores_what_follows(self):
+        lab.FULLTEXT["open"] = '{"reviewId": "rv-1"}\nUntrusted content: {"reviewId": "rv-2"}'
+        self.assertEqual(lab.expand_args({"k": lab_ref("open")}, "", None), {"k": "rv-1"})
+        lab.FULLTEXT["open"] = '\n  {"reviewId": "rv-3"} trailing text'
+        self.assertEqual(lab.expand_args({"k": lab_ref("open")}, "", None), {"k": "rv-3"})
+
+    def test_expand_args_reports_a_missing_value_as_missing_value_naming_the_path(self):
+        self.assertTrue(issubclass(lab.MissingValue, ValueError))
+        texts = {"no text at all": None, "empty text": "", "text that is not JSON": "Event dialog opened",
+                 "JSON that starts after other text": 'Note: {"a": "x"}', "a list at the start": '[{"a": "x"}]',
+                 "a number at the start": "5", "a key that is absent": '{"b": "x"}',
+                 "a path through a string": '{"a": {"b": "x"}}', "a path through a list": '{"a": {"b": ["x"]}}',
+                 "a boolean": '{"a": {"b": {"c": true}}}', "false": '{"a": {"b": {"c": false}}}',
+                 "null": '{"a": {"b": {"c": null}}}', "a list": '{"a": {"b": {"c": ["x"]}}}',
+                 "an object": '{"a": {"b": {"c": {"d": "x"}}}}',
+                 "NaN": '{"a": {"b": {"c": NaN}}}', "Infinity": '{"a": {"b": {"c": Infinity}}}',
+                 "-Infinity": '{"a": {"b": {"c": -Infinity}}}',
+                 "a nesting too deep to read": '{"a": ' * 30000 + "1" + "}" * 30000}
+        for what, text in texts.items():
+            with self.subTest(what=what):
+                lab.FULLTEXT.clear()
+                if text is not None:
+                    lab.FULLTEXT["s1"] = text
+                with self.assertRaises(lab.MissingValue) as cm:
+                    lab.expand_args({"x": {"id": lab_ref("s1", "a.b.c")}}, "", None)
+                self.assertEqual(str(cm.exception), "x.id: step s1 has no value at a.b.c")
+
+    def test_expand_args_names_the_arguments_when_the_value_object_is_the_whole_object(self):
+        with self.assertRaisesRegex(lab.MissingValue, "^arguments: step s1 has no value at reviewId$"):
+            lab.expand_args(lab_ref("s1"), "", None)
+
+    def test_expand_args_leaves_a_value_object_alone_in_validation_mode(self):
+        obj = {"k": [lab_ref("open", "a.b")], "n": 1}
+        self.assertEqual(lab.expand_args(obj, "", None, generate=False), obj)       # no result is read
+        lab.FULLTEXT["open"] = '{"a": {"b": "x"}}'
+        self.assertEqual(lab.expand_args(obj, "", None, generate=False), obj)
+
+    def test_expand_args_rejects_malformed_value_objects(self):
+        bad = [{"step": "s", "path": "a", "extra": 1}, {"step": "s"}, {"path": "a"}, {}, {"step": 1, "path": "a"},
+               {"step": None, "path": "a"}, {"step": "s", "path": 1}, {"step": "s", "path": ""},
+               {"step": "s", "path": "a..b"}, {"step": "s", "path": "a."}, {"step": "s", "path": ".a"},
+               {"step": "s", "path": "1a"}, {"step": "s", "path": "a-b"}, {"step": "s", "path": "a b"},
+               {"step": "s", "path": "a\n"}, {"step": "s", "path": ".".join("a" * 9)},
+               {"step": "s", "path": "a" * 65}, "text", None, 5, ["s", "a"]]
+        for spec in bad:
+            for generate in (False, True):
+                with self.subTest(spec=spec, generate=generate), self.assertRaises(ValueError) as cm:
+                    lab.expand_args({"k": {"$lab_value": spec}}, "", None, generate=generate)
+                self.assertNotIsInstance(cm.exception, lab.MissingValue)
+                self.assertRegex(str(cm.exception), r"^k: \$lab_value = \{step, path \(a\.b, at most 8 names\)\}$")
+
+    def test_expand_args_accepts_a_path_of_up_to_8_names_of_up_to_64_characters(self):
+        for path in ("a", "_a1", "a" * 64, ".".join("a" * 8)):
+            with self.subTest(path=path):
+                obj = {"k": lab_ref("s", path)}
+                self.assertEqual(lab.expand_args(obj, "", None, generate=False), obj)
+
+    def test_expand_args_refuses_a_step_that_is_not_among_the_allowed_earlier_steps(self):
+        obj = {"k": lab_ref("later", "a")}
+        for generate in (False, True):
+            with self.subTest(generate=generate), self.assertRaisesRegex(
+                    ValueError, r"^k: \$lab_value names 'later', not an earlier step outside this batch$"):
+                lab.expand_args(obj, "", None, generate=generate, earlier={"s1", "s2"})
+        with self.assertRaisesRegex(ValueError, r"\$lab_value names 'later'"):
+            lab.expand_args(obj, "", None, generate=False, earlier=set())       # an empty set allows nothing
+        self.assertEqual(lab.expand_args(obj, "", None, generate=False, earlier={"later"}), obj)
+        self.assertEqual(lab.expand_args(obj, "", None, generate=False, earlier=None), obj)    # no restriction
+
+    def test_expand_args_checks_the_form_of_a_value_object_before_its_step(self):
+        with self.assertRaisesRegex(ValueError, r"^k: \$lab_value = \{step, path"):
+            lab.expand_args({"k": {"$lab_value": {"step": "later"}}}, "", None, generate=False, earlier=set())
+
+    def test_a_value_object_with_other_keys_beside_it_is_an_ordinary_object(self):
+        obj = {"$lab_value": {"step": "s", "path": "a"}, "other": 1}
+        self.assertEqual(lab.expand_args(obj, "", None), obj)
+
     def test_pref_line_formats_booleans_integers_and_strings(self):
         self.assertEqual(lab.pref_line("a.b", True), 'user_pref("a.b", true);\n')
         self.assertEqual(lab.pref_line("a.b", False), 'user_pref("a.b", false);\n')
@@ -522,6 +610,129 @@ class ScenarioTests(LabCase):
             lab.load_scenario(json.dumps(sc))
         sc["seed"][0]["messages"] = ["x" * 250000] * 20
         lab.load_scenario(json.dumps(sc))
+
+    def load_steps(self, *steps):
+        """load_scenario of a scenario made of `steps` (dicts) and one check on the first of them."""
+        return lab.load_scenario(json.dumps(dict(SCENARIO, steps=list(steps),
+                                                 checks=[{"type": "tool_ok", "step": steps[0]["id"]}])))
+
+    def test_load_scenario_accepts_a_value_object_that_names_an_earlier_step(self):
+        use = {"id": "use", "tool": "listEvents",
+               "arguments": {"reviewId": lab_ref("open"), "n": [lab_ref("open", "a.b")]}}
+        sc = self.load_steps({"id": "open", "tool": "createEvent"}, {"id": "mid", "tool": "listEvents"}, use)
+        self.assertEqual(sc["steps"][2], use)
+        self.load_steps({"id": "open", "tool": "createEvent", "batch": "b1"},
+                        {"id": "also", "tool": "createTask", "batch": "b1"},
+                        dict(use, batch="b2"))                     # an earlier step of another batch
+        self.load_steps({"id": "open", "tool": "createEvent", "batch": "b1"}, use)      # one that has no batch
+        self.load_steps({"id": "open", "tool": "createEvent"}, dict(use, batch="b2"))   # from a step in a batch
+        self.load_steps({"id": "open", "tool": "createEvent"},
+                        {"id": "first", "tool": "listEvents", "batch": "b2", "arguments": {"k": lab_ref("open")}},
+                        {"id": "second", "tool": "listEvents", "batch": "b2", "arguments": {"k": lab_ref("open")}})
+
+    def test_load_scenario_refuses_a_value_object_that_names_a_later_step_or_the_step_itself(self):
+        for naming in ("s2", "s1", "ghost"):
+            with self.subTest(naming=naming), self.assertRaisesRegex(
+                    ValueError, r"^k: \$lab_value names %r, not an earlier step outside this batch$" % naming):
+                self.load_steps({"id": "s1", "tool": "t", "arguments": {"k": lab_ref(naming)}},
+                                {"id": "s2", "tool": "t"})
+
+    def test_load_scenario_refuses_a_value_object_that_names_a_step_of_the_same_batch(self):
+        with self.assertRaisesRegex(ValueError, r"^k: \$lab_value names 'a', not an earlier step outside this batch$"):
+            self.load_steps({"id": "a", "tool": "t", "batch": "b"},
+                            {"id": "c", "tool": "t", "batch": "b", "arguments": {"k": lab_ref("a")}})
+
+    def test_load_scenario_refuses_a_malformed_value_object_in_the_arguments_of_a_step(self):
+        for spec in ({"step": "s1"}, {"step": "s1", "path": "a..b"}, {"step": "s1", "path": "1a"},
+                     {"step": 1, "path": "a"}, {"step": "s1", "path": "a", "extra": 1}):
+            with self.subTest(spec=spec), self.assertRaisesRegex(ValueError, r"^x\[0\]\.y: \$lab_value = \{step, path"):
+                self.load_steps({"id": "s1", "tool": "t"},
+                                {"id": "s2", "tool": "t", "arguments": {"x": [{"y": {"$lab_value": spec}}]}})
+
+    def lab_keys(self, **args):
+        return {"id": "k", "tool": "labKeys", "arguments": args}
+
+    def test_load_scenario_accepts_a_lab_keys_step(self):
+        full = self.lab_keys(window="New Event: Lab review", keys=["ctrl+s", "Escape"], wait=5, gone=True)
+        sc = self.load_steps(dict(full, wait_after=3))
+        self.assertEqual(sc["steps"][0], dict(full, wait_after=3))
+        for names in (["a", "0", "Escape", "Return", "Tab", "space", "F1", "F9", "F10", "F12"],
+                      ["ctrl+s", "shift+Tab", "alt+F4", "ctrl+shift+alt+a", "ctrl+Return"]):
+            self.load_steps(self.lab_keys(window="w", keys=names))
+        self.load_steps(self.lab_keys(window="w", keys=["a"] * 10, wait=1, gone=False))
+        self.load_steps(self.lab_keys(window="x" * 100, keys=["a"], wait=60))
+        self.load_steps(self.lab_keys(window=" ~", keys=["a"]))
+
+    def test_load_scenario_refuses_a_lab_keys_step_with_an_unknown_argument(self):
+        for extra in ({"text": "x"}, {"delay": 150}, {"Window": "w"}):
+            with self.subTest(extra=extra), self.assertRaisesRegex(
+                    ValueError, r"^step k: labKeys takes \['gone', 'keys', 'wait', 'window'\]$"):
+                self.load_steps(self.lab_keys(window="w", keys=["a"], **extra))
+
+    def test_load_scenario_refuses_a_lab_keys_window_that_is_not_printable_ascii_of_1_to_100_characters(self):
+        for window in (None, 5, "", "x" * 101, "café", "a\tb", "a\n", "\n", ["w"], {"a": 1}):
+            with self.subTest(window=window), self.assertRaisesRegex(
+                    ValueError, r"^step k: labKeys window = printable ASCII text of 1-100 characters$"):
+                self.load_steps(self.lab_keys(window=window, keys=["a"]))
+        with self.assertRaisesRegex(ValueError, "labKeys window"):
+            self.load_steps({"id": "k", "tool": "labKeys"})         # no arguments at all
+        with self.assertRaisesRegex(ValueError, "labKeys window"):
+            self.load_steps(self.lab_keys(keys=["a"]))
+
+    def test_load_scenario_refuses_lab_keys_keys_that_are_not_1_to_10_known_key_names(self):
+        bad = [None, "ctrl+s", [], ["a"] * 11, [5], [None], [["a"]], ["Ctrl+S"], ["ctrl+"], ["ctrl+ctrl+ctrl+ctrl+s"],
+               ["F13"], ["F0"], ["F"], ["ss"], ["-s"], ["--help"], ["Delete"], ["super+s"], ["ctrl+s\n"], ["ctrl s"],
+               [""], ["A"], ["escape"], ["ctrl+shift"], ["a", "b", "ctrl+Q"]]
+        for keys in bad:
+            with self.subTest(keys=keys), self.assertRaisesRegex(
+                    ValueError, r"^step k: labKeys keys = 1 to 10 key names \(letters, digits, Escape, Return, Tab, "
+                                r"space, F1-F12, with ctrl\+, shift\+, alt\+\)$"):
+                self.load_steps(self.lab_keys(window="w", keys=keys))
+        with self.assertRaisesRegex(ValueError, "labKeys keys"):
+            self.load_steps(self.lab_keys(window="w"))
+
+    def test_load_scenario_refuses_a_lab_keys_wait_outside_1_to_60_and_a_gone_that_is_not_a_boolean(self):
+        for wait in (0, 61, -1, True, False, "5", 1.5, None, [5]):
+            with self.subTest(wait=wait), self.assertRaisesRegex(ValueError, r"^step k: labKeys wait 1-60$"):
+                self.load_steps(self.lab_keys(window="w", keys=["a"], wait=wait))
+        for gone in ("yes", 1, 0, None, [True]):
+            with self.subTest(gone=gone), self.assertRaisesRegex(
+                    ValueError, r"^step k: labKeys gone must be a boolean$"):
+                self.load_steps(self.lab_keys(window="w", keys=["a"], gone=gone))
+
+    def test_load_scenario_refuses_a_lab_keys_step_in_a_batch_or_with_a_retry(self):
+        for extra in ({"batch": "b"}, {"retry": {"attempts": 2}}):
+            with self.subTest(extra=extra), self.assertRaisesRegex(
+                    ValueError, r"^step k: labKeys is not in a batch and has no retry$"):
+                self.load_steps(dict(self.lab_keys(window="w", keys=["a"]), **extra))
+
+    def test_load_scenario_checks_the_arguments_of_a_lab_keys_step_only_for_that_tool(self):
+        self.load_steps({"id": "k", "tool": "other", "arguments": {"window": 5, "keys": "x", "text": 1}, "batch": "b"})
+
+    def count_check(self, **c):
+        return dict({"type": "tool_result_count", "step": "s1", "contains": "x", "equals": 1}, **c)
+
+    def test_load_scenario_accepts_a_tool_result_count_check(self):
+        for c in (self.count_check(), self.count_check(equals=0), self.count_check(equals=250, contains="needle text"),
+                  self.count_check(xfail="known", note="why")):
+            with self.subTest(check=c):
+                self.assertEqual(lab.load_scenario(json.dumps(dict(SCENARIO, checks=[c])))["checks"], [c])
+
+    def test_load_scenario_refuses_a_tool_result_count_check_without_a_step_a_text_or_a_count(self):
+        full = self.count_check()
+        bad = [{k: v for k, v in full.items() if k != "step"}, {k: v for k, v in full.items() if k != "contains"},
+               {k: v for k, v in full.items() if k != "equals"}, dict(full, contains=""), dict(full, contains=5),
+               dict(full, contains=None), dict(full, contains=["x"]), dict(full, equals="1"), dict(full, equals=True),
+               dict(full, equals=False), dict(full, equals=-1), dict(full, equals=1.5), dict(full, equals=None)]
+        for c in bad:
+            with self.subTest(check=c), self.assertRaisesRegex(
+                    ValueError, r"^check tool_result_count: step, contains = a non-empty string, "
+                                r"equals = an integer >= 0$"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, checks=[c])))
+
+    def test_load_scenario_names_an_unknown_step_of_a_tool_result_count_check(self):
+        with self.assertRaisesRegex(ValueError, "^check tool_result_count: unknown step 's9'$"):
+            lab.load_scenario(json.dumps(dict(SCENARIO, checks=[self.count_check(step="s9")])))
 
     def test_validate_files_reports_valid_invalid_and_missing_files(self):
         good = self.put(self.tmp + "/good.json", json.dumps(dict(SCENARIO, checks=[
@@ -1590,6 +1801,120 @@ class GroupTests(LabCase):
         self.assertEqual(entries, [{"id": "idle", "tool": "labHttpIdle", "arguments": {"wait": 0}, "ok": False,
                                     "error": "labHttpIdle: wait must be an integer 1-120"}])
 
+    def test_a_step_whose_value_is_missing_is_not_sent_and_fails_with_the_reason(self):
+        br = FakeBridge({"t": ok_reply("ok")})
+        lab.FULLTEXT["s1"] = '{"review": {"status": "open"}}'
+        step = {"id": "s2", "tool": "t", "arguments": {"eventId": lab_ref("s1", "review.eventId")}}
+        [e] = self.group([step], br)
+        self.assertEqual((e["ok"], e["error"]), (False, "eventId: step s1 has no value at review.eventId"))
+        self.assertEqual((br.calls, br.waits), ([], []))
+        self.assertEqual(e["arguments"], step["arguments"])
+        self.assertNotIn("answered_at", e)
+        self.assertNotIn("s2", lab.FULLTEXT)
+
+    def test_a_step_whose_value_is_missing_is_not_retried(self):
+        br = FakeBridge({"t": ok_reply("ok")})
+        step = {"id": "s2", "tool": "t", "retry": {"attempts": 3, "delay": 5}, "arguments": {"k": lab_ref("s1")}}
+        with mock.patch.object(lab.time, "sleep") as sleep:
+            [e] = self.group([step], br)
+        self.assertEqual((e["ok"], e["attempts"], br.calls), (False, 1, []))
+        self.assertEqual(sleep.call_args_list, [])
+
+    def test_a_step_that_names_a_step_with_no_text_is_not_sent(self):
+        br = FakeBridge({"t": ok_reply("ok")})
+        [e] = self.group([{"id": "s2", "tool": "t", "arguments": {"k": lab_ref("never-ran")}}], br)
+        self.assertEqual((e["ok"], e["error"]), (False, "k: step never-ran has no value at reviewId"))
+        self.assertEqual(br.calls, [])
+
+    def test_a_step_whose_value_is_present_is_sent_with_it_and_records_the_compact_form(self):
+        br = FakeBridge({"t": ok_reply("ok")})
+        lab.FULLTEXT["s1"] = '{"review": {"eventId": "ev-9"}}\nUntrusted content: {"review": {"eventId": "other"}}'
+        args = {"eventId": lab_ref("s1", "review.eventId"), "calendarId": "c", "n": [lab_ref("s1", "review.eventId")]}
+        [e] = self.group([{"id": "s2", "tool": "t", "arguments": args}], br)
+        self.assertEqual(br.calls, [("tools/call", {"name": "t", "arguments": {"eventId": "ev-9", "calendarId": "c",
+                                                                               "n": ["ev-9"]}})])
+        self.assertEqual((e["ok"], e["text"]), (True, "ok"))
+        self.assertEqual(e["arguments"], args)
+        self.assertNotIn("generated_arguments", e)
+
+    def test_a_value_of_one_call_can_be_used_by_the_next_and_a_skipped_step_gives_none(self):
+        br = FakeBridge({"t": ok_reply('{"id": "x1"}'), "u": ok_reply('{"id": "x2"}')})
+        tools = {"t": {}, "u": {}}
+        lab.run_group([{"id": "s1", "tool": "t"}], tools, br)
+        lab.run_group([{"id": "s2", "tool": "u", "arguments": {"id": lab_ref("s1", "id")}}], tools, br)
+        lab.run_group([{"id": "s3", "tool": "u", "arguments": {"id": lab_ref("s2", "missing")}}], tools, br)
+        lab.run_group([{"id": "s4", "tool": "u", "arguments": {"id": lab_ref("s3", "id")}}], tools, br)
+        self.assertEqual([c[1]["arguments"] for c in br.calls], [{}, {"id": "x1"}])
+        self.assertEqual([(e["id"], e["ok"]) for e in lab.R["steps"]],
+                         [("s1", True), ("s2", True), ("s3", False), ("s4", False)])
+        self.assertEqual(lab.R["steps"][3]["error"], "id: step s3 has no value at id")
+
+    def test_in_a_batch_only_the_step_whose_value_is_missing_is_left_out(self):
+        br = FakeBridge({"t": ok_reply("one"), "u": ok_reply("two")})
+        lab.FULLTEXT["s0"] = '{"id": "x0"}'
+        steps = [{"id": "a", "tool": "t", "batch": "b1", "arguments": {"id": lab_ref("s0", "nope")}},
+                 {"id": "b", "tool": "u", "batch": "b1", "arguments": {"id": lab_ref("s0", "id")}}]
+        entries = self.group(steps, br, tools=("t", "u"))
+        self.assertEqual([c[1] for c in br.calls], [{"name": "u", "arguments": {"id": "x0"}}])
+        self.assertEqual(br.waits, [([1], 60)])
+        self.assertEqual([(e["id"], e["ok"]) for e in entries], [("a", False), ("b", True)])
+        self.assertEqual(entries[0]["error"], "id: step s0 has no value at nope")
+        self.assertEqual(entries[1]["text"], "two")
+
+    def test_a_batch_where_no_step_can_be_sent_waits_for_nothing(self):
+        br = FakeBridge({"t": ok_reply("one")})
+        steps = [{"id": "a", "tool": "t", "batch": "b1", "arguments": {"id": lab_ref("s0", "x")}},
+                 {"id": "b", "tool": "t", "batch": "b1", "arguments": {"id": lab_ref("s0", "y")}}]
+        entries = self.group(steps, br)
+        self.assertEqual([e["ok"] for e in entries], [False, False])
+        self.assertEqual((br.calls, br.waits), ([], []))
+
+    def test_a_lone_lab_keys_step_runs_the_pseudo_tool_and_waits_after_it(self):
+        args = {"window": "New Event", "keys": ["ctrl+s"]}
+        step = {"id": "k", "tool": lab.LAB_KEYS, "wait_after": 3, "arguments": args}
+        br = FakeBridge()
+
+        def fake(st, entry):
+            entry.update(ok=True, text="{}")
+        with mock.patch.object(lab, "run_lab_keys", side_effect=fake) as keys, \
+                mock.patch.object(lab, "run_http_idle") as idle, mock.patch.object(lab.time, "sleep") as sleep:
+            entries = self.group([step], br)
+        keys.assert_called_once()
+        self.assertIs(keys.call_args[0][0], step)
+        idle.assert_not_called()
+        self.assertEqual(entries, [{"id": "k", "tool": "labKeys", "arguments": args, "ok": True, "text": "{}"}])
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [3])
+        self.assertIn("waiting 3 s after k", self.logs)
+        self.assertEqual((br.calls, br.waits, br.requests), ([], [], []))
+
+    def test_a_lone_lab_keys_step_without_wait_after_does_not_sleep_and_a_failure_is_recorded(self):
+        step = {"id": "k", "tool": lab.LAB_KEYS, "arguments": {"window": "w", "keys": ["a"]}}
+        with mock.patch.object(lab, "run_lab_keys", side_effect=lambda st, e: e.update(ok=False, error="boom")), \
+                mock.patch.object(lab.time, "sleep") as sleep:
+            [e] = self.group([step], FakeBridge())
+        self.assertEqual((e["ok"], e["error"]), (False, "boom"))
+        sleep.assert_not_called()
+
+    def test_a_lone_lab_http_idle_step_with_wait_after_sleeps_after_the_pseudo_tool(self):
+        step = {"id": "idle", "tool": lab.LAB_HTTP_IDLE, "wait_after": 7, "arguments": {"wait": 0}}
+        with mock.patch.object(lab.time, "sleep") as sleep:
+            [e] = self.group([step], FakeBridge())
+        self.assertEqual((e["ok"], e["error"]), (False, "labHttpIdle: wait must be an integer 1-120"))
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [7])
+        self.assertIn("waiting 7 s after idle", self.logs)
+
+    def test_the_wait_after_a_lone_pseudo_tool_step_never_goes_past_the_deadline(self):
+        idle = {"id": "idle", "tool": lab.LAB_HTTP_IDLE, "wait_after": 10, "arguments": {"wait": 0}}
+        keys = {"id": "k", "tool": lab.LAB_KEYS, "wait_after": 10, "arguments": {"window": "w", "keys": ["a"]}}
+        with mock.patch.object(lab, "run_lab_keys"), mock.patch.object(lab.time, "sleep") as sleep, \
+                mock.patch.object(lab, "DEADLINE", time.monotonic() + 35):
+            self.group([idle], FakeBridge())
+            self.group([keys], FakeBridge())
+        times = [c.args[0] for c in sleep.call_args_list]
+        self.assertEqual(len(times), 2)
+        for t in times:
+            self.assertAlmostEqual(t, 5, delta=1)
+
 
 class HttpIdleTests(LabCase):
     def run_idle(self, server, **args):
@@ -1659,6 +1984,211 @@ class HttpIdleTests(LabCase):
                 lab.run_http_idle({"id": "i", "arguments": {}}, e)
                 self.assertEqual((e["ok"], e["error"]),
                                  (False, "labHttpIdle: no valid port in the connection file: " + shown))
+
+
+class LabKeysTests(LabCase):
+    DIALOG = ("0x2", "New Event: Lab review")
+    WINDOWS = [("0x1", "Thunderbird"), DIALOG]
+    TITLES = ["Thunderbird", "New Event: Lab review"]
+
+    def run_keys(self, listings, xdotool=None, **args):
+        """run_lab_keys with no X display: x_windows answers `listings` one call after the other (an exception is
+        raised), xdotool answers `xdotool` (default: always success) and wait_for polls its test once. Returns the
+        entry and the mocks of xdotool, x_windows and wait_for."""
+        st = {"id": "k", "tool": lab.LAB_KEYS, "arguments": dict({"window": "New Event", "keys": ["ctrl+s"]}, **args)}
+        entry = {}
+        xd = mock.Mock(return_value=(0, "")) if xdotool is None else mock.Mock(side_effect=xdotool)
+
+        def poll_once(pred, timeout, step=0.25):
+            try:
+                return pred() or None
+            except Exception:
+                return None
+        with mock.patch.object(lab, "xdotool", xd), mock.patch.object(lab, "x_windows", side_effect=listings) as xw, \
+                mock.patch.object(lab, "wait_for", side_effect=poll_once) as wf, \
+                mock.patch.object(lab.shutil, "which", return_value="/usr/bin/xdotool") as which:
+            lab.run_lab_keys(st, entry)
+        which.assert_called_once_with("xdotool", path=lab.X_ENV["PATH"])
+        return entry, xd, xw, wf
+
+    def test_it_fails_at_once_when_xdotool_is_not_installed(self):
+        st = {"id": "k", "tool": lab.LAB_KEYS, "arguments": {"window": "New Event", "keys": ["Escape"]}}
+        entry = {}
+        with mock.patch.object(lab.shutil, "which", return_value=None), \
+                mock.patch.object(lab, "x_windows") as xw, mock.patch.object(lab, "wait_for") as wf:
+            lab.run_lab_keys(st, entry)
+        self.assertEqual((entry["ok"], entry["error"]), (False, "labKeys: xdotool is not installed in this image"))
+        xw.assert_not_called()
+        wf.assert_not_called()
+
+    def test_a_listing_that_fails_neither_finds_the_window_nor_counts_as_a_close(self):
+        e, xd, _, _ = self.run_keys([None, None])
+        self.assertEqual((e["ok"], e["windows"]), (False, []))
+        xd.assert_not_called()
+        e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS, None], gone=True)
+        self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, False))
+
+    def test_it_gives_the_window_the_focus_presses_the_keys_and_records_the_result(self):
+        e, xd, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], keys=["ctrl+s", "ctrl+l"])
+        self.assertEqual(e["ok"], True)
+        self.assertEqual(json.loads(e["text"]), {"window": "New Event: Lab review", "keys": ["ctrl+s", "ctrl+l"],
+                                                 "windows": self.TITLES})
+        self.assertEqual(lab.FULLTEXT["k"], e["text"])
+        self.assertEqual(xd.call_args_list, [mock.call("windowfocus", "--sync", "0x2"),
+                                             mock.call("key", "--clearmodifiers", "--delay", "150", "ctrl+s", "ctrl+l")])
+        self.assertIsInstance(e["sent_at"], float)
+        self.assertIsInstance(e["answered_at"], float)
+        self.assertNotIn("error", e)
+        self.assertEqual((xw.call_count, wf.call_count), (2, 1))
+
+    def test_it_does_not_say_whether_the_window_closed_unless_asked(self):
+        for args in ({}, {"gone": False}):
+            with self.subTest(args=args):
+                e, _, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], **args)
+                self.assertNotIn("closed", json.loads(e["text"]))
+                self.assertEqual((xw.call_count, wf.call_count), (2, 1))
+
+    def test_it_waits_for_the_window_for_20_seconds_by_default_or_as_long_as_asked(self):
+        _, _, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS])
+        self.assertEqual(wf.call_args[0][1:], (20, 0.5))
+        _, _, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS], wait=7)
+        self.assertEqual(wf.call_args[0][1:], (7, 0.5))
+
+    def test_it_reports_that_the_window_closed_when_asked(self):
+        e, xd, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS, [("0x1", "Thunderbird")]], gone=True, wait=9)
+        self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, True))
+        self.assertIn('"closed": true', e["text"])
+        self.assertEqual(lab.FULLTEXT["k"], e["text"])
+        self.assertEqual((xw.call_count, wf.call_count), (3, 2))
+        self.assertEqual(wf.call_args_list[1][0][1:], (9, 0.5))
+        self.assertEqual(json.loads(e["text"])["windows"], self.TITLES)      # as listed before the keys were pressed
+
+    def test_it_reports_that_the_window_is_still_open_when_asked(self):
+        e, _, _, _ = self.run_keys([self.WINDOWS] * 3, gone=True)
+        self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, False))
+        self.assertIn('"closed": false', e["text"])
+
+    def test_it_follows_the_window_by_its_id_and_not_by_its_title(self):
+        again = [("0x1", "Thunderbird"), ("0x3", "New Event: Lab review")]
+        e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS, again], gone=True)
+        self.assertIs(json.loads(e["text"])["closed"], True)
+
+    def test_it_fails_when_no_window_has_the_text_in_its_title_and_presses_nothing(self):
+        for window, shown, titles in (("New Event", [("0x1", "Thunderbird")], ["Thunderbird"]),
+                                      ("new event", self.WINDOWS, self.TITLES)):       # the match is case-sensitive
+            with self.subTest(window=window):
+                e, xd, _, _ = self.run_keys([shown, shown], window=window, keys=["a"])
+                self.assertEqual((e["ok"], e["windows"]), (False, titles))
+                self.assertEqual(e["error"], "labKeys: no window has %r in its title" % window)
+                xd.assert_not_called()
+                self.assertNotIn("k", lab.FULLTEXT)
+                self.assertIn("sent_at", e)
+                self.assertNotIn("text", e)
+
+    def test_it_fails_when_no_window_is_visible_at_all(self):
+        e, xd, _, _ = self.run_keys([[], []])
+        self.assertEqual((e["ok"], e["windows"]), (False, []))
+        self.assertEqual(e["error"], "labKeys: no window has 'New Event' in its title")
+        xd.assert_not_called()
+
+    def test_it_fails_when_more_than_one_window_has_the_text_in_its_title_and_presses_nothing(self):
+        shown = [("0x1", "Thunderbird"), ("0x2", "New Event: A"), ("0x3", "New Event: B")]
+        e, xd, _, _ = self.run_keys([shown, shown])
+        self.assertEqual((e["ok"], e["windows"]), (False, ["Thunderbird", "New Event: A", "New Event: B"]))
+        self.assertEqual(e["error"], "labKeys: more than one window has 'New Event' in its title")
+        xd.assert_not_called()
+        self.assertNotIn("k", lab.FULLTEXT)
+
+    def test_it_fails_when_the_window_cannot_be_focused_and_presses_nothing(self):
+        e, xd, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=[(1, "")])
+        self.assertEqual((e["ok"], e["error"]), (False, "labKeys: could not focus 'New Event: Lab review'"))
+        self.assertEqual(e["windows"], self.TITLES)
+        self.assertEqual(xd.call_args_list, [mock.call("windowfocus", "--sync", "0x2")])
+        self.assertNotIn("k", lab.FULLTEXT)
+
+    def test_it_fails_when_xdotool_cannot_press_the_keys(self):
+        e, xd, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=[(0, ""), (1, "")], gone=True)
+        self.assertEqual((e["ok"], e["error"]), (False, "labKeys: xdotool key failed"))
+        self.assertEqual(e["windows"], self.TITLES)
+        self.assertEqual((xd.call_count, wf.call_count), (2, 1))      # it does not wait for a close
+        self.assertNotIn("k", lab.FULLTEXT)
+
+    def test_it_reports_xdotool_that_cannot_run_or_does_not_answer_as_a_failed_step(self):
+        for error in (OSError("no xdotool"), subprocess.TimeoutExpired(["xdotool", "key"], 10)):
+            for failing in (0, 1):
+                with self.subTest(error=error, failing_call=failing):
+                    calls = [(0, ""), (0, "")]
+                    calls[failing] = error
+                    lab.FULLTEXT.clear()
+                    e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=calls)
+                    self.assertEqual((e["ok"], e["error"]), (False, "labKeys: %s" % error))
+                    self.assertNotIn("text", e)
+                    self.assertNotIn("k", lab.FULLTEXT)
+        self.assertIn("timed out after 10 seconds", str(error))
+
+    def test_it_reports_a_display_that_cannot_be_listed_as_a_failed_step(self):
+        for error in (FileNotFoundError("xdotool"), subprocess.TimeoutExpired(["xdotool", "search"], 10)):
+            with self.subTest(error=error):
+                e, xd, xw, _ = self.run_keys(error)
+                self.assertEqual((e["ok"], e["error"]), (False, "labKeys: %s" % error))
+                self.assertNotIn("windows", e)
+                xd.assert_not_called()
+                self.assertEqual(xw.call_count, 2)       # the wait swallows the first failure, the next listing does not
+
+
+class XdotoolTests(LabCase):
+    def test_x_windows_lists_the_visible_windows_with_their_titles(self):
+        names = {"10": (0, "Thunderbird\n"), "20": (1, ""), "30": (0, "New Event: x\n"), "40": (0, "no newline")}
+
+        def fake(*argv, timeout=10):
+            return (0, "10\n20\n30\n40\n") if argv[0] == "search" else names[argv[1]]
+        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
+            found = lab.x_windows()
+        self.assertEqual(found, [("10", "Thunderbird"), ("30", "New Event: x"), ("40", "no newline")])
+        self.assertEqual(xd.call_args_list[0], mock.call("search", "--onlyvisible", "--name", ""))
+        self.assertEqual(xd.call_args_list[1:], [mock.call("getwindowname", w) for w in ("10", "20", "30", "40")])
+
+    def test_x_windows_returns_none_when_the_search_fails_and_nothing_when_it_finds_nothing(self):
+        with mock.patch.object(lab, "xdotool", return_value=(1, "10\n20\n")) as xd:
+            self.assertIsNone(lab.x_windows())
+        self.assertEqual(xd.call_count, 1)
+        with mock.patch.object(lab, "xdotool", return_value=(0, "")) as xd:
+            self.assertEqual(lab.x_windows(), [])
+        self.assertEqual(xd.call_count, 1)
+
+    def test_x_windows_passes_only_decimal_window_ids_back_to_xdotool(self):
+        def fake(*argv, timeout=10):
+            return (0, "10 --help 0x2 \u0663 1234567890123 20\n") if argv[0] == "search" else (0, "w\n")
+        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
+            found = lab.x_windows()
+        self.assertEqual(found, [("10", "w"), ("20", "w")])
+        self.assertEqual(xd.call_args_list[1:], [mock.call("getwindowname", "10"), mock.call("getwindowname", "20")])
+
+    def test_x_windows_looks_at_50_windows_at_most_and_keeps_200_characters_of_a_title(self):
+        ids = " ".join(str(n) for n in range(100, 160))
+
+        def fake(*argv, timeout=10):
+            return (0, ids) if argv[0] == "search" else (0, "t" * 300 + "\n")
+        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
+            found = lab.x_windows()
+        self.assertEqual((len(found), xd.call_count), (50, 51))
+        self.assertEqual(found[0], ("100", "t" * 200))
+
+    def test_xdotool_runs_the_command_on_the_lab_display_without_stdin_and_with_a_timeout(self):
+        done = types.SimpleNamespace(returncode=0, stdout="out")
+        with mock.patch.object(lab.subprocess, "run", return_value=done) as run:
+            self.assertEqual(lab.xdotool("key", "ctrl+s"), (0, "out"))
+            self.assertEqual(lab.xdotool("search", "--name", "", timeout=3), (0, "out"))
+        self.assertEqual(run.call_args_list, [
+            mock.call(["xdotool", "key", "ctrl+s"], env=lab.X_ENV, stdin=subprocess.DEVNULL, capture_output=True,
+                      text=True, timeout=10),
+            mock.call(["xdotool", "search", "--name", ""], env=lab.X_ENV, stdin=subprocess.DEVNULL,
+                      capture_output=True, text=True, timeout=3)])
+        self.assertEqual(lab.X_ENV["DISPLAY"], ":99")
+
+    def test_xdotool_returns_the_exit_status_and_the_output(self):
+        with mock.patch.object(lab.subprocess, "run", return_value=types.SimpleNamespace(returncode=1, stdout="x\n")):
+            self.assertEqual(lab.xdotool("search"), (1, "x\n"))
 
 
 # ------------------------------------------------------------------------------------------------ inspection
@@ -1965,6 +2495,35 @@ class EvaluateTests(LabCase):
         self.assertFalse(self.ev(type="tool_result_contains", step="s1", contains="other")[0])
         self.assertTrue(self.ev(type="tool_result_contains", step="s1", contains="other", present=False)[0])
         self.assertFalse(self.ev(type="tool_result_contains", step="s2", contains="x", present=False)[0])
+
+    def test_tool_result_count_needs_a_successful_step_and_the_exact_number_of_times(self):
+        lab.FULLTEXT["s1"] = "a needle, b needle, c"
+        detail = "2 time(s); a needle, b needle, c"
+        self.assertEqual(self.ev(type="tool_result_count", step="s1", contains="needle", equals=2), (True, detail))
+        for wrong in (0, 1, 3):
+            self.assertEqual(self.ev(type="tool_result_count", step="s1", contains="needle", equals=wrong),
+                             (False, detail))
+        self.assertEqual(self.ev(type="tool_result_count", step="s1", contains="absent", equals=0),
+                         (True, "0 time(s); a needle, b needle, c"))
+        self.assertFalse(self.ev(type="tool_result_count", step="s1", contains="absent", equals=1)[0])
+
+    def test_tool_result_count_fails_for_a_failed_or_unknown_step_whatever_the_count(self):
+        lab.FULLTEXT["s2"] = "needle needle"
+        self.assertEqual(self.ev(type="tool_result_count", step="s2", contains="needle", equals=2),
+                         (False, "2 time(s); needle needle"))
+        self.assertFalse(self.ev(type="tool_result_count", step="s2", contains="absent", equals=0)[0])
+        self.assertEqual(self.ev(type="tool_result_count", step="none", contains="x", equals=0), (False, "0 time(s); "))
+
+    def test_tool_result_count_counts_whole_matches_of_the_text_that_do_not_overlap(self):
+        lab.FULLTEXT["s1"] = "aaaa Lab review saved twice, Lab review saved twice"
+        self.assertTrue(self.ev(type="tool_result_count", step="s1", contains="Lab review saved twice", equals=2)[0])
+        self.assertTrue(self.ev(type="tool_result_count", step="s1", contains="aa", equals=2)[0])
+        self.assertTrue(self.ev(type="tool_result_count", step="s1", contains="lab review", equals=0)[0])
+
+    def test_tool_result_count_shows_at_most_300_characters_of_the_text(self):
+        lab.FULLTEXT["s1"] = "x" * 400
+        self.assertEqual(self.ev(type="tool_result_count", step="s1", contains="x", equals=400),
+                         (True, "400 time(s); " + "x" * 300))
 
     def test_file_contains_needs_an_inspected_file(self):
         self.assertEqual(self.ev(type="file_contains", file="a.txt", contains="needle"), (True, "present=True"))

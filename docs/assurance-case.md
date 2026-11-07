@@ -78,7 +78,9 @@ harness is the container's PID 1, with no other init.
 **Separation.** The code under test never runs on the host or the CI runner, only in the container. Inside it, the
 two processes that hold the container's input and output are made non-dumpable before any code under test starts
 (`make_nondumpable`, `run_as_init`). The processes the harness starts after it has read its input (mailpit, Xvfb,
-Thunderbird) get `/dev/null` or a log file as standard streams (`start`); the bridge's pipes go to the harness.
+Thunderbird) get `/dev/null` or a log file as standard streams (`start`); the bridge's pipes go to the harness, and so
+does the output of xdotool, which `labKeys` runs for a moment (`/dev/null` as input; what it prints is read as data,
+and only decimal window ids are passed back to it).
 
 **Input validation and output sanitising.**
 - Input from the host is bounded: scenario at most 1,000,000 bytes, tree at most 600 MiB (`run-lab.sh`), nonce

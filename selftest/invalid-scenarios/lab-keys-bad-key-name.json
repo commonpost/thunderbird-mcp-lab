@@ -1,0 +1,20 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "labKeys",
+   "arguments": {
+    "window": "New Event",
+    "keys": [
+     "Ctrl+S"
+    ]
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

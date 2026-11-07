@@ -53,5 +53,12 @@
  "check-xfail-empty.json": "check tool_ok: xfail must be a string of 1-500 characters",
  "check-note-not-string.json": "check tool_ok: note must be a string of 1-500 characters",
  "bridge-first-not-valid.json": "bridge_first: true, false or seconds 0-60",
- "check-cold-start-without-bridge-first.json": "check cold_start: needs \"bridge_first\""
+ "check-cold-start-without-bridge-first.json": "check cold_start: needs \"bridge_first\"",
+ "lab-value-later-step.json": "reviewId: $lab_value names 's2', not an earlier step outside this batch",
+ "lab-value-same-batch.json": "reviewId: $lab_value names 's0', not an earlier step outside this batch",
+ "lab-value-malformed.json": "reviewId: $lab_value = {step, path (a.b, at most 8 names)}",
+ "lab-keys-unknown-argument.json": "step s1: labKeys takes",
+ "lab-keys-bad-key-name.json": "step s1: labKeys keys = 1 to 10 key names",
+ "lab-keys-in-batch.json": "step s1: labKeys is not in a batch and has no retry",
+ "check-count-without-equals.json": "check tool_result_count: step, contains = a non-empty string, equals = an integer >= 0"
 }

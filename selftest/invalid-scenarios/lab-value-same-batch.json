@@ -1,0 +1,28 @@
+{
+ "steps": [
+  {
+   "id": "s0",
+   "tool": "createEvent",
+   "batch": "b"
+  },
+  {
+   "id": "s1",
+   "tool": "listEvents",
+   "batch": "b",
+   "arguments": {
+    "reviewId": {
+     "$lab_value": {
+      "step": "s0",
+      "path": "reviewId"
+     }
+    }
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

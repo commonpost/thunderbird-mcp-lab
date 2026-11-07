@@ -62,7 +62,7 @@ Seeded mbox files have no `.msf` summary and Thunderbird does not index them by 
 |---|---|
 | `id` | Unique name `[A-Za-z0-9._-]`, referenced by checks. |
 | `tool` | MCP tool name. |
-| `arguments` | Tool arguments (object). May contain generators (below). |
+| `arguments` | Tool arguments (object). May contain generators and values of earlier results (below). |
 | `timeout` | Seconds, 1-180 (default 60). |
 | `note` | Free text for readers. |
 | `draft_subject` | After the call, wait up to `draft_wait` seconds (1-120, default 30) for a draft whose subject contains this text, and record its raw headers (`draft`). |
@@ -81,11 +81,36 @@ an `error` field.
 (1 to 32 MiB) of value `byte` (0-255, default 97). The result keeps the compact form and records the size, base64
 length and SHA-256 in `generated_arguments`. This keeps scenarios and results small.
 
+**Values of earlier results.** Anywhere in the `arguments` of a tool call, an object whose only key is `$lab_value`,
+e.g. `{"$lab_value": {"step": "open", "path": "review.eventId"}}`, is replaced when the call is sent by the string or
+number found at that dotted path (1 to 8 names of `[A-Za-z_][A-Za-z0-9_]*`) in the JSON value that starts the full
+response text of the step `step`; whatever follows that value in the text (a note that a server adds after its JSON)
+is ignored. This is how a scenario passes an identifier that a tool made up (a `reviewId`, an `eventId`) to a later
+call. `step` must be an earlier step that is not in the same `batch`; this is checked when the scenario is loaded. A
+boolean, `null`, a list, an object, `NaN` or an infinity is not a value. When the step has no text, its text does not start with JSON or
+the path leads to no value, the call is not sent: the step fails (`ok` false) with an error such as `eventId: step
+saved-state has no value at review.eventId`, it is not retried, and a step that names it fails the same way. The result keeps the compact
+form.
+
 **`labHttpIdle`.** A step whose `tool` is `labHttpIdle` calls no MCP tool: the harness opens a TCP connection to the
 extension's HTTP port (read from its connection file), sends `arguments.send` (at most 4096 characters; by default a
 request line and one header, never the end of the headers), then waits up to `arguments.wait` seconds (1-120, default
 45) for the server to close the connection. The step's text is a JSON object `{"closed": bool, "closedAfter":
 seconds, "received": first bytes}`, so `tool_result_contains` checks work on it. Use it outside a `batch`.
+
+**`labKeys`.** A step whose `tool` is `labKeys` calls no MCP tool: it presses keys in a window of Thunderbird, as a
+user would, to drive a dialog that a tool opens for review (the dialogs of `createEvent` and `createTask`; no scenario
+drives a compose window). The harness uses `xdotool` on the lab's Xvfb display, which has no window manager: it waits
+up to `arguments.wait` seconds (1-60, default 20) until exactly one visible window has `arguments.window` (printable
+ASCII, 1-100 characters) in its title, gives that window the input focus, then sends `arguments.keys` (1 to 10 key
+names, 150 ms apart) through the XTEST extension. A key name is a lowercase letter, a digit, `Escape`, `Return`, `Tab`,
+`space` or `F1` to `F12`, with up to three of `ctrl+`, `shift+`, `alt+` in front, e.g. `ctrl+s`. With `arguments.gone`
+true, the harness then waits up to `wait` seconds for that window to close. The step fails when no window, or more than
+one, has the text in its title, when the window cannot be focused, or when `xdotool` fails or is not installed. The step's text is a JSON
+object `{"window": title, "keys": [...], "windows": [titles of the visible windows before the keys], "closed": bool}`
+(`closed` only with `gone`), so `tool_result_contains` checks work on it, e.g. `"closed": true`. The title of
+Thunderbird's event dialog is `New Event: <title>`, and `Edit Event: <title>` once the event has been saved; that of
+its task dialog is `New Task: <title>`. Use it outside a `batch` and without `retry`; `wait_after` applies.
 
 ## Checks
 
@@ -98,6 +123,7 @@ fails the run. The run passes when no check has status `fail` and the harness re
 | `tool_ok` | `step` | the step succeeded |
 | `tool_error_contains` | `step`, `contains` | the step failed and its error or text contains the text |
 | `tool_result_contains` | `step`, `contains`, `present` (default true) | the step succeeded and its full response text contains (or does not contain) the text |
+| `tool_result_count` | `step`, `contains`, `equals` | the step succeeded and its full response text contains the text exactly `equals` times (an integer, 0 or more; matches do not overlap) |
 | `cold_start` | any of `answered`, `tools`, `min_tools`, `max_seconds`, `list_changed`, `capability_list_changed` (needs `bridge_first`) | the first `tools/list` of a `bridge_first` run was answered with a list (`answered`), of exactly `tools` or at least `min_tools` tools, within `max_seconds` of the request; `notifications/tools/list_changed` came after Thunderbird was up (`list_changed`); `initialize` declared `tools.listChanged` (`capability_list_changed`) |
 | `tools_list_has` | `tool`, `present` (default true) | the tool is in `tools/list` (or, with `present: false`, is not) |
 | `schema_has` | `tool`, `property` | the property is in the tool's `inputSchema` (tool listed in `schema_watch`) |

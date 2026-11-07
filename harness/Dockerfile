@@ -65,7 +65,7 @@ LABEL org.opencontainers.image.title="thunderbird-mcp-lab" \
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       libgtk-3-0t64 libasound2t64 libdbus-glib-1-2 libx11-xcb1 libxtst6 libpci3 libegl1 libgl1 \
-      xvfb xauth fonts-dejavu-core fontconfig \
+      xvfb xauth xdotool fonts-dejavu-core fontconfig \
       nodejs python3 jq procps \
  && rm -rf /var/lib/apt/lists/* \
  && rm -f /etc/ssl/certs/ca-certificates.crt /etc/apt/apt.conf.d/99https-ca \

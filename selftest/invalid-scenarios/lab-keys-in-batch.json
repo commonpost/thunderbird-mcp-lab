@@ -1,0 +1,21 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "labKeys",
+   "batch": "b",
+   "arguments": {
+    "window": "New Event",
+    "keys": [
+     "ctrl+s"
+    ]
+   }
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ]
+}

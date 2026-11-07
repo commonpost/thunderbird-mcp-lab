@@ -56,8 +56,8 @@ Three stages:
 1. the `mailpit` binary, copied from the official image, pinned by digest;
 2. the Thunderbird download (`debian:13-slim`, pinned by digest): `SHA512SUMS` must carry a valid OpenPGP signature
    that chains to a pinned primary key fingerprint of Mozilla's release key, then the archive must match its SHA-512;
-3. the runtime image (`debian:13-slim`, pinned by digest): the libraries Thunderbird needs, Xvfb, Node.js and Python
-   from Debian; set-uid and set-gid bits removed; Thunderbird's updater removed; `policies.json` that turns off
+3. the runtime image (`debian:13-slim`, pinned by digest): the libraries Thunderbird needs, Xvfb, xdotool, Node.js and
+   Python from Debian; set-uid and set-gid bits removed; Thunderbird's updater removed; `policies.json` that turns off
    application and extension updates and telemetry; the harness (`lab.py`) and the base profile (`user.js`) owned by
    root and read-only; user 10001; entry point `python3 -I /opt/tblab/lab.py`.
 
@@ -82,7 +82,8 @@ One Python file that uses only the standard library. It runs as PID 1 of the con
 5. **MCP session.** It starts the tree's own `node mcp-bridge.cjs` with a fixed environment (plus the scenario's
    `THUNDERBIRD_MCP_*` variables, if any), sends `initialize` and `tools/list`, then each step as a `tools/call`.
    Steps with the same `batch` are sent together; a step can be retried; the pseudo-tool `labHttpIdle` opens a raw
-   connection to the add-on's port instead (`run_mcp`, `run_group`, `run_http_idle`).
+   connection to the add-on's port instead (`run_mcp`, `run_group`, `run_http_idle`), and the pseudo-tool `labKeys`
+   presses keys in a Thunderbird window with `xdotool` (`run_lab_keys`).
 6. **Inspection.** It reads the drafts from the mbox files, the messages captured by mailpit, the profile files the
    scenario names, and the watched or inspected preferences from `prefs.js` (`inspect`, `PrefWatch`).
 7. **Checks and result.** It evaluates the scenario's checks (`run_checks`, `evaluate`), stops every process, and

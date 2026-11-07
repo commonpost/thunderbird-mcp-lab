@@ -32,6 +32,7 @@ import email.header
 import glob
 import hashlib
 import json
+import math
 import os
 import poplib
 import queue
@@ -259,6 +260,12 @@ SEED_FILE_RE = re.compile(r"Mail/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}/msgFilterRules
 PROFILE_FILE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}){0,4}")     # fullmatch
 GEN_KEY = "$lab_base64"
 MAX_GEN = 32 * 1024 * 1024
+# {"$lab_value": {"step": "<id of an earlier step>", "path": "a.b"}}: a value of that step's JSON result.
+VALUE_KEY = "$lab_value"
+VALUE_PATH_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63}){0,7}")   # fullmatch
+# labKeys: key names given to xdotool, a letter, digit or one of a few named keys, with up to three modifiers.
+KEY_RE = re.compile(r"(?:(?:ctrl|shift|alt)\+){0,3}(?:[a-z0-9]|Escape|Return|Tab|space|F[1-9]|F1[0-2])")   # fullmatch
+WINDOW_TEXT_RE = re.compile(r"[ -~]{1,100}")   # fullmatch
 TOOLS = {}       # full tools/list definitions (for tool_json_* checks), not copied into the result
 FULLTEXT = {}    # full text of tool responses, per step (for checks), not copied into the result
 FILES_FULL = {}  # full content of inspected profile files (for checks), not copied into the result
@@ -271,7 +278,8 @@ STEP_KEYS = {"id", "tool", "arguments", "timeout", "force_call", "batch", "wait_
 CHECK_TYPES = {"tool_ok", "tools_list_has", "draft_exists", "draft_header_contains", "schema_has", "mailpit_total",
                "tool_error_contains", "draft_count", "draft_body_contains", "prefs_js_line", "tool_json_equals",
                "tool_json_contains", "tool_result_contains", "listed_filter", "filter_rule", "file_contains",
-               "draft_attachment", "mailpit_header_contains", "mailpit_body_contains", "cold_start"}
+               "draft_attachment", "mailpit_header_contains", "mailpit_body_contains", "cold_start",
+               "tool_result_count"}
 
 
 def load_scenario(raw):
@@ -290,12 +298,16 @@ def load_scenario(raw):
     if not isinstance(steps, list) or len(steps) > 50:
         raise ValueError("steps: a list of at most 50 items")
     ids = set()
+    seen = []      # (id, batch) of the steps already checked
+    earlier = {}   # step id -> the steps a $lab_value of it may name: before it, not in its own batch
     for st in steps:
         if not isinstance(st, dict) or not isinstance(st.get("id"), str) or not NAME_RE.fullmatch(st["id"]) \
                 or not isinstance(st.get("tool"), str) or not TOOL_RE.fullmatch(st["tool"]):
             raise ValueError("invalid step (id, tool)")
         if st["id"] in ids:
             raise ValueError("step %s: duplicate id" % st["id"])
+        earlier[st["id"]] = {i for i, b in seen if not (st.get("batch") and b == st.get("batch"))}
+        seen.append((st["id"], st.get("batch")))
         ids.add(st["id"])
         unknown = sorted(set(st) - STEP_KEYS)
         if unknown:
@@ -327,6 +339,8 @@ def load_scenario(raw):
             if not isinstance(pp, list) or len(pp) > 10 or not all(
                     isinstance(p, dict) and isinstance(p.get("header"), str) and isinstance(p.get("needle"), str) for p in pp):
                 raise ValueError("step %s: %s = at most 10 {header, needle}" % (st["id"], key))
+        if st["tool"] == LAB_KEYS:
+            check_lab_keys(st)
     bf = sc.get("bridge_first", False)
     if not (isinstance(bf, bool) or isinstance(bf, int) and 0 <= bf <= 60):
         raise ValueError("bridge_first: true, false or seconds 0-60")
@@ -389,19 +403,55 @@ def load_scenario(raw):
             raise ValueError("check cold_start: needs \"bridge_first\"")
         if "step" in c and (not isinstance(c["step"], str) or c["step"] not in ids):
             raise ValueError("check %s: unknown step %r" % (c["type"], c["step"]))
+        if c["type"] == "tool_result_count" and ("step" not in c or not isinstance(c.get("contains"), str)
+                                                 or not c["contains"] or not isinstance(c.get("equals"), int)
+                                                 or isinstance(c["equals"], bool) or c["equals"] < 0):
+            raise ValueError("check tool_result_count: step, contains = a non-empty string, equals = an integer >= 0")
         for k in ("xfail", "note"):
             if k in c and (not isinstance(c[k], str) or not 1 <= len(c[k]) <= 500):
                 raise ValueError("check %s: %s must be a string of 1-500 characters" % (c["type"], k))
     for st in steps:
-        expand_args(st.get("arguments", {}), "", None, generate=False)   # validates generators
+        # Validates generators and values (an earlier step, a path).
+        expand_args(st.get("arguments", {}), "", None, generate=False, earlier=earlier[st["id"]])
     return sc
 
 
-def expand_args(obj, path, notes, generate=True):
+class MissingValue(ValueError):
+    """A $lab_value whose step has no such value: the step is not sent."""
+
+
+def lab_value(spec, path, earlier, generate):
+    where = path or "arguments"
+    if not isinstance(spec, dict) or set(spec) != {"step", "path"} or not isinstance(spec["step"], str) \
+            or not isinstance(spec["path"], str) or not VALUE_PATH_RE.fullmatch(spec["path"]):
+        raise ValueError("%s: %s = {step, path (a.b, at most 8 names)}" % (where, VALUE_KEY))
+    if earlier is not None and spec["step"] not in earlier:
+        raise ValueError("%s: %s names %r, not an earlier step outside this batch" % (where, VALUE_KEY, spec["step"]))
+    if not generate:
+        return {VALUE_KEY: spec}
+    try:
+        # The JSON value at the start of the text: a server may add a note after it. The text comes from the code
+        # under test: too deep a nesting is no value either.
+        value = json.JSONDecoder().raw_decode(FULLTEXT.get(spec["step"], "").lstrip())[0]
+    except (ValueError, RecursionError):
+        value = None
+    for name in spec["path"].split("."):
+        value = value.get(name) if isinstance(value, dict) else None
+    if isinstance(value, bool) or not isinstance(value, (str, int, float)) \
+            or isinstance(value, float) and not math.isfinite(value):
+        raise MissingValue("%s: step %s has no value at %s" % (where, spec["step"], spec["path"]))
+    return value
+
+
+def expand_args(obj, path, notes, generate=True, earlier=None):
     """Replaces every object {"$lab_base64": {"bytes": N, "byte": B}} (its only key) with the base64 string of N bytes
     of value B (default 97, "a") when the call is sent. The result keeps the compact form; "notes" receives the size,
-    base64 length and SHA-256 of the generated bytes."""
+    base64 length and SHA-256 of the generated bytes. Every object {"$lab_value": {"step": S, "path": P}} becomes the
+    string or number at P in the JSON value that starts the text of step S's result (MissingValue when there is none);
+    "earlier", when given, is the set of steps S may name."""
     if isinstance(obj, dict):
+        if set(obj) == {VALUE_KEY}:
+            return lab_value(obj[VALUE_KEY], path, earlier, generate)
         if set(obj) == {GEN_KEY}:
             spec = obj[GEN_KEY]
             if not isinstance(spec, dict) or set(spec) - {"bytes", "byte"} or not isinstance(spec.get("bytes"), int) \
@@ -416,9 +466,9 @@ def expand_args(obj, path, notes, generate=True):
                 notes.append({"path": path, "bytes": spec["bytes"], "byte": spec.get("byte", 97),
                               "base64_length": len(b64), "sha256": hashlib.sha256(raw).hexdigest()})
             return b64
-        return {k: expand_args(v, "%s.%s" % (path, k) if path else k, notes, generate) for k, v in obj.items()}
+        return {k: expand_args(v, "%s.%s" % (path, k) if path else k, notes, generate, earlier) for k, v in obj.items()}
     if isinstance(obj, list):
-        return [expand_args(v, "%s[%d]" % (path, i), notes, generate) for i, v in enumerate(obj)]
+        return [expand_args(v, "%s[%d]" % (path, i), notes, generate, earlier) for i, v in enumerate(obj)]
     return obj
 
 
@@ -1174,13 +1224,112 @@ def run_http_idle(st, entry):
     FULLTEXT[st["id"]] = text
 
 
+# Pseudo-tool "labKeys": presses keys in a window of Thunderbird, as a user would, with xdotool on the lab's display
+# (Xvfb, no window manager): it gives the window the input focus, then sends the keys through the XTEST extension.
+# arguments.window: text found in the title of exactly one visible window (waited for up to arguments.wait seconds,
+# 1-60, default 20); arguments.keys: 1 to 10 key names (KEY_RE). The step's text is a JSON object {"window": title,
+# "keys": [...], "windows": [titles of the visible windows]}, so tool_result_contains checks work on it. After the
+# keys, arguments.gone (true: the window must close within arguments.wait seconds) can be checked the same way:
+# "closed": true or false.
+LAB_KEYS = "labKeys"
+LAB_KEYS_ARGS = {"window", "keys", "wait", "gone"}
+X_ENV = {"DISPLAY": ":99", "PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"}
+
+
+def check_lab_keys(st):
+    args = st.get("arguments", {})
+    if set(args) - LAB_KEYS_ARGS:
+        raise ValueError("step %s: labKeys takes %s" % (st["id"], sorted(LAB_KEYS_ARGS)))
+    if not isinstance(args.get("window"), str) or not WINDOW_TEXT_RE.fullmatch(args["window"]):
+        raise ValueError("step %s: labKeys window = printable ASCII text of 1-100 characters" % st["id"])
+    keys = args.get("keys")
+    if not isinstance(keys, list) or not 1 <= len(keys) <= 10 \
+            or not all(isinstance(k, str) and KEY_RE.fullmatch(k) for k in keys):
+        raise ValueError("step %s: labKeys keys = 1 to 10 key names (letters, digits, Escape, Return, Tab, space, "
+                         "F1-F12, with ctrl+, shift+, alt+)" % st["id"])
+    w = args.get("wait", 20)
+    if not isinstance(w, int) or isinstance(w, bool) or not 1 <= w <= 60:
+        raise ValueError("step %s: labKeys wait 1-60" % st["id"])
+    if not isinstance(args.get("gone", False), bool):
+        raise ValueError("step %s: labKeys gone must be a boolean" % st["id"])
+    if "batch" in st or "retry" in st:
+        raise ValueError("step %s: labKeys is not in a batch and has no retry" % st["id"])
+
+
+def xdotool(*argv, timeout=10):
+    r = subprocess.run(["xdotool", *argv], env=X_ENV, stdin=subprocess.DEVNULL, capture_output=True, text=True,
+                       timeout=timeout)
+    return r.returncode, r.stdout
+
+
+X_WINDOW_ID_RE = re.compile(r"[0-9]{1,12}")   # fullmatch
+
+
+def x_windows():
+    """[(id, title)] of the visible windows of the lab's display, or None when they cannot be listed. xdotool writes
+    to a pipe of the harness: what it prints is data, and only decimal window ids are passed back to it."""
+    code, out = xdotool("search", "--onlyvisible", "--name", "")
+    if code != 0:
+        return None
+    found = []
+    for wid in [w for w in out.split() if X_WINDOW_ID_RE.fullmatch(w)][:50]:
+        c, name = xdotool("getwindowname", wid)
+        if c == 0:
+            found.append((wid, name.rstrip("\n")[:200]))
+    return found
+
+
+def window_gone(wid):
+    """True once no visible window has that id; a listing that fails says nothing."""
+    windows = x_windows()
+    return windows is not None and all(w != wid for w, _ in windows)
+
+
+def run_lab_keys(st, entry):
+    args = st["arguments"]
+    want, wait = args["window"], args.get("wait", 20)
+    entry["sent_at"] = round(time.monotonic() - T0, 2)
+    if not shutil.which("xdotool", path=X_ENV["PATH"]):
+        entry.update(ok=False, error="labKeys: xdotool is not installed in this image")
+        return
+    try:
+        match = wait_for(lambda: [w for w in x_windows() or [] if want in w[1]] or None, wait, 0.5)
+        windows = [name for _, name in x_windows() or []]
+        if not match or len(match) != 1:
+            entry.update(ok=False, error="labKeys: %s window has %r in its title" % (
+                "no" if not match else "more than one", want), windows=windows)
+            return
+        wid, title = match[0]
+        code, _ = xdotool("windowfocus", "--sync", wid)
+        if code != 0:
+            entry.update(ok=False, error="labKeys: could not focus %r" % title, windows=windows)
+            return
+        code, _ = xdotool("key", "--clearmodifiers", "--delay", "150", *args["keys"])
+        if code != 0:
+            entry.update(ok=False, error="labKeys: xdotool key failed", windows=windows)
+            return
+        result = {"window": title, "keys": args["keys"], "windows": windows}
+        if args.get("gone"):
+            result["closed"] = bool(wait_for(lambda: window_gone(wid), wait, 0.5))
+    except (OSError, subprocess.TimeoutExpired) as e:
+        entry.update(ok=False, error="labKeys: %s" % e)
+        return
+    text = json.dumps(result)
+    entry.update(ok=True, text=text, answered_at=round(time.monotonic() - T0, 2))
+    FULLTEXT[st["id"]] = text
+
+
 def run_group(grp, by_name, br):
-    if len(grp) == 1 and grp[0]["tool"] == LAB_HTTP_IDLE:
+    if len(grp) == 1 and grp[0]["tool"] in (LAB_HTTP_IDLE, LAB_KEYS):
         st = grp[0]
         entry = {"id": st["id"], "tool": st["tool"], "arguments": st.get("arguments", {})}
         log("lab step %s (%s)" % (st["tool"], st["id"]))
-        run_http_idle(st, entry)
+        (run_http_idle if st["tool"] == LAB_HTTP_IDLE else run_lab_keys)(st, entry)
         R["steps"].append(entry)
+        w = st.get("wait_after", 0)
+        if w:
+            log("waiting %d s after %s" % (w, st["id"]))
+            time.sleep(min(w, max(0.0, DEADLINE - time.monotonic() - 30)))
         return
     entries = []
     for st in grp:
@@ -1207,7 +1356,12 @@ def run_group(grp, by_name, br):
             log("call %s (%s)%s" % (st["tool"], st["id"], " [batch %s]" % st["batch"] if st.get("batch") else ""))
             e["sent_at"] = round(time.monotonic() - T0, 2)
             gen = []
-            args = expand_args(st.get("arguments", {}), "", gen)      # generators; the result keeps the compact form
+            try:
+                # Generators and values; the result keeps the compact form.
+                args = expand_args(st.get("arguments", {}), "", gen)
+            except MissingValue as ex:
+                e.update(ok=False, error=str(ex))
+                continue
             if gen:
                 e["generated_arguments"] = gen
             rids[br.send_request("tools/call", {"name": st["tool"], "arguments": args})] = (st, e)
@@ -1220,7 +1374,8 @@ def run_group(grp, by_name, br):
             e["answered_at"] = t
         if rt:
             live[0][1]["attempts"] = k + 1
-            if live[0][1].get("ok") or k + 1 == attempts:
+            # Nothing sent: a value of an earlier step is missing, and will not appear by trying again.
+            if live[0][1].get("ok") or k + 1 == attempts or not rids:
                 break
             time.sleep(min(rt.get("delay", 2), max(0.0, DEADLINE - time.monotonic())))
     if PW:
@@ -1522,6 +1677,12 @@ def evaluate(c, steps):
         text = FULLTEXT.get(c.get("step"), "")
         present = str(c.get("contains", "\0")) in text
         return bool(e.get("ok")) and present == bool(c.get("present", True)), "present=%s; %s" % (present, text[:300])
+    if typ == "tool_result_count":           # the step SUCCEEDED and its full text contains the text that many times
+        e = steps.get(c.get("step")) or {}
+        text = FULLTEXT.get(c.get("step"), "")
+        needle = str(c.get("contains", "")) or "\0"
+        n = text.count(needle)
+        return bool(e.get("ok")) and n == c.get("equals"), "%d time(s); %s" % (n, text[:300])
     if typ == "listed_filter":
         return check_listed_filter(c)
     if typ == "filter_rule":
