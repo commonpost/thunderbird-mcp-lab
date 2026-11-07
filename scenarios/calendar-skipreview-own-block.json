@@ -1,0 +1,139 @@
+{
+  "name": "calendar-skipreview-own-block",
+  "description": "The block of skipReview for mail (blockSkipReview) is turned off and the one for events and tasks (blockCalendarSkipReview) is on: a direct sendMail reaches the local SMTP sink, while createEvent and createTask with skipReview are refused before anything is looked up, name the block that refused them, and create nothing.",
+  "prefs": {
+    "calendar.list.sortOrder": "labstore",
+    "calendar.registry.labstore.type": "storage",
+    "calendar.registry.labstore.uri": "moz-storage-calendar://",
+    "calendar.registry.labstore.name": "Lab store",
+    "calendar.registry.labstore.disabled": false,
+    "calendar.registry.labstore.calendar-main-in-composite": true,
+    "extensions.commonpost-mcp.blockSkipReview": false,
+    "extensions.commonpost-mcp.blockCalendarSkipReview": true
+  },
+  "steps": [
+    {
+      "id": "cals",
+      "tool": "listCalendars",
+      "timeout": 30,
+      "arguments": {}
+    },
+    {
+      "id": "event-skip",
+      "tool": "createEvent",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab refused event",
+        "startDate": "2026-12-10T14:00:00Z",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "task-skip",
+      "tool": "createTask",
+      "timeout": 30,
+      "arguments": {
+        "title": "Lab refused task",
+        "dueDate": "2026-12-31",
+        "calendarId": "labstore",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "send-skipreview",
+      "tool": "sendMail",
+      "timeout": 120,
+      "arguments": {
+        "to": "dest@example.com",
+        "from": "lab@example.test",
+        "subject": "Lab direct send [cb1]",
+        "body": "Sent while events and tasks need their dialog.",
+        "skipReview": true
+      }
+    },
+    {
+      "id": "events",
+      "tool": "listEvents",
+      "timeout": 30,
+      "arguments": {
+        "startDate": "2026-12-01",
+        "endDate": "2026-12-31",
+        "calendarId": "labstore"
+      }
+    },
+    {
+      "id": "tasks",
+      "tool": "listTasks",
+      "timeout": 30,
+      "arguments": {
+        "calendarId": "labstore"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_ok",
+      "step": "cals"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "event-skip",
+      "contains": "User preference blocks skipReview for events and tasks.",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "event-skip",
+      "contains": "Retry with skipReview: false (or omitted) to open the review dialog instead.",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "task-skip",
+      "contains": "User preference blocks skipReview for events and tasks.",
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_ok",
+      "step": "send-skipreview"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "send-skipreview",
+      "contains": "\"success\":true,\"message\":\"Message sent\""
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[cb1]",
+      "header": "To",
+      "contains": "dest@example.com"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 1
+    },
+    {
+      "type": "tool_ok",
+      "step": "events"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "events",
+      "contains": "Lab refused event",
+      "present": false,
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    },
+    {
+      "type": "tool_ok",
+      "step": "tasks"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "tasks",
+      "contains": "Lab refused task",
+      "present": false,
+      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+    }
+  ]
+}
