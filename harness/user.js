@@ -144,3 +144,8 @@ user_pref("extensions.installDistroAddons", false);
 user_pref("browser.dom.window.dump.enabled", true);
 user_pref("devtools.console.stdout.chrome", true);
 user_pref("devtools.console.stdout.content", true);
+
+// --- Marionette (labKeys presses keys through it): a fixed port on 127.0.0.1, and none of the preferences it would
+// otherwise set for automation, so Thunderbird runs with the same preferences as without it.
+user_pref("marionette.port", 2828);
+user_pref("remote.prefs.recommended", false);
