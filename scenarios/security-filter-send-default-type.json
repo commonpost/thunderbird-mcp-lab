@@ -1,0 +1,58 @@
+{
+  "name": "security-filter-send-default-type",
+  "prefs": {
+    "extensions.commonpost-mcp.blockFilterForwardReply": false,
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "description": "With Ask me each time: a forward rule of the default type (17, new mail and by hand) opens a dialog that names both: new mail as it arrives, and the messages already there when run by hand. Nothing is written, nothing is sent.",
+  "steps": [
+    {
+      "id": "default",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-default",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_result_contains",
+      "step": "default",
+      "contains": "pending_user_confirmation"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "default",
+      "contains": "This rule will automatically send matching incoming mail, every time, without review."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "default",
+      "contains": "Run by hand (Run Filters on Folder or on Selected Messages), it also sends the matching messages already there."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "default",
+      "contains": "Runs on: new mail (before junk classification), manual run"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

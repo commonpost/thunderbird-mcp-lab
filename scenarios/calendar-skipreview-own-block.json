@@ -79,20 +79,17 @@
     {
       "type": "tool_error_contains",
       "step": "event-skip",
-      "contains": "User preference blocks skipReview for events and tasks.",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "User preference blocks skipReview for events and tasks."
     },
     {
       "type": "tool_error_contains",
       "step": "event-skip",
-      "contains": "Retry with skipReview: false (or omitted) to open the review dialog instead.",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "Retry with skipReview: false (or omitted) to open the review dialog instead."
     },
     {
       "type": "tool_error_contains",
       "step": "task-skip",
-      "contains": "User preference blocks skipReview for events and tasks.",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "User preference blocks skipReview for events and tasks."
     },
     {
       "type": "tool_ok",
@@ -121,8 +118,7 @@
       "type": "tool_result_contains",
       "step": "events",
       "contains": "Lab refused event",
-      "present": false,
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "present": false
     },
     {
       "type": "tool_ok",
@@ -132,8 +128,7 @@
       "type": "tool_result_contains",
       "step": "tasks",
       "contains": "Lab refused task",
-      "present": false,
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "present": false
     }
   ]
 }

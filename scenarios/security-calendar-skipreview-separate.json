@@ -102,25 +102,21 @@
     },
     {
       "type": "tool_ok",
-      "step": "event-skip",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "step": "event-skip"
     },
     {
       "type": "tool_result_contains",
       "step": "event-skip",
-      "contains": "Event \\\"Lab direct event\\\" added to calendar \\\"Lab store\\\"",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "Event \\\"Lab direct event\\\" added to calendar \\\"Lab store\\\""
     },
     {
       "type": "tool_ok",
-      "step": "task-skip",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "step": "task-skip"
     },
     {
       "type": "tool_result_contains",
       "step": "task-skip",
-      "contains": "Task \\\"Lab direct task\\\" created in calendar \\\"Lab store\\\"",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "Task \\\"Lab direct task\\\" created in calendar \\\"Lab store\\\""
     },
     {
       "type": "tool_error_contains",
@@ -147,8 +143,7 @@
     {
       "type": "tool_result_contains",
       "step": "events",
-      "contains": "Lab direct event",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "Lab direct event"
     },
     {
       "type": "tool_ok",
@@ -157,8 +152,7 @@
     {
       "type": "tool_result_contains",
       "step": "tasks",
-      "contains": "Lab direct task",
-      "xfail": "Until the release after 0.19.2: a block of skipReview for events and tasks apart from the one for mail."
+      "contains": "Lab direct task"
     },
     {
       "type": "draft_count",
