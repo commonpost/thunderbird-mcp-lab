@@ -48,7 +48,7 @@ import time
 import urllib.request
 import zipfile
 
-HARNESS = "thunderbird-mcp-lab harness 1.2"
+HARNESS = "thunderbird-mcp-lab harness 1.3"
 T0 = time.monotonic()
 DEADLINE = T0 + 560                     # seconds; run-lab.sh stops the container after 900 s
 LAB = "/lab"
@@ -263,7 +263,7 @@ MAX_GEN = 32 * 1024 * 1024
 # {"$lab_value": {"step": "<id of an earlier step>", "path": "a.b"}}: a value of that step's JSON result.
 VALUE_KEY = "$lab_value"
 VALUE_PATH_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}(?:\.[A-Za-z_][A-Za-z0-9_]{0,63}){0,7}")   # fullmatch
-# labKeys: key names given to xdotool, a letter, digit or one of a few named keys, with up to three modifiers.
+# labKeys: key names (WebDriver key actions), a letter, digit or one of a few named keys, with up to three modifiers.
 KEY_RE = re.compile(r"(?:(?:ctrl|shift|alt)\+){0,3}(?:[a-z0-9]|Escape|Return|Tab|space|F[1-9]|F1[0-2])")   # fullmatch
 WINDOW_TEXT_RE = re.compile(r"[ -~]{1,100}")   # fullmatch
 TOOLS = {}       # full tools/list definitions (for tool_json_* checks), not copied into the result
@@ -1068,7 +1068,8 @@ def start_tb(sc):
         for k in ("MOZ_DISABLE_CONTENT_SANDBOX", "MOZ_DISABLE_GMP_SANDBOX", "MOZ_DISABLE_RDD_SANDBOX",
                   "MOZ_DISABLE_SOCKET_PROCESS_SANDBOX", "MOZ_DISABLE_UTILITY_SANDBOX", "MOZ_DISABLE_GPU_SANDBOX"):
             env[k] = "1"
-    start("thunderbird", [TB_DIR + "/thunderbird", "--profile", PROF, "--no-remote"], env=env)
+    env["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS"] = "1"      # Marionette in the chrome context, for labKeys (MARIONETTE_PORT)
+    start("thunderbird", [TB_DIR + "/thunderbird", "--profile", PROF, "--no-remote", "--marionette"], env=env)
     ok = wait_for(lambda: os.path.isfile(CONN) or PROCS["thunderbird"].poll() is not None,
                   sc.get("startup_timeout", 150), 0.5)
     if not ok or not os.path.isfile(CONN):
@@ -1224,16 +1225,105 @@ def run_http_idle(st, entry):
     FULLTEXT[st["id"]] = text
 
 
-# Pseudo-tool "labKeys": presses keys in a window of Thunderbird, as a user would, with xdotool on the lab's display
-# (Xvfb, no window manager): it gives the window the input focus, then sends the keys through the XTEST extension.
-# arguments.window: text found in the title of exactly one visible window (waited for up to arguments.wait seconds,
-# 1-60, default 20); arguments.keys: 1 to 10 key names (KEY_RE). The step's text is a JSON object {"window": title,
-# "keys": [...], "windows": [titles of the visible windows]}, so tool_result_contains checks work on it. After the
-# keys, arguments.gone (true: the window must close within arguments.wait seconds) can be checked the same way:
-# "closed": true or false.
+# Pseudo-tool "labKeys": presses keys in a window of Thunderbird, as a user would, through Thunderbird's own
+# Marionette server (WebDriver key actions in the chrome context). The keys go through Gecko's keyboard event
+# pipeline into the window, whatever has the X input focus: Xvfb has no window manager, so focus given with xdotool
+# did not always activate a dialog that had just opened (its first Escape was lost), while Marionette switches to the
+# window and activates it the way Gecko itself does.
+# arguments.window: text found in the title of exactly one open window of Thunderbird (waited for up to
+# arguments.wait seconds, 1-60, default 20); arguments.keys: 1 to 10 key names (KEY_RE). The step's text is a JSON
+# object {"window": title, "keys": [...], "windows": [titles of the open windows]}, so tool_result_contains checks work
+# on it. After the keys, arguments.gone (true: the window must close within arguments.wait seconds) can be checked
+# the same way: "closed": true or false.
 LAB_KEYS = "labKeys"
 LAB_KEYS_ARGS = {"window", "keys", "wait", "gone"}
-X_ENV = {"DISPLAY": ":99", "PATH": "/usr/bin:/bin", "LANG": "C.UTF-8"}
+# Marionette listens on 127.0.0.1 inside the container (--network none). Thunderbird starts it with --marionette;
+# MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1 lets it work in the chrome context, where the dialogs are. That gives nothing to the
+# code under test it does not already have (the extension runs with chrome privileges): the container stays the
+# boundary. user.js sets remote.prefs.recommended to false, so Marionette changes none of Thunderbird's preferences.
+MARIONETTE_PORT = 2828
+MARIONETTE_TIMEOUT = 15          # seconds, per command
+MARIONETTE_MAX_REPLY = 1 << 20   # bytes; a reply is data from the process under test
+MARIONETTE_HANDLE_RE = re.compile(r"[0-9A-Za-z{}-]{1,64}")   # fullmatch: only such handles are passed back
+# WebDriver key values (WebDriver spec, "Keyboard actions").
+WD_KEYS = dict({"Escape": "\ue00c", "Return": "\ue006", "Tab": "\ue004", "space": " "},
+               **{"F%d" % n: chr(0xE031 + n - 1) for n in range(1, 13)})
+WD_MODIFIERS = {"ctrl": "\ue009", "shift": "\ue008", "alt": "\ue00a"}
+KEYS_AFTER_FOCUS = 1.5           # seconds between activating the window and the first key (see press_keys)
+
+
+class MarionetteError(Exception):
+    """An error answered by Marionette: .error is its WebDriver error code ("no such window", ...)."""
+    def __init__(self, command, error, message):
+        super().__init__("%s: %s: %s" % (command, error, message))
+        self.error = error
+
+
+class Marionette:
+    """Minimal client of Marionette (protocol 3: length-prefixed JSON over TCP), for labKeys only."""
+    def __init__(self, port=MARIONETTE_PORT, timeout=MARIONETTE_TIMEOUT):
+        self.sock = socket.create_connection(("127.0.0.1", port), timeout=timeout)
+        self.buf = b""
+        self.next_id = 0
+        hello = self.read()
+        if not isinstance(hello, dict) or hello.get("marionetteProtocol") != 3:
+            raise ValueError("not a Marionette server (protocol 3)")
+
+    def read(self):
+        while b":" not in self.buf:
+            if len(self.buf) > 8:
+                raise ValueError("Marionette: bad length prefix")
+            self.recv()
+        n, rest = self.buf.split(b":", 1)
+        if not n.isdigit() or len(n) > 8 or int(n) > MARIONETTE_MAX_REPLY:
+            raise ValueError("Marionette: bad length prefix")
+        self.buf = rest
+        while len(self.buf) < int(n):
+            self.recv()
+        data, self.buf = self.buf[:int(n)], self.buf[int(n):]
+        return json.loads(data.decode("utf-8"))
+
+    def recv(self):
+        chunk = self.sock.recv(65536)
+        if not chunk:
+            raise OSError("Marionette closed the connection")
+        self.buf += chunk
+
+    def command(self, name, params=None):
+        self.next_id += 1
+        data = json.dumps([0, self.next_id, name, params or {}]).encode()
+        self.sock.sendall(str(len(data)).encode() + b":" + data)
+        reply = self.read()
+        if not (isinstance(reply, list) and len(reply) == 4 and reply[0] == 1 and reply[1] == self.next_id):
+            raise ValueError("Marionette: unexpected reply to %s" % name)
+        if reply[2]:
+            err = reply[2] if isinstance(reply[2], dict) else {}
+            raise MarionetteError(name, str(err.get("error", "error"))[:100], str(err.get("message", ""))[:300])
+        res = reply[3]
+        return res.get("value") if isinstance(res, dict) and set(res) == {"value"} else res
+
+
+MN = None
+
+
+def marionette():
+    """The session of this run, opened on first use: a new WebDriver session, in the chrome context."""
+    global MN
+    if MN is None:
+        mn = wait_for(lambda: Marionette(), 30, 0.5)
+        if not mn:
+            raise OSError("Marionette does not answer on 127.0.0.1:%d" % MARIONETTE_PORT)
+        # "ignore": by default a WebDriver session answers ("dismisses") the dialogs it finds open, the common
+        # dialog of a filter confirmation among them; only the keys of a step may answer one here.
+        # Marionette reads the capabilities flat (not under capabilities.alwaysMatch, which it ignores silently):
+        # the reply must show the behavior taken, or no key is pressed.
+        session = mn.command("WebDriver:NewSession", {"unhandledPromptBehavior": "ignore"})
+        caps = session.get("capabilities") if isinstance(session, dict) else None
+        if not isinstance(caps, dict) or caps.get("unhandledPromptBehavior") != "ignore":
+            raise ValueError("Marionette did not take unhandledPromptBehavior ignore: it would answer dialogs itself")
+        mn.command("Marionette:SetContext", {"value": "chrome"})
+        MN = mn
+    return MN
 
 
 def check_lab_keys(st):
@@ -1256,62 +1346,93 @@ def check_lab_keys(st):
         raise ValueError("step %s: labKeys is not in a batch and has no retry" % st["id"])
 
 
-def xdotool(*argv, timeout=10):
-    r = subprocess.run(["xdotool", *argv], env=X_ENV, stdin=subprocess.DEVNULL, capture_output=True, text=True,
-                       timeout=timeout)
-    return r.returncode, r.stdout
+def key_actions(name):
+    """WebDriver actions for one KEY_RE key name: modifiers down, the key down and up, modifiers up."""
+    *mods, key = name.split("+")
+    seq = [WD_MODIFIERS[m] for m in mods] + [WD_KEYS.get(key, key)]
+    return [{"type": "keyDown", "value": v} for v in seq] + [{"type": "keyUp", "value": v} for v in reversed(seq)]
 
 
-X_WINDOW_ID_RE = re.compile(r"[0-9]{1,12}")   # fullmatch
-
-
-def x_windows():
-    """[(id, title)] of the visible windows of the lab's display, or None when they cannot be listed. xdotool writes
-    to a pipe of the harness: what it prints is data, and only decimal window ids are passed back to it."""
-    code, out = xdotool("search", "--onlyvisible", "--name", "")
-    if code != 0:
+def tb_windows():
+    """[(handle, title)] of the open windows of Thunderbird, or None when they cannot be listed. Titles are data;
+    only handles of a plain form are passed back to Marionette."""
+    mn = marionette()
+    try:
+        handles = mn.command("WebDriver:GetWindowHandles")
+    except MarionetteError:
+        return None
+    if not isinstance(handles, list):
         return None
     found = []
-    for wid in [w for w in out.split() if X_WINDOW_ID_RE.fullmatch(w)][:50]:
-        c, name = xdotool("getwindowname", wid)
-        if c == 0:
-            found.append((wid, name.rstrip("\n")[:200]))
+    for h in [h for h in handles if isinstance(h, str) and MARIONETTE_HANDLE_RE.fullmatch(h)][:50]:
+        try:
+            mn.command("WebDriver:SwitchToWindow", {"handle": h, "focus": False})
+            title = mn.command("WebDriver:GetTitle")
+        except MarionetteError as e:
+            if e.error != "unexpected alert open":
+                continue                  # closed meanwhile
+            # A window under an open dialog answers no command, not even its title, whatever the prompt
+            # behavior: it is listed without a title.
+            title = ""
+        found.append((h, title[:200] if isinstance(title, str) else ""))
     return found
 
 
 def window_gone(wid):
-    """True once no visible window has that id; a listing that fails says nothing."""
-    windows = x_windows()
+    """True once no open window has that handle; a listing that fails says nothing."""
+    windows = tb_windows()
     return windows is not None and all(w != wid for w, _ in windows)
+
+
+def press_keys(wid, keys):
+    """Activates the window, then presses the keys one after the other (150 ms apart). Returns None, or an error.
+    A window that closes on the last key (Escape, Return, ctrl+l...) is not an error."""
+    mn = marionette()
+    try:
+        mn.command("WebDriver:SwitchToWindow", {"handle": wid, "focus": True})
+    except MarionetteError as e:
+        return "could not activate the window (%s)" % e.error
+    # A dialog that asks for a delay (enableDelay: the filter confirmation, add-on installs...) cancels every key
+    # pressed within security.dialog_enable_delay (1 s) of getting the focus, and restarts that delay: Gecko's guard
+    # against keys typed for another window (EnableDelayHelper, PromptUtils.sys.mjs). A user reads the dialog before
+    # answering; the harness waits KEYS_AFTER_FOCUS.
+    time.sleep(KEYS_AFTER_FOCUS)
+    for i, key in enumerate(keys):
+        if i:
+            time.sleep(0.15)
+        try:
+            # A source id of its own per key: a modifier left down by a window that closed is not carried over.
+            mn.command("WebDriver:PerformActions",
+                       {"actions": [{"type": "key", "id": "lab-kb-%d-%d" % (mn.next_id, i),
+                                     "actions": key_actions(key)}]})
+        except MarionetteError as e:
+            if e.error != "no such window":
+                return "pressing %s failed (%s)" % (key, e.error)
+            if i < len(keys) - 1:
+                return "the window closed on %s, before %s" % (key, ", ".join(keys[i + 1:]))
+    return None
 
 
 def run_lab_keys(st, entry):
     args = st["arguments"]
     want, wait = args["window"], args.get("wait", 20)
     entry["sent_at"] = round(time.monotonic() - T0, 2)
-    if not shutil.which("xdotool", path=X_ENV["PATH"]):
-        entry.update(ok=False, error="labKeys: xdotool is not installed in this image")
-        return
     try:
-        match = wait_for(lambda: [w for w in x_windows() or [] if want in w[1]] or None, wait, 0.5)
-        windows = [name for _, name in x_windows() or []]
+        match = wait_for(lambda: [w for w in tb_windows() or [] if want in w[1]] or None, wait, 0.5)
+        windows = [name for _, name in tb_windows() or []]
         if not match or len(match) != 1:
             entry.update(ok=False, error="labKeys: %s window has %r in its title" % (
                 "no" if not match else "more than one", want), windows=windows)
             return
         wid, title = match[0]
-        code, _ = xdotool("windowfocus", "--sync", wid)
-        if code != 0:
-            entry.update(ok=False, error="labKeys: could not focus %r" % title, windows=windows)
-            return
-        code, _ = xdotool("key", "--clearmodifiers", "--delay", "150", *args["keys"])
-        if code != 0:
-            entry.update(ok=False, error="labKeys: xdotool key failed", windows=windows)
+        error = press_keys(wid, args["keys"])
+        if error:
+            entry.update(ok=False, error="labKeys: %s in %r" % (error, title), windows=windows)
             return
         result = {"window": title, "keys": args["keys"], "windows": windows}
         if args.get("gone"):
             result["closed"] = bool(wait_for(lambda: window_gone(wid), wait, 0.5))
-    except (OSError, subprocess.TimeoutExpired) as e:
+    except (OSError, ValueError, MarionetteError) as e:
         entry.update(ok=False, error="labKeys: %s" % e)
         return
     text = json.dumps(result)

@@ -1,0 +1,117 @@
+{
+  "name": "security-filter-confirm-escape",
+  "description": "Does Escape refuse the confirmation dialog once it has loaded? A forward rule of type 16 with Ask me each time, Escape about five seconds after the call (the harness waits 1.5 s after activating the window), then listFilters confirmation: true.",
+  "prefs": {
+    "extensions.commonpost-mcp.blockFilterForwardReply": false,
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "steps": [
+    {
+      "id": "manual",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-manual",
+        "type": 16,
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "esc",
+      "tool": "labKeys",
+      "arguments": {
+        "window": "create a filter rule that SENDS MAIL",
+        "keys": [
+          "Escape"
+        ],
+        "wait": 10,
+        "gone": true
+      },
+      "wait_after": 2
+    },
+    {
+      "id": "state",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "confirmation": true
+      }
+    },
+    {
+      "id": "again",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-default",
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      },
+      "wait_after": 3
+    },
+    {
+      "id": "esc2",
+      "tool": "labKeys",
+      "arguments": {
+        "window": "create a filter rule that SENDS MAIL",
+        "keys": [
+          "Escape"
+        ],
+        "wait": 10,
+        "gone": true
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_result_contains",
+      "step": "esc",
+      "contains": "\"closed\": true"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "state",
+      "contains": "refused"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "again",
+      "contains": "pending_user_confirmation"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "esc2",
+      "contains": "\"closed\": true"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}

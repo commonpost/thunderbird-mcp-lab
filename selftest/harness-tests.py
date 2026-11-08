@@ -223,7 +223,7 @@ class LabCase(unittest.TestCase):
         self.logs = []
         patcher = mock.patch.multiple(
             lab, R={"harness": lab.HARNESS, "ok": False, "errors": [], "phases": {}}, PROCS={}, TOOLS={},
-            FULLTEXT={}, FILES_FULL={}, MAILPIT_FULL=[], PW=None, NONCE="", SCENARIO_RAW=b"",
+            FULLTEXT={}, FILES_FULL={}, MAILPIT_FULL=[], PW=None, NONCE="", SCENARIO_RAW=b"", MN=None,
             DEADLINE=time.monotonic() + 560, LAB=self.tmp + "/lab", SRC=self.tmp + "/lab/src",
             PROF=self.tmp + "/lab/profile", LOGS=self.tmp + "/logs", CONN=self.tmp + "/conn.json",
             log=self.logs.append)
@@ -1361,7 +1361,7 @@ class ServiceTests(LabCase):
         self.put(self.tmp + "/tb/application.ini", "[App]\nVersion=128.1.0\nBuildID=2026\nName=x\n")
         name, argv, env = self.start_tb({"startup_timeout": 90}, conn='{"port": 4321}')
         self.assertEqual((name, argv), ("thunderbird", [self.tmp + "/tb/thunderbird", "--profile", lab.PROF,
-                                                         "--no-remote"]))
+                                                         "--no-remote", "--marionette"]))
         self.assertEqual((env["DISPLAY"], env["MOZ_NO_REMOTE"], env["XDG_RUNTIME_DIR"]), (":99", "1", "/tmp/xdg"))
         self.assertFalse([k for k in env if k.startswith("MOZ_DISABLE_") and k.endswith("SANDBOX")])
         self.assertEqual(self.waits, [(90, 0.5)])
@@ -1987,66 +1987,53 @@ class HttpIdleTests(LabCase):
 
 
 class LabKeysTests(LabCase):
-    DIALOG = ("0x2", "New Event: Lab review")
-    WINDOWS = [("0x1", "Thunderbird"), DIALOG]
+    DIALOG = ("h2", "New Event: Lab review")
+    WINDOWS = [("h1", "Thunderbird"), DIALOG]
     TITLES = ["Thunderbird", "New Event: Lab review"]
 
-    def run_keys(self, listings, xdotool=None, **args):
-        """run_lab_keys with no X display: x_windows answers `listings` one call after the other (an exception is
-        raised), xdotool answers `xdotool` (default: always success) and wait_for polls its test once. Returns the
-        entry and the mocks of xdotool, x_windows and wait_for."""
+    def run_keys(self, listings, press=None, **args):
+        """run_lab_keys without Thunderbird: tb_windows answers `listings` one call after the other (an exception is
+        raised), press_keys answers `press` (default: no error) and wait_for polls its test once. Returns the entry
+        and the mocks of press_keys, tb_windows and wait_for."""
         st = {"id": "k", "tool": lab.LAB_KEYS, "arguments": dict({"window": "New Event", "keys": ["ctrl+s"]}, **args)}
         entry = {}
-        xd = mock.Mock(return_value=(0, "")) if xdotool is None else mock.Mock(side_effect=xdotool)
+        pk = mock.Mock(return_value=None) if press is None else mock.Mock(side_effect=press)
 
         def poll_once(pred, timeout, step=0.25):
             try:
                 return pred() or None
             except Exception:
                 return None
-        with mock.patch.object(lab, "xdotool", xd), mock.patch.object(lab, "x_windows", side_effect=listings) as xw, \
-                mock.patch.object(lab, "wait_for", side_effect=poll_once) as wf, \
-                mock.patch.object(lab.shutil, "which", return_value="/usr/bin/xdotool") as which:
+        with mock.patch.object(lab, "press_keys", pk), mock.patch.object(lab, "tb_windows", side_effect=listings) as tw, \
+                mock.patch.object(lab, "wait_for", side_effect=poll_once) as wf:
             lab.run_lab_keys(st, entry)
-        which.assert_called_once_with("xdotool", path=lab.X_ENV["PATH"])
-        return entry, xd, xw, wf
-
-    def test_it_fails_at_once_when_xdotool_is_not_installed(self):
-        st = {"id": "k", "tool": lab.LAB_KEYS, "arguments": {"window": "New Event", "keys": ["Escape"]}}
-        entry = {}
-        with mock.patch.object(lab.shutil, "which", return_value=None), \
-                mock.patch.object(lab, "x_windows") as xw, mock.patch.object(lab, "wait_for") as wf:
-            lab.run_lab_keys(st, entry)
-        self.assertEqual((entry["ok"], entry["error"]), (False, "labKeys: xdotool is not installed in this image"))
-        xw.assert_not_called()
-        wf.assert_not_called()
+        return entry, pk, tw, wf
 
     def test_a_listing_that_fails_neither_finds_the_window_nor_counts_as_a_close(self):
-        e, xd, _, _ = self.run_keys([None, None])
+        e, pk, _, _ = self.run_keys([None, None])
         self.assertEqual((e["ok"], e["windows"]), (False, []))
-        xd.assert_not_called()
+        pk.assert_not_called()
         e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS, None], gone=True)
         self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, False))
 
-    def test_it_gives_the_window_the_focus_presses_the_keys_and_records_the_result(self):
-        e, xd, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], keys=["ctrl+s", "ctrl+l"])
+    def test_it_presses_the_keys_in_the_window_and_records_the_result(self):
+        e, pk, tw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], keys=["ctrl+s", "ctrl+l"])
         self.assertEqual(e["ok"], True)
         self.assertEqual(json.loads(e["text"]), {"window": "New Event: Lab review", "keys": ["ctrl+s", "ctrl+l"],
                                                  "windows": self.TITLES})
         self.assertEqual(lab.FULLTEXT["k"], e["text"])
-        self.assertEqual(xd.call_args_list, [mock.call("windowfocus", "--sync", "0x2"),
-                                             mock.call("key", "--clearmodifiers", "--delay", "150", "ctrl+s", "ctrl+l")])
+        self.assertEqual(pk.call_args_list, [mock.call("h2", ["ctrl+s", "ctrl+l"])])
         self.assertIsInstance(e["sent_at"], float)
         self.assertIsInstance(e["answered_at"], float)
         self.assertNotIn("error", e)
-        self.assertEqual((xw.call_count, wf.call_count), (2, 1))
+        self.assertEqual((tw.call_count, wf.call_count), (2, 1))
 
     def test_it_does_not_say_whether_the_window_closed_unless_asked(self):
         for args in ({}, {"gone": False}):
             with self.subTest(args=args):
-                e, _, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], **args)
+                e, _, tw, wf = self.run_keys([self.WINDOWS, self.WINDOWS], **args)
                 self.assertNotIn("closed", json.loads(e["text"]))
-                self.assertEqual((xw.call_count, wf.call_count), (2, 1))
+                self.assertEqual((tw.call_count, wf.call_count), (2, 1))
 
     def test_it_waits_for_the_window_for_20_seconds_by_default_or_as_long_as_asked(self):
         _, _, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS])
@@ -2055,11 +2042,11 @@ class LabKeysTests(LabCase):
         self.assertEqual(wf.call_args[0][1:], (7, 0.5))
 
     def test_it_reports_that_the_window_closed_when_asked(self):
-        e, xd, xw, wf = self.run_keys([self.WINDOWS, self.WINDOWS, [("0x1", "Thunderbird")]], gone=True, wait=9)
+        e, _, tw, wf = self.run_keys([self.WINDOWS, self.WINDOWS, [("h1", "Thunderbird")]], gone=True, wait=9)
         self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, True))
         self.assertIn('"closed": true', e["text"])
         self.assertEqual(lab.FULLTEXT["k"], e["text"])
-        self.assertEqual((xw.call_count, wf.call_count), (3, 2))
+        self.assertEqual((tw.call_count, wf.call_count), (3, 2))
         self.assertEqual(wf.call_args_list[1][0][1:], (9, 0.5))
         self.assertEqual(json.loads(e["text"])["windows"], self.TITLES)      # as listed before the keys were pressed
 
@@ -2068,127 +2055,288 @@ class LabKeysTests(LabCase):
         self.assertEqual((e["ok"], json.loads(e["text"])["closed"]), (True, False))
         self.assertIn('"closed": false', e["text"])
 
-    def test_it_follows_the_window_by_its_id_and_not_by_its_title(self):
-        again = [("0x1", "Thunderbird"), ("0x3", "New Event: Lab review")]
+    def test_it_follows_the_window_by_its_handle_and_not_by_its_title(self):
+        again = [("h1", "Thunderbird"), ("h3", "New Event: Lab review")]
         e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS, again], gone=True)
         self.assertIs(json.loads(e["text"])["closed"], True)
 
     def test_it_fails_when_no_window_has_the_text_in_its_title_and_presses_nothing(self):
-        for window, shown, titles in (("New Event", [("0x1", "Thunderbird")], ["Thunderbird"]),
+        for window, shown, titles in (("New Event", [("h1", "Thunderbird")], ["Thunderbird"]),
                                       ("new event", self.WINDOWS, self.TITLES)):       # the match is case-sensitive
             with self.subTest(window=window):
-                e, xd, _, _ = self.run_keys([shown, shown], window=window, keys=["a"])
+                e, pk, _, _ = self.run_keys([shown, shown], window=window, keys=["a"])
                 self.assertEqual((e["ok"], e["windows"]), (False, titles))
                 self.assertEqual(e["error"], "labKeys: no window has %r in its title" % window)
-                xd.assert_not_called()
+                pk.assert_not_called()
                 self.assertNotIn("k", lab.FULLTEXT)
                 self.assertIn("sent_at", e)
                 self.assertNotIn("text", e)
 
-    def test_it_fails_when_no_window_is_visible_at_all(self):
-        e, xd, _, _ = self.run_keys([[], []])
+    def test_it_fails_when_no_window_is_open_at_all(self):
+        e, pk, _, _ = self.run_keys([[], []])
         self.assertEqual((e["ok"], e["windows"]), (False, []))
         self.assertEqual(e["error"], "labKeys: no window has 'New Event' in its title")
-        xd.assert_not_called()
+        pk.assert_not_called()
 
     def test_it_fails_when_more_than_one_window_has_the_text_in_its_title_and_presses_nothing(self):
-        shown = [("0x1", "Thunderbird"), ("0x2", "New Event: A"), ("0x3", "New Event: B")]
-        e, xd, _, _ = self.run_keys([shown, shown])
+        shown = [("h1", "Thunderbird"), ("h2", "New Event: A"), ("h3", "New Event: B")]
+        e, pk, _, _ = self.run_keys([shown, shown])
         self.assertEqual((e["ok"], e["windows"]), (False, ["Thunderbird", "New Event: A", "New Event: B"]))
         self.assertEqual(e["error"], "labKeys: more than one window has 'New Event' in its title")
-        xd.assert_not_called()
+        pk.assert_not_called()
         self.assertNotIn("k", lab.FULLTEXT)
 
-    def test_it_fails_when_the_window_cannot_be_focused_and_presses_nothing(self):
-        e, xd, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=[(1, "")])
-        self.assertEqual((e["ok"], e["error"]), (False, "labKeys: could not focus 'New Event: Lab review'"))
+    def test_it_fails_when_the_keys_cannot_be_pressed_and_does_not_wait_for_a_close(self):
+        e, pk, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS], press=["could not activate the window (x)"],
+                                     gone=True)
+        self.assertEqual((e["ok"], e["error"]),
+                         (False, "labKeys: could not activate the window (x) in 'New Event: Lab review'"))
         self.assertEqual(e["windows"], self.TITLES)
-        self.assertEqual(xd.call_args_list, [mock.call("windowfocus", "--sync", "0x2")])
+        self.assertEqual(wf.call_count, 1)
         self.assertNotIn("k", lab.FULLTEXT)
 
-    def test_it_fails_when_xdotool_cannot_press_the_keys(self):
-        e, xd, _, wf = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=[(0, ""), (1, "")], gone=True)
-        self.assertEqual((e["ok"], e["error"]), (False, "labKeys: xdotool key failed"))
-        self.assertEqual(e["windows"], self.TITLES)
-        self.assertEqual((xd.call_count, wf.call_count), (2, 1))      # it does not wait for a close
-        self.assertNotIn("k", lab.FULLTEXT)
-
-    def test_it_reports_xdotool_that_cannot_run_or_does_not_answer_as_a_failed_step(self):
-        for error in (OSError("no xdotool"), subprocess.TimeoutExpired(["xdotool", "key"], 10)):
-            for failing in (0, 1):
-                with self.subTest(error=error, failing_call=failing):
-                    calls = [(0, ""), (0, "")]
-                    calls[failing] = error
-                    lab.FULLTEXT.clear()
-                    e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS], xdotool=calls)
-                    self.assertEqual((e["ok"], e["error"]), (False, "labKeys: %s" % error))
-                    self.assertNotIn("text", e)
-                    self.assertNotIn("k", lab.FULLTEXT)
-        self.assertIn("timed out after 10 seconds", str(error))
-
-    def test_it_reports_a_display_that_cannot_be_listed_as_a_failed_step(self):
-        for error in (FileNotFoundError("xdotool"), subprocess.TimeoutExpired(["xdotool", "search"], 10)):
+    def test_a_marionette_that_cannot_be_reached_or_answers_badly_is_a_failed_step(self):
+        for error in (OSError("Marionette does not answer"), ValueError("Marionette: bad length prefix"),
+                      lab.MarionetteError("WebDriver:PerformActions", "unknown error", "x")):
             with self.subTest(error=error):
-                e, xd, xw, _ = self.run_keys(error)
+                lab.FULLTEXT.clear()
+                e, _, _, _ = self.run_keys([self.WINDOWS, self.WINDOWS], press=error)
                 self.assertEqual((e["ok"], e["error"]), (False, "labKeys: %s" % error))
-                self.assertNotIn("windows", e)
-                xd.assert_not_called()
-                self.assertEqual(xw.call_count, 2)       # the wait swallows the first failure, the next listing does not
+                self.assertNotIn("text", e)
+                self.assertNotIn("k", lab.FULLTEXT)
+
+    def test_a_listing_that_raises_is_a_failed_step(self):
+        error = OSError("Marionette closed the connection")
+        e, pk, tw, _ = self.run_keys(error)
+        self.assertEqual((e["ok"], e["error"]), (False, "labKeys: %s" % error))
+        self.assertNotIn("windows", e)
+        pk.assert_not_called()
+        self.assertEqual(tw.call_count, 2)       # the wait swallows the first failure, the next listing does not
 
 
-class XdotoolTests(LabCase):
-    def test_x_windows_lists_the_visible_windows_with_their_titles(self):
-        names = {"10": (0, "Thunderbird\n"), "20": (1, ""), "30": (0, "New Event: x\n"), "40": (0, "no newline")}
+class FakeMarionette:
+    """A Marionette server on a socket pair: it sends the hello, then answers each command with replies[name]
+    (a value, an exception-like dict {"error": ...}, or a callable of the params), and records the commands."""
 
-        def fake(*argv, timeout=10):
-            return (0, "10\n20\n30\n40\n") if argv[0] == "search" else names[argv[1]]
-        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
-            found = lab.x_windows()
-        self.assertEqual(found, [("10", "Thunderbird"), ("30", "New Event: x"), ("40", "no newline")])
-        self.assertEqual(xd.call_args_list[0], mock.call("search", "--onlyvisible", "--name", ""))
-        self.assertEqual(xd.call_args_list[1:], [mock.call("getwindowname", w) for w in ("10", "20", "30", "40")])
+    def __init__(self, test, replies, hello=None):
+        self.server, client = socket.socketpair()
+        test.addCleanup(self.server.close)
+        test.addCleanup(client.close)
+        self.replies, self.commands = replies, []
+        self.send(hello if hello is not None else {"applicationType": "gecko", "marionetteProtocol": 3})
+        self.thread = threading.Thread(target=self.serve, daemon=True)
+        self.thread.start()
+        self.client = client
 
-    def test_x_windows_returns_none_when_the_search_fails_and_nothing_when_it_finds_nothing(self):
-        with mock.patch.object(lab, "xdotool", return_value=(1, "10\n20\n")) as xd:
-            self.assertIsNone(lab.x_windows())
-        self.assertEqual(xd.call_count, 1)
-        with mock.patch.object(lab, "xdotool", return_value=(0, "")) as xd:
-            self.assertEqual(lab.x_windows(), [])
-        self.assertEqual(xd.call_count, 1)
+    def send(self, obj, raw=None):
+        data = raw if raw is not None else json.dumps(obj).encode()
+        self.server.sendall(data if raw is not None else str(len(data)).encode() + b":" + data)
 
-    def test_x_windows_passes_only_decimal_window_ids_back_to_xdotool(self):
-        def fake(*argv, timeout=10):
-            return (0, "10 --help 0x2 \u0663 1234567890123 20\n") if argv[0] == "search" else (0, "w\n")
-        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
-            found = lab.x_windows()
-        self.assertEqual(found, [("10", "w"), ("20", "w")])
-        self.assertEqual(xd.call_args_list[1:], [mock.call("getwindowname", "10"), mock.call("getwindowname", "20")])
+    def serve(self):
+        buf = b""
+        try:
+            while True:
+                while b":" not in buf:
+                    chunk = self.server.recv(65536)
+                    if not chunk:
+                        return
+                    buf += chunk
+                n, buf = buf.split(b":", 1)
+                while len(buf) < int(n):
+                    buf += self.server.recv(65536)
+                msg, buf = json.loads(buf[:int(n)]), buf[int(n):]
+                _, mid, name, params = msg
+                self.commands.append((name, params))
+                r = self.replies.get(name, None)
+                r = r(params) if callable(r) else r
+                if isinstance(r, dict) and "error" in r and set(r) <= {"error", "message"}:
+                    self.send([1, mid, r, None])
+                else:
+                    self.send([1, mid, None, r])
+        except OSError:
+            return
 
-    def test_x_windows_looks_at_50_windows_at_most_and_keeps_200_characters_of_a_title(self):
-        ids = " ".join(str(n) for n in range(100, 160))
+    def connect(self, port=None, timeout=None):
+        return self.client
 
-        def fake(*argv, timeout=10):
-            return (0, ids) if argv[0] == "search" else (0, "t" * 300 + "\n")
-        with mock.patch.object(lab, "xdotool", side_effect=fake) as xd:
-            found = lab.x_windows()
-        self.assertEqual((len(found), xd.call_count), (50, 51))
-        self.assertEqual(found[0], ("100", "t" * 200))
 
-    def test_xdotool_runs_the_command_on_the_lab_display_without_stdin_and_with_a_timeout(self):
-        done = types.SimpleNamespace(returncode=0, stdout="out")
-        with mock.patch.object(lab.subprocess, "run", return_value=done) as run:
-            self.assertEqual(lab.xdotool("key", "ctrl+s"), (0, "out"))
-            self.assertEqual(lab.xdotool("search", "--name", "", timeout=3), (0, "out"))
-        self.assertEqual(run.call_args_list, [
-            mock.call(["xdotool", "key", "ctrl+s"], env=lab.X_ENV, stdin=subprocess.DEVNULL, capture_output=True,
-                      text=True, timeout=10),
-            mock.call(["xdotool", "search", "--name", ""], env=lab.X_ENV, stdin=subprocess.DEVNULL,
-                      capture_output=True, text=True, timeout=3)])
-        self.assertEqual(lab.X_ENV["DISPLAY"], ":99")
+class MarionetteTests(LabCase):
+    def client(self, replies, hello=None):
+        fake = FakeMarionette(self, replies, hello)
+        with mock.patch.object(lab.socket, "create_connection", side_effect=fake.connect):
+            return lab.Marionette(), fake
 
-    def test_xdotool_returns_the_exit_status_and_the_output(self):
-        with mock.patch.object(lab.subprocess, "run", return_value=types.SimpleNamespace(returncode=1, stdout="x\n")):
-            self.assertEqual(lab.xdotool("search"), (1, "x\n"))
+    def test_it_checks_the_hello_and_sends_length_prefixed_commands(self):
+        mn, fake = self.client({"WebDriver:GetTitle": {"value": "Thunderbird"}})
+        self.assertEqual(mn.command("WebDriver:GetTitle"), "Thunderbird")
+        self.assertEqual(fake.commands, [("WebDriver:GetTitle", {})])
+        with self.assertRaisesRegex(ValueError, "not a Marionette server"):
+            self.client({}, hello={"marionetteProtocol": 2})
+
+    def test_a_reply_that_is_not_only_a_value_is_returned_whole(self):
+        mn, _ = self.client({"WebDriver:NewSession": {"sessionId": "s", "capabilities": {}}})
+        self.assertEqual(mn.command("WebDriver:NewSession"), {"sessionId": "s", "capabilities": {}})
+
+    def test_an_error_reply_raises_with_its_webdriver_code(self):
+        mn, _ = self.client({"WebDriver:PerformActions": {"error": "no such window", "message": "gone"}})
+        with self.assertRaises(lab.MarionetteError) as cm:
+            mn.command("WebDriver:PerformActions", {"actions": []})
+        self.assertEqual(cm.exception.error, "no such window")
+        self.assertEqual(str(cm.exception), "WebDriver:PerformActions: no such window: gone")
+
+    def test_it_refuses_a_bad_or_too_long_length_prefix_and_a_closed_connection(self):
+        for raw in (b"123456789:", b"x1:{}", b"%d:" % (lab.MARIONETTE_MAX_REPLY + 1)):
+            with self.subTest(raw=raw):
+                a, b = socket.socketpair()
+                self.addCleanup(a.close)
+                self.addCleanup(b.close)
+                a.sendall(raw)
+                with mock.patch.object(lab.socket, "create_connection", return_value=b), \
+                        self.assertRaisesRegex(ValueError, "bad length prefix"):
+                    lab.Marionette()
+        a, b = socket.socketpair()
+        self.addCleanup(b.close)
+        a.close()
+        with mock.patch.object(lab.socket, "create_connection", return_value=b), \
+                self.assertRaisesRegex(OSError, "closed the connection"):
+            lab.Marionette()
+
+    def test_a_reply_to_another_command_is_refused(self):
+        mn, fake = self.client({})
+        orig = fake.send
+        fake.send = lambda obj, raw=None: orig([1, 999, None, None]) if isinstance(obj, list) else orig(obj, raw)
+        with self.assertRaisesRegex(ValueError, "unexpected reply to WebDriver:GetTitle"):
+            mn.command("WebDriver:GetTitle")
+
+    def test_the_session_is_opened_once_in_the_chrome_context(self):
+        ok = {"sessionId": "s", "capabilities": {"unhandledPromptBehavior": "ignore"}}
+        mn, fake = self.client({"WebDriver:NewSession": ok, "Marionette:SetContext": {"value": None}})
+        with mock.patch.object(lab, "Marionette", return_value=mn) as ctor:
+            self.assertIs(lab.marionette(), mn)
+            self.assertIs(lab.marionette(), mn)
+        ctor.assert_called_once_with()
+        self.assertEqual(fake.commands, [("WebDriver:NewSession", {"unhandledPromptBehavior": "ignore"}),
+                                         ("Marionette:SetContext", {"value": "chrome"})])
+
+    def test_no_session_unless_marionette_says_it_leaves_dialogs_alone(self):
+        for reply in ({"sessionId": "s", "capabilities": {"unhandledPromptBehavior": "dismiss and notify"}},
+                      {"sessionId": "s", "capabilities": {}}, {"sessionId": "s"}, None):
+            with self.subTest(reply=reply):
+                mn, fake = self.client({"WebDriver:NewSession": reply})
+                with mock.patch.object(lab, "Marionette", return_value=mn), \
+                        self.assertRaisesRegex(ValueError, "would answer dialogs itself"):
+                    lab.marionette()
+                self.assertIsNone(lab.MN)
+                self.assertEqual([n for n, _ in fake.commands], ["WebDriver:NewSession"])
+
+    def test_no_session_when_marionette_never_answers(self):
+        with mock.patch.object(lab, "wait_for", return_value=None) as wf, \
+                self.assertRaisesRegex(OSError, "Marionette does not answer on 127.0.0.1:2828"):
+            lab.marionette()
+        self.assertEqual(wf.call_args[0][1:], (30, 0.5))
+        self.assertIsNone(lab.MN)
+
+    def test_key_actions_press_the_modifiers_around_the_key(self):
+        self.assertEqual(lab.key_actions("Escape"), [{"type": "keyDown", "value": "\ue00c"},
+                                                     {"type": "keyUp", "value": "\ue00c"}])
+        self.assertEqual(lab.key_actions("ctrl+shift+s"), [
+            {"type": "keyDown", "value": "\ue009"}, {"type": "keyDown", "value": "\ue008"},
+            {"type": "keyDown", "value": "s"}, {"type": "keyUp", "value": "s"},
+            {"type": "keyUp", "value": "\ue008"}, {"type": "keyUp", "value": "\ue009"}])
+        self.assertEqual([a["value"] for a in lab.key_actions("Return")], ["\ue006", "\ue006"])
+        self.assertEqual([a["value"] for a in lab.key_actions("space")], [" ", " "])
+        self.assertEqual([a["value"] for a in lab.key_actions("F12")], ["\ue03c", "\ue03c"])
+        self.assertEqual([a["value"] for a in lab.key_actions("alt+Tab")], ["\ue00a", "\ue004", "\ue004", "\ue00a"])
+        for name in ("a", "7", "Escape", "Return", "Tab", "space", "F1", "F12", "ctrl+alt+shift+x"):
+            self.assertTrue(lab.KEY_RE.fullmatch(name))
+            self.assertEqual(len(lab.key_actions(name)), 2 * len(name.split("+")))
+
+    def session(self, replies):
+        mn, fake = self.client(replies)
+        lab.MN = mn
+        return fake
+
+    def test_tb_windows_lists_the_windows_with_their_titles_without_raising_them(self):
+        titles = {"h1": "Thunderbird", "h2": "t" * 300, "h3": 7,
+                  "h5": {"error": "unexpected alert open", "message": "Unexpected confirmEx dialog detected"}}
+        current = {}
+
+        def switch(p):
+            if p["handle"] == "h4":
+                return {"error": "no such window", "message": ""}
+            current["h"] = p["handle"]
+            return None
+
+        def title(p):
+            t = titles[current["h"]]
+            return t if isinstance(t, dict) else {"value": t}
+        fake = self.session({"WebDriver:GetWindowHandles": ["h1", "--x y", "h2", 5, "h3", "h4", "h5"],
+                             "WebDriver:SwitchToWindow": switch, "WebDriver:GetTitle": title})
+        self.assertEqual(lab.tb_windows(), [("h1", "Thunderbird"), ("h2", "t" * 200), ("h3", ""), ("h5", "")])
+        self.assertEqual([p for n, p in fake.commands if n == "WebDriver:SwitchToWindow"],
+                         [{"handle": h, "focus": False} for h in ("h1", "h2", "h3", "h4", "h5")])
+
+    def test_tb_windows_is_none_when_the_handles_cannot_be_listed(self):
+        self.session({"WebDriver:GetWindowHandles": {"error": "unknown error", "message": ""}})
+        self.assertIsNone(lab.tb_windows())
+        self.session({"WebDriver:GetWindowHandles": {"handles": []}})
+        self.assertIsNone(lab.tb_windows())
+
+    def test_tb_windows_looks_at_50_windows_at_most(self):
+        fake = self.session({"WebDriver:GetWindowHandles": ["h%d" % n for n in range(60)],
+                             "WebDriver:SwitchToWindow": None, "WebDriver:GetTitle": {"value": "w"}})
+        self.assertEqual(len(lab.tb_windows()), 50)
+        self.assertEqual(len([n for n, _ in fake.commands if n == "WebDriver:GetTitle"]), 50)
+
+    def test_window_gone_needs_a_listing_without_the_handle(self):
+        for listing, gone in ((None, False), ([("h1", "a")], True), ([("h2", "b")], False)):
+            with mock.patch.object(lab, "tb_windows", return_value=listing):
+                self.assertIs(lab.window_gone("h2"), gone)
+
+    def press(self, actions_reply, keys):
+        fake = self.session({"WebDriver:SwitchToWindow": None, "WebDriver:PerformActions": actions_reply})
+        with mock.patch.object(lab.time, "sleep") as sleep:
+            out = lab.press_keys("h2", keys)
+        return out, fake, sleep
+
+    def test_press_keys_activates_the_window_then_presses_each_key_with_a_source_of_its_own(self):
+        out, fake, sleep = self.press(None, ["ctrl+s", "ctrl+l"])
+        self.assertIsNone(out)
+        self.assertEqual(fake.commands[0], ("WebDriver:SwitchToWindow", {"handle": "h2", "focus": True}))
+        acts = [p["actions"][0] for n, p in fake.commands if n == "WebDriver:PerformActions"]
+        self.assertEqual([a["actions"] for a in acts], [lab.key_actions("ctrl+s"), lab.key_actions("ctrl+l")])
+        self.assertEqual(len({a["id"] for a in acts}), 2)
+        self.assertTrue(all(a["type"] == "key" for a in acts))
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [lab.KEYS_AFTER_FOCUS, 0.15])
+        self.assertGreater(lab.KEYS_AFTER_FOCUS, 1.0)       # security.dialog_enable_delay is 1000 ms
+
+    def test_a_window_that_closes_on_the_last_key_is_not_an_error_but_before_it_is(self):
+        gone = {"error": "no such window", "message": "BrowsingContext does no longer exist"}
+        out, _, _ = self.press(gone, ["Escape"])
+        self.assertIsNone(out)
+        out, fake, _ = self.press(gone, ["Escape", "Return", "a"])
+        self.assertEqual(out, "the window closed on Escape, before Return, a")
+        self.assertEqual(len([n for n, _ in fake.commands if n == "WebDriver:PerformActions"]), 1)
+        out, _, _ = self.press({"error": "invalid argument", "message": ""}, ["Escape"])
+        self.assertEqual(out, "pressing Escape failed (invalid argument)")
+
+    def test_press_keys_presses_nothing_when_the_window_cannot_be_activated(self):
+        fake = self.session({"WebDriver:SwitchToWindow": {"error": "no such window", "message": ""}})
+        self.assertEqual(lab.press_keys("h2", ["Escape"]), "could not activate the window (no such window)")
+        self.assertEqual([n for n, _ in fake.commands], ["WebDriver:SwitchToWindow"])
+
+    def test_thunderbird_starts_marionette_with_system_access(self):
+        with mock.patch.object(lab, "start") as start, mock.patch.object(lab, "wait_for", return_value=False), \
+                mock.patch.object(lab, "PROCS", {"thunderbird": mock.Mock(poll=mock.Mock(return_value=None))}), \
+                self.assertRaises(RuntimeError):
+            lab.start_tb({})
+        argv, env = start.call_args[0][1], start.call_args[1]["env"]
+        self.assertEqual(argv[-1], "--marionette")
+        self.assertEqual(env["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS"], "1")
+        with open(os.path.join(os.path.dirname(lab.__file__), "user.js")) as f:
+            userjs = f.read()
+        self.assertIn('user_pref("marionette.port", %d);' % lab.MARIONETTE_PORT, userjs)
+        self.assertIn('user_pref("remote.prefs.recommended", false);', userjs)
 
 
 # ------------------------------------------------------------------------------------------------ inspection
