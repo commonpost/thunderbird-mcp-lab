@@ -1,0 +1,158 @@
+{
+  "name": "security-filter-send-scope",
+  "prefs": {
+    "extensions.commonpost-mcp.blockFilterForwardReply": false,
+    "mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"
+  },
+  "description": "With Ask me each time: a forward rule run periodically (256), on archiving (128) or periodically and by hand (272) is refused before any dialog; one run only by hand (16) opens a dialog that says it sends the messages already there, and no word about incoming mail. Nothing is written, nothing is sent.",
+  "steps": [
+    {
+      "id": "periodic",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-periodic",
+        "type": 256,
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "archive",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-archive",
+        "type": 128,
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "both",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-both",
+        "type": 272,
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "manual",
+      "tool": "createFilter",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2",
+        "name": "lab-scope-manual",
+        "type": 16,
+        "conditions": [
+          {
+            "attrib": "subject",
+            "op": "contains",
+            "value": "lab-scope"
+          }
+        ],
+        "actions": [
+          {
+            "type": "forward",
+            "value": "dest@example.com"
+          }
+        ]
+      }
+    },
+    {
+      "id": "filters",
+      "tool": "listFilters",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account2"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_error_contains",
+      "step": "periodic",
+      "contains": "cannot run on archiving or periodically"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "periodic",
+      "contains": "can be deleted (deleteFilter)"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "archive",
+      "contains": "cannot run on archiving or periodically"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "both",
+      "contains": "cannot run on archiving or periodically"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "manual",
+      "contains": "pending_user_confirmation"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "manual",
+      "contains": "Run by hand (Run Filters on Folder or on Selected Messages), it sends the matching messages already there, without review."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "manual",
+      "contains": "incoming mail",
+      "present": false
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "filters",
+      "contains": "lab-scope",
+      "present": false
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0
+    }
+  ]
+}
