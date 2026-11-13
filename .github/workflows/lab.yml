@@ -205,8 +205,15 @@ jobs:
           fi
           echo "code under test at $EXPECTED_SHA"
 
+      # Debian mirrors sometimes drop a connection; a retry reuses the layers already built.
       - name: Build the lab image
-        run: docker build -t thunderbird-mcp-lab:ci harness
+        run: |
+          for attempt in 1 2 3; do
+            if docker build -t thunderbird-mcp-lab:ci harness; then exit 0; fi
+            echo "::warning::lab image build failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep 30; fi
+          done
+          exit 1
 
       # The tree under test (possibly an unreviewed pull request) is never executed on the runner: run-lab.sh only reads
       # it with tar and streams it into a container started with --network none, --read-only, --cap-drop ALL and an

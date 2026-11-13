@@ -58,8 +58,14 @@ jobs:
       - name: Build the lab and coverage images
         run: |
           set -euo pipefail
-          docker build -t thunderbird-mcp-lab:ci harness
-          docker build --target coverage -t thunderbird-mcp-lab:coverage harness
+          # Debian mirrors sometimes drop a connection; a retry reuses the layers already built.
+          for attempt in 1 2 3; do
+            if docker build -t thunderbird-mcp-lab:ci harness \
+              && docker build --target coverage -t thunderbird-mcp-lab:coverage harness; then exit 0; fi
+            echo "::warning::lab image build failed (attempt $attempt of 3)"
+            if [ "$attempt" -lt 3 ]; then sleep 30; fi
+          done
+          exit 1
 
       - name: Measure
         run: >-
