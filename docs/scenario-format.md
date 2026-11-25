@@ -19,12 +19,50 @@ Every run starts from the same throw-away profile (`harness/user.js`):
 | identity `id1` | `Lab User <lab@example.test>`, plain-text compose, drafts in Local Folders/Drafts, copies in Local Folders/Sent |
 | SMTP `smtp1` | mailpit on `127.0.0.1:1025`, no authentication, no TLS |
 | mailpit API | `http://127.0.0.1:8025` (used by the harness only) |
+| `account3` / `server3` | Only with the [`imap`](#the-imap-account) key: IMAP account `tblab` on a local Dovecot server (`127.0.0.1:1143`), folders `imap://tblab@127.0.0.1/INBOX`, `imap://tblab@127.0.0.1/Drafts`, ... |
+| identity `id3` | Only with `imap`: the identity of `account3`, the same person and folders as `id1` |
 
 Use only reserved example domains (`example.com`, `example.test`, ...) in scenarios.
 
 To seed messages in the POP3 inbox, fix its directory so that Thunderbird does not pick a different one:
 `"prefs": {"mail.server.server2.directory-rel": "[ProfD]Mail/127.0.0.1"}`, then seed folder `127.0.0.1/Inbox`, whose
 URI is `mailbox://lab@127.0.0.1/Inbox`.
+
+## The IMAP account
+
+A scenario with the top-level key `imap` gets a third account, on an IMAP server that the harness starts inside the
+container before Thunderbird:
+
+```json
+"imap": {"folders": {"INBOX": ["raw RFC 5322 message", "..."], "Drafts": []}}
+```
+
+- `folders` names 1 to 10 folders of the server, each with the list of its messages (0 to 20 raw messages, 5 MB in
+  total, stored in the order given and unread). A folder name is 1 to 32 letters, digits, `-` or `_`, starting with a
+  letter or a digit; the inbox is `INBOX`, in capitals. Folders are not nested. A folder the scenario needs, `Drafts`
+  for instance, must be listed, with `[]` when it starts empty; Thunderbird may create others itself (`Trash`).
+- The server is Dovecot's `imap` program, one process per connection behind `socat` on `127.0.0.1:1143`, on a Maildir
+  the harness writes under `/lab/imap`. It runs as the lab user and every connection is already authenticated (the
+  greeting is `PREAUTH`): there is no password, no TLS and no login to test. Before it goes on, the harness checks that
+  greeting and that every folder holds the number of messages the scenario gave (`phases.imap`).
+- The harness adds the account to the profile itself: `account3` on `server3` (type `imap`, user `tblab`, named
+  `Lab IMAP (Dovecot)`), with the identity `id3` (`Lab User <lab@example.test>`, SMTP `smtp1`). Like `id1`, `id3`
+  composes in plain text and keeps its drafts, copies, templates and archives in Local Folders, so the `draft_*`
+  checks see a draft saved for this account. The folder URIs are `imap://tblab@127.0.0.1/<folder>`.
+- These preferences are written before the scenario's own `prefs`, which can change any of them. To keep the drafts on
+  the server: `"prefs": {"mail.identity.id3.draft_folder": "imap://tblab@127.0.0.1/Drafts"}`. The `draft_*` checks and
+  `draft_subject` read the mbox files of the profile and do not see such drafts: check them through a tool instead,
+  e.g. `tool_result_contains` on a `searchMessages` step on that folder. A scenario that sets
+  `mail.accountmanager.accounts` itself must keep `account3` in it.
+- Messages are fetched from the server on demand: nothing is downloaded for offline use, so the profile holds no copy
+  of a message body, and a tool that reads a message makes Thunderbird ask the server for it.
+- Thunderbird logs in at startup and lists the folders by itself, a few seconds after the extension is ready. A
+  reliable recipe: a first step with a `wait_after` of about 10 s, then a `listFolders` step with `refresh: true` and a
+  `retry` on each folder the scenario uses, then a `searchMessages` step with a `retry` (see
+  `scenarios/imap-reply-forward-draft.json`). After a tool has stored a message on the server, give Thunderbird a few
+  seconds (`wait_after`) before a step that lists or searches that folder.
+
+A scenario without `imap` runs exactly as before: no server is started and the profile has two accounts.
 
 ## Top-level keys
 
@@ -40,6 +78,7 @@ URI is `mailbox://lab@127.0.0.1/Inbox`.
 | `tools_dump` | list of tool names | Records the full `tools/list` definitions (`tools_detail`) and a canonical SHA-256 of each (`tools_detail_sha256`), e.g. to compare a pull request with a release. |
 | `bridge_env` | object (<= 10) | Environment variables for the bridge process only. Names must match `COMMONPOST_MCP_[A-Z0-9_]+` (e.g. `COMMONPOST_MCP_READ_ONLY`) or `THUNDERBIRD_MCP_[A-Z0-9_]+`; values are printable ASCII (<= 500). |
 | `seed` | list (<= 10) | `{"folder": "127.0.0.1/Inbox", "messages": ["raw RFC 5322 message", ...]}` (1 to 20 messages, 5 MB in total): appended to mbox files of the profile before Thunderbird starts. |
+| `imap` | object | `{"folders": {"INBOX": ["raw RFC 5322 message", ...], "Drafts": []}}`: starts a local IMAP server with these folders and messages and adds an IMAP account (`account3`, identity `id3`) to the profile. See [The IMAP account](#the-imap-account). |
 | `seed_files` | list (<= 5) | `{"path": "Mail/<server folder>/msgFilterRules.dat", "content": "..."}` (<= 200 000 characters): filter rules written before Thunderbird starts, e.g. a rule made "by hand" in the filter editor. |
 | `watch_prefs` | list of prefixes (<= 20) | Re-reads `prefs.js` every 0.2 s and records every change of matching lines (`prefs_timeline`); steps get `prefs_before`, `prefs_at_response` and `prefs_after_wait`. Thunderbird writes `prefs.js` about 0.5 s after a change, so shorter-lived states can be missed. |
 | `inspect` | object | `{"prefs": [prefixes], "files": [paths]}`, see below. |
@@ -171,10 +210,11 @@ status in this order:
 The result JSON contains, among others: `ok`, `errors`, `summary` (`pass`, `fail`, `xfail`, `xpass` counts),
 `checks` (each with `check`, `ok`, `status` and `detail`), `pid1` (whether the harness runs as PID 1 of the
 container) and `nondumpable`, `phases` (versions of Thunderbird, mailpit, Node.js and the extension, MCP server info,
-XPI hash), `tools`, `steps` (arguments, timing, response text), `drafts`, `mbox_folders`, `mailpit`, the optional
-inspection results, and the tail of the Thunderbird, bridge, mailpit and Xvfb logs. When the add-on under test was
-instrumented for coverage (`scripts/coverage/instrument.cjs` in commonpost/thunderbird-mcp), `coverage_hex` holds
-the hex bitmap of the statements of `api.js` it ran, read from `<profile>/cp-coverage.txt` (hex digits only, at most
-65,536); a normal build has no such field.
+XPI hash; with `imap`, the version of Dovecot and the number of messages the server reports per folder), `tools`,
+`steps` (arguments, timing, response text), `drafts`, `mbox_folders`, `mailpit`, the optional inspection results, and
+the tail of the Thunderbird, bridge, mailpit and Xvfb logs (`logs`; with `imap`, also that of the IMAP server). When
+the add-on under test was instrumented for coverage (`scripts/coverage/instrument.cjs` in commonpost/thunderbird-mcp),
+`coverage_hex` holds the hex bitmap of the statements of `api.js` it ran, read from `<profile>/cp-coverage.txt` (hex
+digits only, at most 65,536); a normal build has no such field.
 
 It is produced next to the code under test: treat it as data.

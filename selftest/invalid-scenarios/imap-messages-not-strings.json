@@ -1,0 +1,23 @@
+{
+ "steps": [
+  {
+   "id": "s1",
+   "tool": "listAccounts"
+  }
+ ],
+ "checks": [
+  {
+   "type": "tool_ok",
+   "step": "s1"
+  }
+ ],
+ "imap": {
+  "folders": {
+   "INBOX": [
+    {
+     "raw": "x"
+    }
+   ]
+  }
+ }
+}

@@ -11,10 +11,10 @@ Runs inside a disposable container started with --network none --read-only --cap
     N bytes  the scenario (JSON)
     rest     a tar stream of a thunderbird-mcp source tree (extension/ + mcp-bridge.cjs at its root)
 
-Flow: mailpit (SMTP + POP3 + HTTP API on 127.0.0.1) -> Xvfb -> throw-away profile (user.js) + an XPI built from
-extension/ -> Thunderbird -> wait for the extension's connection file -> JSON-RPC MCP session with the tree's own
-"node mcp-bridge.cjs" -> inspection of drafts (mbox), of mailpit (raw source) and, on request, of profile files and
-prefs.js -> checks.
+Flow: mailpit (SMTP + POP3 + HTTP API on 127.0.0.1) -> an IMAP server on 127.0.0.1 when the scenario asks for one ->
+Xvfb -> throw-away profile (user.js) + an XPI built from extension/ -> Thunderbird -> wait for the extension's
+connection file -> JSON-RPC MCP session with the tree's own "node mcp-bridge.cjs" -> inspection of drafts (mbox), of
+mailpit (raw source) and, on request, of profile files and prefs.js -> checks.
 
 Output: progress on stderr ("[lab ...]"); the result is ONE JSON object (ASCII, CR/LF escaped) on stdout, between two
 marker lines that carry the nonce.
@@ -31,6 +31,7 @@ import base64
 import email.header
 import glob
 import hashlib
+import imaplib
 import json
 import math
 import os
@@ -48,7 +49,7 @@ import time
 import urllib.request
 import zipfile
 
-HARNESS = "thunderbird-mcp-lab harness 1.3"
+HARNESS = "thunderbird-mcp-lab harness 1.4"
 T0 = time.monotonic()
 DEADLINE = T0 + 560                     # seconds; run-lab.sh stops the container after 900 s
 LAB = "/lab"
@@ -66,6 +67,12 @@ CONN_BY_ID = {
 CONN = CONN_BY_ID["commonpost-mcp@commonpost.github.io"]
 API = "http://127.0.0.1:8025/api/v1"
 POP3_USER = "lab"
+# Optional IMAP account (scenario key "imap"): Dovecot's imap binary, one process per connection behind socat, on
+# 127.0.0.1. It runs as the lab user on a Maildir written from the scenario and greets with PREAUTH (the session is
+# already authenticated, there is no password); the Dovecot service (master, login and auth processes) is not used.
+IMAP_PORT = 1143
+IMAP_USER = "tblab"
+IMAP_BIN = "/usr/lib/dovecot/imap"
 MAX_TEXT = 20000
 MAX_OUT = 3_000_000
 MAX_SCENARIO = 1_000_000
@@ -258,6 +265,8 @@ PRINTABLE_RE = re.compile(r"[ -~]{0,500}")
 XPI_REL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9._-]{0,63}){0,3}\.xpi")      # fullmatch
 SEED_FILE_RE = re.compile(r"Mail/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}/msgFilterRules\.dat")                       # fullmatch
 PROFILE_FILE_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}(/[A-Za-z0-9][A-Za-z0-9 ._-]{0,63}){0,4}")     # fullmatch
+# IMAP folder to create: one level, no dot (the separator of the Maildir on disk), no slash, no space.
+IMAP_FOLDER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,31}")   # fullmatch
 GEN_KEY = "$lab_base64"
 MAX_GEN = 32 * 1024 * 1024
 # {"$lab_value": {"step": "<id of an earlier step>", "path": "a.b"}}: a value of that step's JSON result.
@@ -272,7 +281,7 @@ FILES_FULL = {}  # full content of inspected profile files (for checks), not cop
 MAILPIT_FULL = []  # raw messages captured by mailpit (for checks), not copied into the result
 
 TOP_KEYS = {"name", "description", "tb_sandbox", "startup_timeout", "prefs", "schema_watch", "steps", "inspect",
-            "checks", "seed", "watch_prefs", "bridge_env", "tools_dump", "xpi", "seed_files", "bridge_first"}
+            "checks", "seed", "watch_prefs", "bridge_env", "tools_dump", "xpi", "seed_files", "bridge_first", "imap"}
 STEP_KEYS = {"id", "tool", "arguments", "timeout", "force_call", "batch", "wait_after", "retry", "draft_subject",
              "draft_wait", "probes", "part_probes", "note"}
 CHECK_TYPES = {"tool_ok", "tools_list_has", "draft_exists", "draft_header_contains", "schema_has", "mailpit_total",
@@ -375,6 +384,22 @@ def load_scenario(raw):
         total += sum(len(m) for m in msgs)
     if total > 5_000_000:
         raise ValueError("seed: at most 5 MB")
+    if "imap" in sc:
+        im = sc["imap"]
+        folders = im.get("folders") if isinstance(im, dict) and set(im) == {"folders"} else None
+        if not isinstance(folders, dict) or not 1 <= len(folders) <= 10:
+            raise ValueError("imap: {\"folders\": {1 to 10 folder names: [raw messages]}}")
+        total = 0
+        for name, msgs in folders.items():
+            # The inbox is "INBOX" for an IMAP server, whatever the case: any other spelling would be the same folder.
+            if not IMAP_FOLDER_RE.fullmatch(name) or (name.upper() == "INBOX" and name != "INBOX"):
+                raise ValueError("imap: folder refused %r (letters, digits, - and _, at most 32; the inbox is "
+                                 "\"INBOX\")" % name)
+            if not isinstance(msgs, list) or len(msgs) > 20 or not all(isinstance(m, str) for m in msgs):
+                raise ValueError("imap %s: messages = at most 20 strings" % name)
+            total += sum(len(m) for m in msgs)
+        if total > 5_000_000:
+            raise ValueError("imap: at most 5 MB")
     xp = sc.get("xpi")
     if xp is not None and (not isinstance(xp, str) or not XPI_REL_RE.fullmatch(xp) or ".." in xp):
         raise ValueError("xpi: a path relative to the received tree, [A-Za-z0-9._-] and /, ending in .xpi")
@@ -931,6 +956,125 @@ def start_mailpit():
         raise RuntimeError("mailpit self-check failed")
 
 
+def imap_prefs():
+    """Preferences of the IMAP account that the scenario key "imap" adds to the profile: account3 on server3, with its
+    own identity id3. Same person and same folders as id1 (drafts, copies, templates and archives in Local Folders),
+    so that the draft checks, which read mbox files, also see what a tool saves for this account. They are written
+    before the scenario's own preferences, which can therefore change any of them."""
+    local = "mailbox://nobody@Local%20Folders/"
+    return {
+        "mail.accountmanager.accounts": "account2,account1,account3",
+        "mail.account.account3.server": "server3",
+        "mail.account.account3.identities": "id3",
+        "mail.server.server3.type": "imap",
+        "mail.server.server3.hostname": "127.0.0.1",
+        "mail.server.server3.port": IMAP_PORT,
+        "mail.server.server3.userName": IMAP_USER,
+        "mail.server.server3.name": "Lab IMAP (Dovecot)",
+        "mail.server.server3.socketType": 0,
+        "mail.server.server3.authMethod": 3,
+        "mail.server.server3.login_at_startup": True,
+        "mail.server.server3.check_new_mail": False,
+        "mail.server.server3.using_subscription": False,
+        # Nothing is kept for offline use: every message is fetched from the server when a tool reads it.
+        "mail.server.server3.offline_download": False,
+        "mail.server.server3.autosync_offline_stores": False,
+        "mail.server.server3.directory-rel": "[ProfD]ImapMail/127.0.0.1",
+        "mail.server.server3.storeContractID": "@mozilla.org/msgstore/berkeleystore;1",
+        "mail.identity.id3.fullName": "Lab User",
+        "mail.identity.id3.useremail": "lab@example.test",
+        "mail.identity.id3.valid": True,
+        "mail.identity.id3.smtpServer": "smtp1",
+        "mail.identity.id3.compose_html": False,
+        "mail.identity.id3.draft_folder": local + "Drafts",
+        "mail.identity.id3.drafts_folder_picker_mode": "1",
+        "mail.identity.id3.fcc": True,
+        "mail.identity.id3.fcc_folder": local + "Sent",
+        "mail.identity.id3.fcc_folder_picker_mode": "1",
+        "mail.identity.id3.stationery_folder": local + "Templates",
+        "mail.identity.id3.tmpl_folder_picker_mode": "1",
+        "mail.identity.id3.archive_folder": local + "Archives",
+        "mail.identity.id3.attach_signature": False,
+        "mail.identity.id3.reply_on_top": 0,
+    }
+
+
+def write_maildir(root, folders):
+    """"imap": the folders of the scenario as a Maildir++ tree (the inbox is the root, any other folder a ".Name"
+    directory in it), one file per raw message, in the order given, without any flag (unread). Returns the number of
+    messages written per folder."""
+    out = {}
+    for sub in ("cur", "new", "tmp"):
+        os.makedirs(os.path.join(root, sub), mode=0o700, exist_ok=True)
+    for name, msgs in folders.items():
+        path = root if name == "INBOX" else os.path.join(root, "." + name)
+        if path != root:
+            if os.path.realpath(path) != os.path.join(os.path.realpath(root), "." + name) or "/" in name:
+                raise RuntimeError("imap: folder outside the Maildir: %r" % name)
+            for sub in ("cur", "new", "tmp"):
+                os.makedirs(os.path.join(path, sub), mode=0o700, exist_ok=True)
+            with open(os.path.join(path, "maildirfolder"), "w"):
+                pass
+        for n, raw in enumerate(msgs, 1):
+            with open(os.path.join(path, "cur", "%d.M%dP1.lab:2," % (1700000000 + n, n)), "wb") as f:
+                f.write(raw.replace("\r\n", "\n").encode("utf-8"))
+        out[name] = len(msgs)
+    return out
+
+
+def imap_counts(names):
+    """One session with the IMAP server: it must greet with PREAUTH. Returns {folder: number of messages} as the
+    server reports them (None for a folder it does not report)."""
+    conn = imaplib.IMAP4("127.0.0.1", IMAP_PORT, timeout=10)
+    try:
+        if conn.state != "AUTH":
+            raise RuntimeError("no PREAUTH greeting")
+        counts = {}
+        for name in names:
+            typ, data = conn.status(name, "(MESSAGES)")
+            mm = re.search(rb"\(MESSAGES (\d+)\)", data[0] or b"") if typ == "OK" and data else None
+            counts[name] = int(mm.group(1)) if mm else None
+        return counts
+    finally:
+        try:
+            conn.logout()
+        except Exception:
+            pass
+
+
+def dovecot_version():
+    try:
+        return subprocess.run(["dovecot", "--version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                              timeout=10).stdout.decode("ascii", "replace").strip()
+    except Exception:
+        return None
+
+
+def start_imap(im):
+    """"imap": writes the Maildir and Dovecot's configuration under <lab>/imap, starts the server (socat on
+    127.0.0.1, one imap process per connection, their messages in the "imap" log) and checks it: a PREAUTH greeting,
+    and every folder with the number of messages the scenario gave."""
+    home = LAB + "/imap"
+    root = home + "/Maildir"
+    written = write_maildir(root, im["folders"])
+    conf = home + "/dovecot.conf"
+    with open(conf, "w") as f:
+        # USER and HOME come from the environment given below; nothing is read from /etc/dovecot.
+        f.write("dovecot_config_version = 2.4.1\ndovecot_storage_version = 2.4.1\n"
+                "import_environment {\n  USER = %%{env:USER}\n  HOME = %%{env:HOME}\n}\n"
+                "mail_driver = maildir\nmail_path = %s\nlog_path = /dev/stderr\n" % root)
+    env = {"USER": IMAP_USER, "HOME": home, "PATH": "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8", "TZ": "UTC"}
+    start("imap", ["socat", "TCP-LISTEN:%d,bind=127.0.0.1,reuseaddr,fork" % IMAP_PORT,
+                   "EXEC:%s -c %s" % (IMAP_BIN, conf)], env=env)
+    counts = wait_for(lambda: imap_counts(list(written)), 20)
+    if not counts:
+        raise RuntimeError("the IMAP server does not answer with PREAUTH:\n" + (tail(LOGS + "/imap.log") or ""))
+    phase("imap", port=IMAP_PORT, preauth=True, folders=counts, version=dovecot_version())
+    if counts != written:
+        raise RuntimeError("the IMAP server does not hold the messages of the scenario: %s, expected %s" % (
+            json.dumps(counts, sort_keys=True), json.dumps(written, sort_keys=True)))
+
+
 def start_xvfb():
     os.makedirs("/tmp/.X11-unix", exist_ok=True)
     os.chmod("/tmp/.X11-unix", 0o1777)
@@ -983,9 +1127,15 @@ def make_profile(sc):
     with open(USERJS_BASE) as f:
         base = f.read()
     extra = "".join(pref_line(k, v) for k, v in sc.get("prefs", {}).items())
+    info = {"scenario_prefs": len(sc.get("prefs", {}))}
+    if "imap" in sc:
+        # Before the scenario's own preferences: the last line for a preference wins.
+        base += "\n// --- IMAP account (scenario key \"imap\")\n" + "".join(
+            pref_line(k, v) for k, v in imap_prefs().items())
+        info["imap_prefs"] = len(imap_prefs())
     with open(PROF + "/user.js", "w") as f:
         f.write(base + "\n// --- Scenario preferences\n" + extra)
-    phase("profile", scenario_prefs=len(sc.get("prefs", {})))
+    phase("profile", **info)
     seed_mbox(sc)
     seed_files(sc)
 
@@ -1847,7 +1997,8 @@ def run_checks(sc):
 
 def emit():
     R["duration_s"] = round(time.monotonic() - T0, 1)
-    R["logs"] = {n: tail(os.path.join(LOGS, n + ".log")) for n in ("thunderbird", "bridge", "mailpit", "xvfb")}
+    R["logs"] = {n: tail(os.path.join(LOGS, n + ".log")) for n in ("thunderbird", "bridge", "mailpit", "xvfb")
+                 + (("imap",) if "imap" in PROCS else ())}
     out = json.dumps(R, ensure_ascii=True, indent=1)
     if len(out) > MAX_OUT:
         R["logs"] = {"truncated": True}
@@ -1885,6 +2036,8 @@ def main():
         extract_source()
         R["extension"] = dict(zip(("id", "version"), build_xpi(sc)))
         start_mailpit()
+        if "imap" in sc:
+            start_imap(sc["imap"])
         start_xvfb()
         make_profile(sc)
         if sc.get("watch_prefs"):
@@ -1905,7 +2058,7 @@ def main():
     finally:
         if os.path.isfile(PROF + "/cp-coverage.txt"):
             time.sleep(0.6)           # an instrumented add-on writes its bitmap every 250 ms: let it write once more
-        for n in ("bridge", "thunderbird", "xvfb", "mailpit"):
+        for n in ("bridge", "thunderbird", "xvfb") + (("imap",) if "imap" in PROCS else ()) + ("mailpit",):
             stop(n)
         try:
             read_coverage()

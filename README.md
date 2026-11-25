@@ -35,6 +35,7 @@ questions such as:
  -----------------                             ------------------------------------------------------------------
  nonce + scenario + tar of source tree --stdin-->  lab.py (PID 1 init + harness, non-dumpable)
                                                      +- mailpit      SMTP 1025 / POP3 1110 / API 8025 on 127.0.0.1
+                                                     +- Dovecot      IMAP 1143 on 127.0.0.1 (only when the scenario asks)
                                                      +- Xvfb :99
                                                      +- Thunderbird 156.0.1, throw-away profile (user.js)
                                                      |    +- extension/ of the tree, zipped into an XPI
@@ -48,7 +49,8 @@ questions such as:
 1. The launcher streams, on the container's standard input, a one-time nonce, the scenario, then a tar archive of the
    source tree (without `.git`). There is no bind mount at all.
 2. The harness zips `extension/` into an XPI, installs it into a fresh profile, starts mailpit, Xvfb and Thunderbird,
-   and waits until the extension has written its connection file.
+   and waits until the extension has written its connection file. A scenario with the `imap` key also gets a local
+   IMAP server (Dovecot) holding the folders and messages it lists, and an IMAP account in the profile.
 3. It starts the tree's own `mcp-bridge.cjs`, runs `initialize` and `tools/list`, then every `tools/call` of the
    scenario.
 4. It inspects the drafts folder, the messages captured by mailpit, and any profile file or preference the scenario
@@ -152,6 +154,7 @@ run, and it shows up as `xpass` once the issue no longer reproduces.
 | `delete-task.json` | `deleteTask` in an ics calendar seeded with an event and four tasks (one completed, one recurring): a task is deleted with no review dialog and with the default `blockSkipReview`, and is gone from `listTasks` and from the `.ics` file, the other tasks stay; a recurring task goes with its whole series and a warning. The id of an event is refused (`Task not found`) by `deleteTask` and by `updateTask`, and the event stays unchanged in `listEvents` and in the file. Errors: a task already deleted, an unknown task, another calendar, an unknown calendar, a read-only calendar, no `taskId`, no `calendarId`. The tool's definition in `tools/list`. The tasks deleted are seeded ones. |
 | `new-tools-disabled.json` | With `disabledTools` holding one tool and no `knownTools` (a restriction saved before 0.19.0), `deleteTask`, the tool 0.19.0 adds, is off: missing from `tools/list`, refused when called anyway, nothing deleted; the other tools of 0.18.2 stay on. Without a restriction the tool is on: see `delete-task.json`. |
 | `search-fields.json` | `fields` of `searchMessages` and `getRecentMessages` on seeded POP3 messages (flagged and tagged, with a Cc, with an attachment, encrypted, with a copy in Archives): rows cut to the asked columns plus `id` and `folderPath`, in objects and table format (one column, several, none, with a query, a page, a JSON string); the columns an option or a state adds stay (`attachments`, `dupLocations`, `encrypted`); the number of matches is unchanged. Refused with `countOnly`, `groupBy` and `format: legacy`; a name that is not a column or a value that is not a list is refused by the schema. |
+| `imap-reply-forward-draft.json` | The lab's IMAP account (key `imap`), with its drafts kept on the server: the original is found and read from the server; `saveDraft`, `replyToMessage` and `forwardMessage` with mode `draft` succeed and name the IMAP Drafts folder, and a search of that folder finds the four drafts, the reply and the forward among them; no draft lands in Local Folders and nothing is sent. Not covered: the headers and bodies of the drafts saved on the server. |
 | `getmessage-authentication.json` | `getMessage` and `getMessages` return `authentication` (SPF, DKIM, DMARC, `authservId`, domains, selectors) from the topmost `Authentication-Results` header of seeded POP3 messages: a folded header with two DKIM signatures; a message without the header has none; a header written lower down is never read, also when the topmost one holds no result; a header with no server name, comments, upper-case domains and an invalid selector is cleaned. |
 
 The filter scenarios used to mark as `xfail` the checks that failed because of the filter id and value-typing issues
@@ -202,7 +205,8 @@ non-dumpable, then forks into a minimal init (PID 1, which only reaps orphaned p
 two are the only processes that hold the container's standard input and output, and both are non-dumpable before any
 code under test starts: code running under the same uid can neither read their memory nor open that input or output
 through `/proc/<pid>/fd` (the kernel would require `CAP_SYS_PTRACE`). The other processes get `/dev/null` or a log
-file as standard streams, except the bridge, whose input and output are its own pipes to the harness, and the short
+file as standard streams, except the bridge, whose input and output are its own pipes to the harness, the IMAP
+processes of a scenario with `imap` (each has its own connection on 127.0.0.1 as input and output), and the short
 Marionette connection of `labKeys` (a TCP socket on 127.0.0.1, opened by the harness). Do not add
 `--init`: a dumpable PID 1 such as `docker-init` would hold the container's output where the code under test can reach
 it (the harness logs a warning when it is not PID 1). The launcher trusts only the result block tagged with the nonce
@@ -262,8 +266,10 @@ under test, which may be an unreviewed pull request, so they are not redistribut
 - A single Thunderbird build: 156.0.1, en-US. Other versions can be built with `--build-arg TB_VERSION=...`
   (if Mozilla has rotated its signing key, verify the new primary key out of band and pass it with
   `--build-arg MOZ_RELEASE_FPR=...`), but only 156.0.1 has been tested.
-- The mail server is simulated: mailpit accepts everything. There is no TLS, OAuth, IMAP, Exchange or realistic
-  rejection; messages are seeded directly into the profile's mbox files.
+- The mail server is simulated: mailpit accepts everything. There is no TLS, OAuth, Exchange or realistic
+  rejection; messages are seeded directly into the profile's mbox files. IMAP is a local Dovecot server that a scenario
+  asks for (`imap`): every connection is already authenticated, so logins, TLS, quotas, slow or failing servers and
+  provider-specific behaviour (Gmail labels, special-use folders) are not covered, and one scenario uses it so far.
 - Every run starts from an empty profile: there is no real user state (accounts, filters, tags, address books,
   calendars), and the global search index is disabled.
 - The lab can press keys in a Thunderbird window (`labKeys`, through Thunderbird's own Marionette server: WebDriver key
@@ -305,4 +311,5 @@ Thunderbird and Mozilla are trademarks of the Mozilla Foundation. This project i
 
 MIT, see [LICENSE](LICENSE). The image built from `harness/Dockerfile` contains third-party software under its own
 licenses, none of which is stored in this repository: Thunderbird (Mozilla Public License 2.0 and others, see
-`about:license`), mailpit (MIT) and Debian packages. This repository does not publish images.
+`about:license`), mailpit (MIT) and Debian packages (among them Dovecot, MIT and LGPL-2.1, and socat, GPL-2.0). This
+repository does not publish images.
