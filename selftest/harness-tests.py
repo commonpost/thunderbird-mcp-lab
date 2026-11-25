@@ -611,6 +611,38 @@ class ScenarioTests(LabCase):
         sc["seed"][0]["messages"] = ["x" * 250000] * 20
         lab.load_scenario(json.dumps(sc))
 
+    def test_load_scenario_accepts_imap_folders_with_or_without_messages(self):
+        for folders in ({"INBOX": ["m"]}, {"Drafts": []}, {"INBOX": [], "Drafts": ["a", "b"], "a_b-9": []},
+                        {"x" * 32: ["m"] * 20}, {"f%d" % n: [] for n in range(10)}):
+            with self.subTest(folders=folders):
+                sc = lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": folders})))
+                self.assertEqual(sc["imap"]["folders"], folders)
+
+    def test_load_scenario_refuses_an_imap_key_of_another_shape(self):
+        for imap in (None, [], "INBOX", {}, {"folders": {}}, {"folders": []}, {"folders": {"INBOX": []}, "port": 1},
+                     {"folder": {"INBOX": []}}, {"folders": {"f%d" % n: [] for n in range(11)}}):
+            with self.subTest(imap=imap), self.assertRaisesRegex(ValueError, r'^imap: \{"folders": \{1 to 10 folder'):
+                lab.load_scenario(json.dumps(dict(SCENARIO, imap=imap)))
+
+    def test_load_scenario_refuses_imap_folder_names_outside_the_safe_set(self):
+        for name in ("", "../x", "..", ".hidden", "a.b", "a/b", "a b", "-a", "_a", "x" * 33, "Drafts\n", "caf\u00e9",
+                     "inbox", "Inbox", "iNBOX"):
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, "^imap: folder refused"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {name: []}})))
+
+    def test_load_scenario_refuses_imap_messages_that_are_not_a_short_list_of_strings(self):
+        for msgs in (None, "m", {"0": "m"}, [1], ["m", None], ["m"] * 21):
+            with self.subTest(msgs=msgs), self.assertRaisesRegex(
+                    ValueError, "^imap Drafts: messages = at most 20 strings$"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {"INBOX": [], "Drafts": msgs}})))
+
+    def test_load_scenario_refuses_more_than_5_mb_of_imap_messages(self):
+        sc = dict(SCENARIO, imap={"folders": {"INBOX": ["x" * 260000] * 10, "Archive": ["x" * 260000] * 10}})
+        with self.assertRaisesRegex(ValueError, "^imap: at most 5 MB$"):
+            lab.load_scenario(json.dumps(sc))
+        sc["imap"]["folders"]["Archive"] = ["x" * 240000] * 10
+        lab.load_scenario(json.dumps(sc))
+
     def load_steps(self, *steps):
         """load_scenario of a scenario made of `steps` (dicts) and one check on the first of them."""
         return lab.load_scenario(json.dumps(dict(SCENARIO, steps=list(steps),
@@ -1321,6 +1353,108 @@ class ServiceTests(LabCase):
         info = lab.R["phases"]["mailpit"]
         self.assertEqual((info["smtp_to_api"], info["pop3_messages"]), (False, "failed: refused"))
 
+    def test_write_maildir_puts_the_inbox_at_the_root_and_other_folders_beside_it(self):
+        root = self.tmp + "/Maildir"
+        written = lab.write_maildir(root, {"INBOX": ["Subject: a\r\n\r\none\r\n", "Subject: b\n\ncaf\u00e9\n"],
+                                           "Drafts": [], "Archive": ["Subject: c\n\nthree\n"]})
+        self.assertEqual(written, {"INBOX": 2, "Drafts": 0, "Archive": 1})
+        self.assertEqual(sorted(os.listdir(root)), [".Archive", ".Drafts", "cur", "new", "tmp"])
+        self.assertEqual(sorted(os.listdir(root + "/cur")), ["1700000001.M1P1.lab:2,", "1700000002.M2P1.lab:2,"])
+        with open(root + "/cur/1700000001.M1P1.lab:2,", "rb") as f:
+            self.assertEqual(f.read(), b"Subject: a\n\none\n")
+        with open(root + "/cur/1700000002.M2P1.lab:2,", "rb") as f:
+            self.assertEqual(f.read(), "Subject: b\n\ncaf\u00e9\n".encode("utf-8"))
+        self.assertFalse(os.path.exists(root + "/maildirfolder"))
+        for name, files in ((".Drafts", []), (".Archive", ["1700000001.M1P1.lab:2,"])):
+            self.assertEqual(sorted(os.listdir(root + "/" + name)), ["cur", "maildirfolder", "new", "tmp"])
+            self.assertEqual(os.listdir(root + "/" + name + "/cur"), files)
+
+    def test_write_maildir_refuses_a_folder_outside_the_maildir(self):
+        for name in ("../x", "x/y", "/etc"):
+            with self.subTest(name=name), self.assertRaisesRegex(RuntimeError, "^imap: folder outside the Maildir"):
+                lab.write_maildir(self.tmp + "/Maildir", {name: []})
+        self.assertFalse(os.path.exists(self.tmp + "/x"))
+
+    def fake_imap(self, state="AUTH", status=None, logout_error=None):
+        """Stands in for imaplib.IMAP4: `status` maps a folder to its (type, data) answer."""
+        conn = mock.Mock()
+        conn.state = state
+        conn.status.side_effect = lambda name, what: (status or {}).get(name, ("NO", [b"no such mailbox"]))
+        conn.logout.side_effect = logout_error
+        return mock.patch.object(lab.imaplib, "IMAP4", mock.Mock(return_value=conn)), conn
+
+    def test_imap_counts_reads_the_number_of_messages_of_every_folder(self):
+        patch, conn = self.fake_imap(status={"INBOX": ("OK", [b"INBOX (MESSAGES 2)"]), "Drafts": ("OK", [b"Drafts (MESSAGES 0)"]),
+                                             "Odd": ("OK", [b"Odd ()"]), "Empty": ("OK", []), "None": ("OK", [None])})
+        with patch as imap4:
+            counts = lab.imap_counts(["INBOX", "Drafts", "Odd", "Empty", "None", "Missing"])
+        self.assertEqual(counts, {"INBOX": 2, "Drafts": 0, "Odd": None, "Empty": None, "None": None, "Missing": None})
+        imap4.assert_called_once_with("127.0.0.1", 1143, timeout=10)
+        conn.status.assert_any_call("INBOX", "(MESSAGES)")
+        conn.logout.assert_called_once_with()
+
+    def test_imap_counts_needs_a_preauth_greeting_and_survives_a_failed_logout(self):
+        patch, conn = self.fake_imap(state="NONAUTH")
+        with patch, self.assertRaisesRegex(RuntimeError, "^no PREAUTH greeting$"):
+            lab.imap_counts(["INBOX"])
+        conn.logout.assert_called_once_with()
+        patch, conn = self.fake_imap(status={"INBOX": ("OK", [b"INBOX (MESSAGES 1)"])}, logout_error=OSError("gone"))
+        with patch:
+            self.assertEqual(lab.imap_counts(["INBOX"]), {"INBOX": 1})
+
+    def test_dovecot_version_is_the_trimmed_output_or_none(self):
+        run = mock.Mock(return_value=types.SimpleNamespace(stdout=b"2.4.1-4 (7d8c0e5759)\n"))
+        with mock.patch.object(lab.subprocess, "run", run):
+            self.assertEqual(lab.dovecot_version(), "2.4.1-4 (7d8c0e5759)")
+        self.assertEqual(run.call_args[0][0], ["dovecot", "--version"])
+        with mock.patch.object(lab.subprocess, "run", side_effect=FileNotFoundError("dovecot")):
+            self.assertIsNone(lab.dovecot_version())
+
+    def run_imap(self, folders, counts):
+        """start_imap with the server faked: `counts` is what the server reports (None: it never answers)."""
+        with mock.patch.object(lab, "wait_for", side_effect=lambda pred, timeout, step=0.25: pred()), \
+                mock.patch.object(lab, "imap_counts", mock.Mock(return_value=counts)) as asked, \
+                mock.patch.object(lab, "dovecot_version", return_value="2.4.1"):
+            try:
+                lab.start_imap({"folders": folders})
+                error = None
+            except RuntimeError as e:
+                error = str(e)
+        return asked, error
+
+    def test_start_imap_writes_the_maildir_and_the_configuration_and_checks_the_server(self):
+        asked, error = self.run_imap({"INBOX": ["Subject: a\n\nx\n"], "Drafts": []}, {"INBOX": 1, "Drafts": 0})
+        self.assertIsNone(error)
+        home = lab.LAB + "/imap"
+        self.assertEqual(os.listdir(home + "/Maildir/cur"), ["1700000001.M1P1.lab:2,"])
+        self.assertTrue(os.path.isfile(home + "/Maildir/.Drafts/maildirfolder"))
+        with open(home + "/dovecot.conf") as f:
+            conf = f.read()
+        self.assertEqual(conf, "dovecot_config_version = 2.4.1\ndovecot_storage_version = 2.4.1\n"
+                               "import_environment {\n  USER = %{env:USER}\n  HOME = %{env:HOME}\n}\n"
+                               "mail_driver = maildir\nmail_path = " + home + "/Maildir\nlog_path = /dev/stderr\n")
+        (name, argv, kw), = self.started
+        self.assertEqual(name, "imap")
+        self.assertEqual(argv, ["socat", "TCP-LISTEN:1143,bind=127.0.0.1,reuseaddr,fork",
+                                "EXEC:/usr/lib/dovecot/imap -c " + home + "/dovecot.conf"])
+        self.assertEqual((kw["env"]["USER"], kw["env"]["HOME"]), ("tblab", home))
+        asked.assert_called_once_with(["INBOX", "Drafts"])
+        info = lab.R["phases"]["imap"]
+        self.assertEqual((info["port"], info["preauth"], info["folders"], info["version"]),
+                         (1143, True, {"INBOX": 1, "Drafts": 0}, "2.4.1"))
+
+    def test_start_imap_fails_with_the_end_of_its_log_when_the_server_never_answers(self):
+        self.put(lab.LOGS + "/imap.log", "socat: bind: Address already in use\n")
+        _, error = self.run_imap({"INBOX": []}, None)
+        self.assertEqual(error, "the IMAP server does not answer with PREAUTH:\nsocat: bind: Address already in use")
+        self.assertNotIn("imap", lab.R["phases"])
+
+    def test_start_imap_fails_when_the_server_does_not_hold_the_messages_of_the_scenario(self):
+        _, error = self.run_imap({"INBOX": ["Subject: a\n\nx\n"], "Drafts": []}, {"INBOX": 0, "Drafts": None})
+        self.assertEqual(error, 'the IMAP server does not hold the messages of the scenario: '
+                                '{"Drafts": null, "INBOX": 0}, expected {"Drafts": 0, "INBOX": 1}')
+        self.assertEqual(lab.R["phases"]["imap"]["folders"], {"INBOX": 0, "Drafts": None})
+
     def test_start_xvfb_records_the_display_or_the_end_of_its_log(self):
         self.put(lab.LOGS + "/xvfb.log", "Xvfb: no screen\n")
         with mock.patch.object(lab.os, "makedirs") as makedirs, mock.patch.object(lab.os, "chmod") as chmod:
@@ -1449,8 +1583,41 @@ class ProfileTests(LabCase):
             self.assertEqual(f.read(), 'user_pref("base", 1);\n\n// --- Scenario preferences\n'
                                        'user_pref("a.b", true);\nuser_pref("n", 5);\nuser_pref("s", "q\\"");\n')
         self.assertEqual(lab.R["phases"]["profile"]["scenario_prefs"], 3)
+        self.assertNotIn("imap_prefs", lab.R["phases"]["profile"])
         self.assertTrue(os.path.isfile(lab.PROF + "/Mail/Local Folders/Inbox"))
         self.assertTrue(os.path.isfile(lab.PROF + "/Mail/Local Folders/msgFilterRules.dat"))
+
+    def test_make_profile_adds_the_imap_account_before_the_scenario_preferences(self):
+        base = self.put(self.tmp + "/base-user.js", 'user_pref("base", 1);\n')
+        draft = "imap://tblab@127.0.0.1/Drafts"
+        sc = {"imap": {"folders": {"INBOX": []}}, "prefs": {"mail.identity.id3.draft_folder": draft}}
+        with mock.patch.object(lab, "USERJS_BASE", base):
+            lab.make_profile(sc)
+        with open(lab.PROF + "/user.js") as f:
+            text = f.read()
+        head, _, scenario = text.partition("\n// --- Scenario preferences\n")
+        self.assertTrue(head.startswith('user_pref("base", 1);\n\n// --- IMAP account (scenario key "imap")\n'))
+        for line in ('user_pref("mail.accountmanager.accounts", "account2,account1,account3");\n',
+                     'user_pref("mail.account.account3.server", "server3");\n',
+                     'user_pref("mail.account.account3.identities", "id3");\n',
+                     'user_pref("mail.server.server3.type", "imap");\n',
+                     'user_pref("mail.server.server3.port", 1143);\n',
+                     'user_pref("mail.server.server3.userName", "tblab");\n',
+                     'user_pref("mail.server.server3.offline_download", false);\n',
+                     'user_pref("mail.identity.id3.useremail", "lab@example.test");\n',
+                     'user_pref("mail.identity.id3.draft_folder", "mailbox://nobody@Local%20Folders/Drafts");\n'):
+            self.assertEqual(head.count(line), 1, line)
+        self.assertEqual(scenario, 'user_pref("mail.identity.id3.draft_folder", "%s");\n' % draft)
+        self.assertEqual(lab.R["phases"]["profile"], {"scenario_prefs": 1, "imap_prefs": len(lab.imap_prefs()),
+                                                      "t": lab.R["phases"]["profile"]["t"]})
+
+    def test_the_imap_account_only_sets_preferences_of_its_own_server_and_identity(self):
+        prefs = lab.imap_prefs()
+        self.assertEqual(sorted(k for k in prefs if not k.startswith(("mail.server.server3.", "mail.identity.id3.",
+                                                                      "mail.account.account3."))),
+                         ["mail.accountmanager.accounts"])
+        for k, v in prefs.items():
+            self.assertTrue(lab.PREF_RE.fullmatch(k) and isinstance(v, (bool, int, str)), k)
 
     def test_tb_version_reads_the_known_keys_of_application_ini(self):
         self.put(self.tmp + "/tb/application.ini", "[App]\nVendor=Mozilla\nVersion=128.1.0\nSourceStamp=abc\n"
@@ -2802,6 +2969,13 @@ class EmitTests(LabCase):
         self.assertIsInstance(res["duration_s"], float)
         self.assertTrue(text.isascii())
 
+    def test_emit_adds_the_log_of_the_imap_server_when_it_was_started(self):
+        lab.NONCE = NONCE
+        lab.PROCS["imap"] = FakeProc()
+        self.put(lab.LOGS + "/imap.log", "imap(tblab): Info: Logged out\n")
+        self.assertEqual(result_block(self.emit())["logs"], {
+            "thunderbird": None, "bridge": None, "mailpit": None, "xvfb": None, "imap": "imap(tblab): Info: Logged out"})
+
     def test_emit_escapes_non_ascii_text(self):
         lab.NONCE = NONCE
         lab.R["errors"].append("caf\u00e9\r\nline")
@@ -2883,6 +3057,28 @@ class MainTests(LabCase):
         self.assertEqual(status, 0)
         self.assertEqual(calls[calls.index("make_profile") + 1:calls.index("inspect")],
                          ["Bridge", "run_cold_start", "run_mcp after cold init"])
+
+    def test_with_imap_the_server_starts_after_mailpit_and_is_stopped_with_the_others(self):
+        sc = dict(SCENARIO, imap={"folders": {"INBOX": ["m"], "Drafts": []}})
+        seen = []
+
+        def start_imap(im):
+            seen.append(im)
+            lab.PROCS["imap"] = FakeProc()
+        status, out, calls = self.run_main(raw=json.dumps(sc).encode(), start_imap=start_imap)
+        self.assertEqual(status, 0)
+        self.assertEqual(seen, [sc["imap"]])
+        self.assertEqual(calls[calls.index("start_mailpit"):calls.index("make_profile")], ["start_mailpit", "start_xvfb"])
+        self.assertEqual(calls[-5:], ["stop bridge", "stop thunderbird", "stop xvfb", "stop imap", "stop mailpit"])
+        self.assertIn("imap", result_block(out)["logs"])
+
+    def test_without_imap_no_server_is_started_and_the_logs_keep_their_names(self):
+        boom = mock.Mock(side_effect=AssertionError("start_imap called"))
+        status, out, calls = self.run_main(start_imap=boom)
+        self.assertEqual(status, 0)
+        boom.assert_not_called()
+        self.assertNotIn("stop imap", calls)
+        self.assertEqual(sorted(result_block(out)["logs"]), ["bridge", "mailpit", "thunderbird", "xvfb"])
 
     def test_running_as_the_pid_1_init_child_is_recorded_without_a_warning(self):
         status, out, _ = self.run_main(as_init=True)

@@ -23,6 +23,7 @@ launcher is given, and it is treated as untrusted.
 |  validates arguments        |  scenario, tar of  |  +- PID 1: minimal init (reaps processes, exits with status)  |
 |  copies the scenarios       |  the tree -------> |  +- harness (non-dumpable)                                    |
 |  docker run (options fixed) |                    |      +- mailpit   SMTP/POP3/API on 127.0.0.1                  |
+|                             |                    |      +- Dovecot   IMAP on 127.0.0.1 (scenario key "imap")     |
 |  sanitises the output       |  stdout+stderr:    |      +- Xvfb :99                                              |
 |  reads the nonce-tagged     | <----------------- |      +- Thunderbird + the tree's extension/ (as an XPI)       |
 |  result block               |  progress lines,   |      +- node mcp-bridge.cjs (the tree's) <- JSON-RPC (MCP)    |
@@ -56,8 +57,8 @@ Three stages:
 1. the `mailpit` binary, copied from the official image, pinned by digest;
 2. the Thunderbird download (`debian:13-slim`, pinned by digest): `SHA512SUMS` must carry a valid OpenPGP signature
    that chains to a pinned primary key fingerprint of Mozilla's release key, then the archive must match its SHA-512;
-3. the runtime image (`debian:13-slim`, pinned by digest): the libraries Thunderbird needs, Xvfb, xdotool, Node.js and
-   Python from Debian; set-uid and set-gid bits removed; Thunderbird's updater removed; `policies.json` that turns off
+3. the runtime image (`debian:13-slim`, pinned by digest): the libraries Thunderbird needs, Xvfb, xdotool, Node.js,
+   Python, Dovecot's IMAP server and socat from Debian; set-uid and set-gid bits removed; Thunderbird's updater removed; `policies.json` that turns off
    application and extension updates and telemetry; the harness (`lab.py`) and the base profile (`user.js`) owned by
    root and read-only; user 10001; entry point `python3 -I /opt/tblab/lab.py`.
 
@@ -76,7 +77,11 @@ One Python file that uses only the standard library. It runs as PID 1 of the con
 3. **Add-on.** It zips `extension/` into an XPI without following links (`build_xpi`), or installs a prebuilt XPI
    from the tree if the scenario names one (`install_prebuilt_xpi`), and reads the add-on id from the manifest.
 4. **Environment.** It starts mailpit on 127.0.0.1 and checks it (one message through SMTP, read back through the
-   API, and a POP3 login), starts Xvfb, writes a throw-away profile (`user.js` plus the scenario's preferences),
+   API, and a POP3 login). When the scenario has the `imap` key, it writes a Maildir and a Dovecot configuration
+   under `/lab/imap`, starts `socat` on 127.0.0.1:1143, which runs Dovecot's `imap` program for each connection, already
+   authenticated as the lab user, and checks the `PREAUTH` greeting and the number of messages in every folder
+   (`start_imap`). It starts Xvfb, writes a throw-away profile (`user.js`, the preferences of the IMAP account when
+   there is one, then the scenario's preferences),
    seeds messages and filter files when asked (paths resolved under the profile), then starts Thunderbird and waits
    for the add-on's connection file.
 5. **MCP session.** It starts the tree's own `node mcp-bridge.cjs` with a fixed environment (plus the scenario's
@@ -94,7 +99,8 @@ One Python file that uses only the standard library. It runs as PID 1 of the con
 ### Thunderbird and its profile (`harness/user.js`, `harness/policies.json`)
 
 A Local Folders account and a POP3 account on mailpit, one identity, an SMTP server on mailpit, and preferences that
-avoid first-run windows, update checks and network attempts. Mail is stored in mbox files so that the harness can
+avoid first-run windows, update checks and network attempts. A scenario with the `imap` key adds an IMAP account with
+its own identity (`imap_prefs` in `lab.py`); its messages stay on the server and are fetched on demand. Mail is stored in mbox files so that the harness can
 read drafts directly. The global search index is disabled.
 
 ### Scenarios (`scenarios/`) and their format (`docs/scenario-format.md`)

@@ -28,7 +28,8 @@ Requests are welcome as [issues](https://github.com/commonpost/thunderbird-mcp-l
 
 - Publishing releases or prebuilt images: the lab is used from `main`, and users build the image themselves from a
   commit they choose.
-- Windows or macOS hosts, real mail servers (TLS, IMAP, OAuth, Exchange) or network access from the container.
+- Windows or macOS hosts, real mail servers (TLS, OAuth, Exchange, an IMAP provider) or network access from the
+  container. The IMAP server of the lab is a local one, with no login.
 - Driving Thunderbird's user interface: tools that open a compose window for review are checked through drafts, or
   through direct delivery to the local SMTP sink.
 - Treating a lab result as proof: the code under test runs next to the harness, so results stay data

@@ -60,5 +60,12 @@
  "lab-keys-unknown-argument.json": "step s1: labKeys takes",
  "lab-keys-bad-key-name.json": "step s1: labKeys keys = 1 to 10 key names",
  "lab-keys-in-batch.json": "step s1: labKeys is not in a batch and has no retry",
- "check-count-without-equals.json": "check tool_result_count: step, contains = a non-empty string, equals = an integer >= 0"
+ "check-count-without-equals.json": "check tool_result_count: step, contains = a non-empty string, equals = an integer >= 0",
+ "imap-not-object.json": "imap: {\"folders\": {1 to 10 folder names: [raw messages]}}",
+ "imap-unknown-key.json": "imap: {\"folders\": {1 to 10 folder names: [raw messages]}}",
+ "imap-no-folders.json": "imap: {\"folders\": {1 to 10 folder names: [raw messages]}}",
+ "imap-folder-traversal.json": "imap: folder refused '../Maildir2'",
+ "imap-folder-with-dot.json": "imap: folder refused 'Lists.Lab'",
+ "imap-folder-inbox-case.json": "imap: folder refused 'Inbox'",
+ "imap-messages-not-strings.json": "imap INBOX: messages = at most 20 strings"
 }

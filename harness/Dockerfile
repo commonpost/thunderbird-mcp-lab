@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: MIT
 # SPDX-FileCopyrightText: 2026 Guillaume Laforest
-# thunderbird-mcp lab image: a real Thunderbird (Linux x86_64) + mailpit + Xvfb + Node.js + the harness.
+# thunderbird-mcp lab image: a real Thunderbird (Linux x86_64) + mailpit + Dovecot's IMAP server + Xvfb + Node.js + the
+# harness.
 # The network is used ONLY during "docker build"; at run time the container runs with --network none (run-lab.sh).
 # Build:  docker build -t thunderbird-mcp-lab:local harness
 # Coverage image (the same image plus coverage.py, to measure harness/lab.py; see selftest/coverage.sh):
@@ -58,6 +59,8 @@ RUN set -eu; \
     echo "Thunderbird $TB_VERSION: GPG signature and SHA512 verified."
 
 # --- Stage 4: runtime image.
+# dovecot-imapd and socat serve the optional IMAP account (scenario key "imap"): the harness runs Dovecot's imap binary
+# itself, one per connection behind socat on 127.0.0.1, as the lab user; the Dovecot service is never started.
 FROM debian-https AS lab
 LABEL org.opencontainers.image.title="thunderbird-mcp-lab" \
       org.opencontainers.image.description="Offline end-to-end lab for thunderbird-mcp (Thunderbird + mailpit + Xvfb)" \
@@ -67,7 +70,9 @@ RUN apt-get update \
       libgtk-3-0t64 libasound2t64 libdbus-glib-1-2 libx11-xcb1 libxtst6 libpci3 libegl1 libgl1 \
       xvfb xauth fonts-dejavu-core fontconfig \
       nodejs python3 jq procps \
+      dovecot-imapd socat \
  && rm -rf /var/lib/apt/lists/* \
+ && test -x /usr/lib/dovecot/imap && dovecot --version && socat -V | head -n 2 \
  && rm -f /etc/ssl/certs/ca-certificates.crt /etc/apt/apt.conf.d/99https-ca \
  && rmdir --ignore-fail-on-non-empty /etc/ssl/certs /etc/ssl \
  && { find / -xdev -perm /6000 -type f -exec chmod a-s {} + 2>/dev/null || true; }
