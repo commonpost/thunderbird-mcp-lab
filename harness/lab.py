@@ -73,6 +73,9 @@ POP3_USER = "lab"
 IMAP_PORT = 1143
 IMAP_USER = "tblab"
 IMAP_BIN = "/usr/lib/dovecot/imap"
+# "all_mail": the folder Virtual/All of the server, a view of the messages of the others (but Trash and Junk)
+IMAP_VIRTUAL = "Virtual"
+IMAP_ALL_MAIL = "All"
 MAX_TEXT = 20000
 MAX_OUT = 3_000_000
 MAX_SCENARIO = 1_000_000
@@ -386,9 +389,14 @@ def load_scenario(raw):
         raise ValueError("seed: at most 5 MB")
     if "imap" in sc:
         im = sc["imap"]
-        folders = im.get("folders") if isinstance(im, dict) and set(im) == {"folders"} else None
+        folders = im.get("folders") if isinstance(im, dict) and set(im) in ({"folders"}, {"folders", "all_mail"}) \
+            else None
         if not isinstance(folders, dict) or not 1 <= len(folders) <= 10:
             raise ValueError("imap: {\"folders\": {1 to 10 folder names: [raw messages]}}")
+        if im.get("all_mail", True) is not True:
+            raise ValueError("imap: all_mail is true, or absent")
+        if "all_mail" in im and any(name.lower() == IMAP_VIRTUAL.lower() for name in folders):
+            raise ValueError("imap: with all_mail, no folder can be named %r" % IMAP_VIRTUAL)
         total = 0
         for name, msgs in folders.items():
             # The inbox is "INBOX" for an IMAP server, whatever the case: any other spelling would be the same folder.
@@ -1063,13 +1071,24 @@ def start_imap(im):
         f.write("dovecot_config_version = 2.4.1\ndovecot_storage_version = 2.4.1\n"
                 "import_environment {\n  USER = %%{env:USER}\n  HOME = %%{env:HOME}\n}\n"
                 "mail_driver = maildir\nmail_path = %s\nlog_path = /dev/stderr\n" % root)
+        if im.get("all_mail"):
+            # A view of every folder, as Gmail's "All Mail": the virtual plugin, in a namespace of its own, flagged \All.
+            virtual = home + "/virtual"
+            os.makedirs(virtual + "/" + IMAP_ALL_MAIL, mode=0o700)
+            with open(virtual + "/" + IMAP_ALL_MAIL + "/dovecot-virtual", "w") as v:
+                v.write("*\n-%s/*\n-Trash\n-Junk\n  all\n" % IMAP_VIRTUAL)
+            f.write("mail_plugins {\n  virtual = yes\n}\n"
+                    "namespace inbox {\n  inbox = yes\n  separator = /\n}\n"
+                    "namespace virtual {\n  prefix = %s/\n  separator = /\n  mail_driver = virtual\n  mail_path = %s\n"
+                    "  mailbox %s {\n    special_use = \\All\n  }\n}\n" % (IMAP_VIRTUAL, virtual, IMAP_ALL_MAIL))
     env = {"USER": IMAP_USER, "HOME": home, "PATH": "/usr/local/bin:/usr/bin:/bin", "LANG": "C.UTF-8", "TZ": "UTC"}
     start("imap", ["socat", "TCP-LISTEN:%d,bind=127.0.0.1,reuseaddr,fork" % IMAP_PORT,
                    "EXEC:%s -c %s" % (IMAP_BIN, conf)], env=env)
     counts = wait_for(lambda: imap_counts(list(written)), 20)
     if not counts:
         raise RuntimeError("the IMAP server does not answer with PREAUTH:\n" + (tail(LOGS + "/imap.log") or ""))
-    phase("imap", port=IMAP_PORT, preauth=True, folders=counts, version=dovecot_version())
+    extra = {"all_mail": IMAP_VIRTUAL + "/" + IMAP_ALL_MAIL} if im.get("all_mail") else {}
+    phase("imap", port=IMAP_PORT, preauth=True, folders=counts, version=dovecot_version(), **extra)
     if counts != written:
         raise RuntimeError("the IMAP server does not hold the messages of the scenario: %s, expected %s" % (
             json.dumps(counts, sort_keys=True), json.dumps(written, sort_keys=True)))
