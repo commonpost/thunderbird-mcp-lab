@@ -1,6 +1,6 @@
 {
   "name": "report-problem",
-  "description": "reportProblem saves what an assistant writes about a tool that misbehaved, for the user to send from the options page; the add-on sends nothing. A saveDraft call that fails (a draftId that names no draft) is followed by a report that names saveDraft: the report is saved (saved true, sent false, one waiting) and the result holds its link as a new GitHub issue for the user to open, the file commonpost-mcp-reports.json of the profile holds it with the versions the add-on added and the error saveDraft had just returned, and the mail address written in the details is replaced. The same report a second time, a tool name that is not a tool of the server and a summary over 120 characters are refused, and a suggestion without a tool is saved as the second report. Nothing is sent through SMTP. Not covered: the options page (its list, the prefilled GitHub issue, Copy, Delete), which no MCP call reaches, and the limit of 20 waiting reports.",
+  "description": "reportProblem saves what an assistant writes about a tool that misbehaved, for the user to send; the add-on sends nothing. A saveDraft call that fails (a draftId that names no draft) and a listFolders call that succeeds on the local account are followed by a bug report that names saveDraft, given as three answers (called, got, expected): the report is saved (saved true, sent false, one waiting), the result holds its link as a new GitHub issue with the add-on's record of calls, and the file commonpost-mcp-reports.json of the profile holds it with the versions, the date the add-on was installed, the error saveDraft had just returned and the record of that call (the names of its arguments, not their values, and its outcome); the mail address written in an answer is replaced. The same report a second time, a tool name that is not a tool of the server, a summary over 120 characters and a bug given as one text (as 0.27.0 took it) are refused. A suggestion that names listFolders is saved as the second report, with the record of the listFolders call and the kind of its account (none: local folders). Nothing is sent through SMTP. Not covered: the options page (its list, the prefilled GitHub issue, Send by email, Copy, Delete), which no MCP call reaches, the limit of 20 waiting reports, and the kinds of account other than the local one (imap, imap (gmail), pop3).",
   "inspect": {
     "files": [
       "commonpost-mcp-reports.json"
@@ -18,13 +18,24 @@
       "note": "An error of saveDraft for the add-on to remember."
     },
     {
+      "id": "listed",
+      "tool": "listFolders",
+      "timeout": 30,
+      "arguments": {
+        "accountId": "account1"
+      },
+      "note": "A call that succeeds on an account, of a tool the second report names."
+    },
+    {
       "id": "report",
       "tool": "reportProblem",
       "timeout": 30,
       "arguments": {
         "kind": "bug",
         "summary": "saveDraft with draftId keeps the old draft listed",
-        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "called": "saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com",
+        "got": "success, and the old version stayed listed in All Mail",
+        "expected": "the old version no longer listed",
         "tool": "saveDraft"
       }
     },
@@ -35,7 +46,9 @@
       "arguments": {
         "kind": "bug",
         "summary": "saveDraft with draftId keeps the old draft listed",
-        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "called": "saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com",
+        "got": "success, and the old version stayed listed in All Mail",
+        "expected": "the old version no longer listed",
         "tool": "saveDraft"
       }
     },
@@ -46,7 +59,9 @@
       "arguments": {
         "kind": "bug",
         "summary": "another summary",
-        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "called": "saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com",
+        "got": "success, and the old version stayed listed in All Mail",
+        "expected": "the old version no longer listed",
         "tool": "sendEverything"
       }
     },
@@ -57,7 +72,20 @@
       "arguments": {
         "kind": "bug",
         "summary": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
-        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "called": "saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com",
+        "got": "success, and the old version stayed listed in All Mail",
+        "expected": "the old version no longer listed",
+        "tool": "saveDraft"
+      }
+    },
+    {
+      "id": "old-shape",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "bug",
+        "summary": "a bug as 0.27.0 took it",
+        "details": "All in one text.",
         "tool": "saveDraft"
       }
     },
@@ -68,7 +96,8 @@
       "arguments": {
         "kind": "suggestion",
         "summary": "saveDraft could name the attachment reminder words",
-        "details": "A draft without attachment whose text holds a reminder word opens a prompt when it is sent."
+        "details": "A draft without attachment whose text holds a reminder word opens a prompt when it is sent.",
+        "tool": "listFolders"
       }
     }
   ],
@@ -85,91 +114,173 @@
     {
       "type": "tool_result_contains",
       "step": "report",
-      "contains": "\"saved\":true"
+      "contains": "\"saved\":true",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_result_contains",
       "step": "report",
-      "contains": "\"sent\":false"
+      "contains": "\"sent\":false",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_result_contains",
       "step": "report",
-      "contains": "\"waiting\":1"
+      "contains": "\"waiting\":1",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_result_contains",
       "step": "report",
-      "contains": "Do not say it was sent"
+      "contains": "Do not say it was sent",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_result_contains",
       "step": "report",
       "contains": "\"issueUrl\":\"https://github.com/commonpost/thunderbird-mcp/issues/new?title=Bug%3A%20saveDraft%20with%20draftId%20keeps%20the%20old%20draft%20listed&body=",
-      "xfail": "Until the release after 0.27.0: the result did not hold the link",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls",
       "note": "The link the assistant gives to the user: the report as a new issue, which the user submits."
     },
     {
       "type": "tool_error_contains",
       "step": "again",
-      "contains": "This report is already saved."
+      "contains": "This report is already saved.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_error_contains",
       "step": "unknown-tool",
-      "contains": "tool is not the name of a tool of this server: sendEverything"
+      "contains": "tool is not the name of a tool of this server: sendEverything",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_error_contains",
       "step": "long-summary",
-      "contains": "summary is too long (121 characters, limit 120)"
+      "contains": "summary is too long (121 characters, limit 120)",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "tool_result_contains",
       "step": "suggestion",
-      "contains": "\"waiting\":2"
+      "contains": "\"waiting\":2",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
-      "contains": "saveDraft with draftId keeps the old draft listed"
+      "contains": "saveDraft with draftId keeps the old draft listed",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
-      "contains": "for a draft written to <address>."
+      "contains": "for a draft written to <address>\"",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
       "contains": "jane.doe",
-      "present": false
+      "present": false,
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
-      "contains": "\"text\": \"Draft not found: "
+      "contains": "\"text\": \"Draft not found: ",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
-      "contains": "\"thunderbird\": \"1"
+      "contains": "\"thunderbird\": \"1",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
       "contains": "another summary",
-      "present": false
+      "present": false,
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "file_contains",
       "file": "commonpost-mcp-reports.json",
-      "contains": "saveDraft could name the attachment reminder words"
+      "contains": "saveDraft could name the attachment reminder words",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     },
     {
       "type": "mailpit_total",
       "equals": 0,
       "note": "Nothing is sent, on any version."
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "old-shape",
+      "contains": "A bug report needs called, got, expected: missing called, got, expected",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"got\": \"success, and the old version stayed listed in All Mail\"",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"args\": [\n     \"body\",\n     \"draftId\"\n    ]",
+      "note": "The record of the failed saveDraft: the names of its arguments.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "lab-no-such-draft",
+      "present": false,
+      "note": "The values of the arguments are not recorded.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"ok\": false",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"ok\": true",
+      "note": "The listFolders call, in the report that names listFolders.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"addonUpdated\": \"20",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "a bug as 0.27.0 took it",
+      "present": false,
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "report",
+      "contains": "Calls%20of%20this%20tool%20since%20Thunderbird%20started",
+      "note": "The record is in the issue the user would open.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"account\": \"none\"",
+      "note": "The listFolders call named the local account of the lab: its kind is recorded.",
+      "xfail": "Until the release after 0.27.0: a bug was one text, and the report held no record of calls"
     }
   ]
 }
