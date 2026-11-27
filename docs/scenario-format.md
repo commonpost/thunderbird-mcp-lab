@@ -49,6 +49,13 @@ container before Thunderbird:
   `Lab IMAP (Dovecot)`), with the identity `id3` (`Lab User <lab@example.test>`, SMTP `smtp1`). Like `id1`, `id3`
   composes in plain text and keeps its drafts, copies, templates and archives in Local Folders, so the `draft_*`
   checks see a draft saved for this account. The folder URIs are `imap://tblab@127.0.0.1/<folder>`.
+- `"all_mail": true` (optional, next to `folders`) adds a folder `Virtual/All` that the server lists as `\All`: a view
+  of the messages of every other folder but `Trash` and `Junk`, as Gmail's "All Mail" (Dovecot's `virtual` plugin). A
+  message appears in it as soon as it is in a folder, and leaves it when it is deleted or moved to `Trash`.
+  Thunderbird shows the folder as an archive folder, at `imap://tblab@127.0.0.1/Virtual/All`, and learns what changed
+  in it only when it updates it. No folder of the scenario can then be named `Virtual`. With several connections to
+  the server Thunderbird may keep watching the view; `"mail.server.server3.max_cached_connections": 1` in `prefs`
+  makes it leave the view when it works in another folder (see `scenarios/imap-all-mail-view.json`).
 - These preferences are written before the scenario's own `prefs`, which can change any of them. To keep the drafts on
   the server: `"prefs": {"mail.identity.id3.draft_folder": "imap://tblab@127.0.0.1/Drafts"}`. The `draft_*` checks and
   `draft_subject` read the mbox files of the profile and do not see such drafts: check them through a tool instead,

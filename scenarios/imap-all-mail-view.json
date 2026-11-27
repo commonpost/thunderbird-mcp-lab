@@ -1,0 +1,273 @@
+{
+  "name": "imap-all-mail-view",
+  "description": "The lab's IMAP account with an All Mail folder (imap.all_mail: Virtual/All, flagged \\All, a view of every folder but Trash and Junk, as Gmail's \"All Mail\"), drafts kept on the server and a single connection to the server, so that Thunderbird does not keep watching that folder. A received message and two drafts are listed twice each, in their folder and in the All Mail view. saveDraft with draftId replaces the first draft: right after the call, a search no longer lists the old version anywhere and lists the new one in Drafts and in the view. deleteMessages moves the second draft to Trash, then updateMessage with trash moves the received message there: right after each call, a search lists the message in Trash only. Not covered: Gmail itself (labels, its own delete rules), a server that answers slowly, several connections, messages moved between ordinary folders.",
+  "imap": {
+    "all_mail": true,
+    "folders": {
+      "INBOX": [
+        "From: Alice Example <alice@example.com>\nTo: Lab User <lab@example.test>\nSubject: allmail1 received\nDate: Thu, 01 Jan 2026 09:00:00 +0000\nMessage-ID: <allmail1-received@example.com>\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nA message received in the inbox.\n"
+      ],
+      "Drafts": [
+        "From: Lab User <lab@example.test>\nTo: recipient@example.com\nSubject: allmail1 first\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <allmail1-first@example.test>\nX-Identity-Key: id3\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nFirst version of first.\n",
+        "From: Lab User <lab@example.test>\nTo: recipient@example.com\nSubject: allmail1 second\nDate: Thu, 01 Jan 2026 10:00:00 +0000\nMessage-ID: <allmail1-second@example.test>\nX-Identity-Key: id3\nX-Mozilla-Draft-Info: internal/draft; vcard=0; receipt=0; DSN=0; uuencode=0; attachmentreminder=0; deliveryformat=0\nMIME-Version: 1.0\nContent-Transfer-Encoding: 8bit\nContent-Type: text/plain; charset=UTF-8\n\nFirst version of second.\n"
+      ]
+    }
+  },
+  "prefs": {
+    "mail.identity.id3.draft_folder": "imap://tblab@127.0.0.1/Drafts",
+    "mail.server.server3.max_cached_connections": 1
+  },
+  "steps": [
+    {
+      "id": "accounts",
+      "tool": "listAccounts",
+      "timeout": 30,
+      "arguments": {},
+      "wait_after": 10,
+      "note": "Thunderbird logs in to the IMAP server at startup and lists its folders: give it time."
+    },
+    {
+      "id": "inbox",
+      "tool": "listFolders",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "imap://tblab@127.0.0.1/INBOX",
+        "refresh": true
+      },
+      "retry": {
+        "attempts": 6,
+        "delay": 5
+      }
+    },
+    {
+      "id": "drafts",
+      "tool": "listFolders",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "imap://tblab@127.0.0.1/Drafts",
+        "refresh": true
+      },
+      "retry": {
+        "attempts": 6,
+        "delay": 5
+      }
+    },
+    {
+      "id": "all-mail",
+      "tool": "listFolders",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "imap://tblab@127.0.0.1/Virtual/All",
+        "refresh": true
+      },
+      "retry": {
+        "attempts": 6,
+        "delay": 5
+      }
+    },
+    {
+      "id": "before",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "allmail1",
+        "dedupByMessageId": false,
+        "includeTrash": true,
+        "fields": [
+          "subject"
+        ],
+        "format": "table"
+      },
+      "retry": {
+        "attempts": 6,
+        "delay": 5
+      }
+    },
+    {
+      "id": "edit",
+      "tool": "saveDraft",
+      "timeout": 150,
+      "arguments": {
+        "draftId": "allmail1-first@example.test",
+        "body": "Second version of first."
+      }
+    },
+    {
+      "id": "after-edit",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "allmail1",
+        "dedupByMessageId": false,
+        "includeTrash": true,
+        "fields": [
+          "subject"
+        ],
+        "format": "table"
+      }
+    },
+    {
+      "id": "delete",
+      "tool": "deleteMessages",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "imap://tblab@127.0.0.1/Drafts",
+        "messageIds": [
+          "allmail1-second@example.test"
+        ]
+      }
+    },
+    {
+      "id": "after-delete",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "allmail1",
+        "dedupByMessageId": false,
+        "includeTrash": true,
+        "fields": [
+          "subject"
+        ],
+        "format": "table"
+      }
+    },
+    {
+      "id": "trash",
+      "tool": "updateMessage",
+      "timeout": 60,
+      "arguments": {
+        "folderPath": "imap://tblab@127.0.0.1/INBOX",
+        "messageId": "allmail1-received@example.com",
+        "trash": true
+      }
+    },
+    {
+      "id": "after-trash",
+      "tool": "searchMessages",
+      "timeout": 60,
+      "arguments": {
+        "query": "allmail1",
+        "dedupByMessageId": false,
+        "includeTrash": true,
+        "fields": [
+          "subject"
+        ],
+        "format": "table"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tool_result_contains",
+      "step": "all-mail",
+      "contains": "\"type\":\"archive\"",
+      "note": "Thunderbird shows a folder flagged \\All as an archive folder."
+    },
+    {
+      "type": "tool_result_count",
+      "step": "before",
+      "contains": "allmail1-received@example.com",
+      "equals": 2
+    },
+    {
+      "type": "tool_result_count",
+      "step": "before",
+      "contains": "allmail1-first@example.test",
+      "equals": 2
+    },
+    {
+      "type": "tool_result_count",
+      "step": "before",
+      "contains": "allmail1-second@example.test",
+      "equals": 2
+    },
+    {
+      "type": "tool_result_count",
+      "step": "before",
+      "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
+      "equals": 3
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "edit",
+      "contains": "\"replacedDraftId\":\"allmail1-first@example.test\""
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "edit",
+      "contains": "\"folderPath\":\"imap://tblab@127.0.0.1/Drafts\""
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-edit",
+      "contains": "allmail1-first@example.test",
+      "equals": 0,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-edit",
+      "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
+      "equals": 3,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change",
+      "note": "The received message, the second draft and the new version of the first."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after-edit",
+      "contains": "\"totalMatches\":6",
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "delete",
+      "contains": "\"movedToTrash\":true"
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-delete",
+      "contains": "allmail1-second@example.test",
+      "equals": 1,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after-delete",
+      "contains": "\"allmail1-second@example.test\",\"imap://tblab@127.0.0.1/Trash\"",
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-delete",
+      "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
+      "equals": 2,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "trash",
+      "contains": "\"to\":\"imap://tblab@127.0.0.1/Trash\""
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-trash",
+      "contains": "allmail1-received@example.com",
+      "equals": 1,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "after-trash",
+      "contains": "\"allmail1-received@example.com\",\"imap://tblab@127.0.0.1/Trash\"",
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+    },
+    {
+      "type": "tool_result_count",
+      "step": "after-trash",
+      "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
+      "equals": 1,
+      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change",
+      "note": "Only the new version of the first draft is left in the view."
+    }
+  ]
+}

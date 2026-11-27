@@ -618,6 +618,19 @@ class ScenarioTests(LabCase):
                 sc = lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": folders})))
                 self.assertEqual(sc["imap"]["folders"], folders)
 
+    def test_load_scenario_accepts_all_mail_true_and_nothing_else(self):
+        sc = lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {"INBOX": []}, "all_mail": True})))
+        self.assertIs(sc["imap"]["all_mail"], True)
+        for value in (False, None, 1, "true", "Virtual/All"):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "^imap: all_mail is true, or absent$"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {"INBOX": []}, "all_mail": value})))
+        for name in ("Virtual", "virtual", "VIRTUAL"):
+            with self.subTest(name=name), self.assertRaisesRegex(
+                    ValueError, "^imap: with all_mail, no folder can be named 'Virtual'$"):
+                lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {name: []}, "all_mail": True})))
+        # Without all_mail the name is an ordinary one
+        lab.load_scenario(json.dumps(dict(SCENARIO, imap={"folders": {"Virtual": []}})))
+
     def test_load_scenario_refuses_an_imap_key_of_another_shape(self):
         for imap in (None, [], "INBOX", {}, {"folders": {}}, {"folders": []}, {"folders": {"INBOX": []}, "port": 1},
                      {"folder": {"INBOX": []}}, {"folders": {"f%d" % n: [] for n in range(11)}}):
@@ -1410,13 +1423,13 @@ class ServiceTests(LabCase):
         with mock.patch.object(lab.subprocess, "run", side_effect=FileNotFoundError("dovecot")):
             self.assertIsNone(lab.dovecot_version())
 
-    def run_imap(self, folders, counts):
+    def run_imap(self, folders, counts, **more):
         """start_imap with the server faked: `counts` is what the server reports (None: it never answers)."""
         with mock.patch.object(lab, "wait_for", side_effect=lambda pred, timeout, step=0.25: pred()), \
                 mock.patch.object(lab, "imap_counts", mock.Mock(return_value=counts)) as asked, \
                 mock.patch.object(lab, "dovecot_version", return_value="2.4.1"):
             try:
-                lab.start_imap({"folders": folders})
+                lab.start_imap(dict({"folders": folders}, **more))
                 error = None
             except RuntimeError as e:
                 error = str(e)
@@ -1442,6 +1455,30 @@ class ServiceTests(LabCase):
         info = lab.R["phases"]["imap"]
         self.assertEqual((info["port"], info["preauth"], info["folders"], info["version"]),
                          (1143, True, {"INBOX": 1, "Drafts": 0}, "2.4.1"))
+
+    def test_start_imap_without_all_mail_says_nothing_about_it(self):
+        self.run_imap({"INBOX": []}, {"INBOX": 0})
+        self.assertNotIn("all_mail", lab.R["phases"]["imap"])
+        self.assertFalse(os.path.exists(lab.LAB + "/imap/virtual"))
+
+    def test_start_imap_with_all_mail_adds_a_virtual_folder_flagged_all(self):
+        asked, error = self.run_imap({"INBOX": ["Subject: a\n\nx\n"], "Drafts": []}, {"INBOX": 1, "Drafts": 0}, all_mail=True)
+        self.assertIsNone(error)
+        home = lab.LAB + "/imap"
+        with open(home + "/virtual/All/dovecot-virtual") as f:
+            self.assertEqual(f.read(), "*\n-Virtual/*\n-Trash\n-Junk\n  all\n")
+        with open(home + "/dovecot.conf") as f:
+            conf = f.read()
+        self.assertEqual(conf, "dovecot_config_version = 2.4.1\ndovecot_storage_version = 2.4.1\n"
+                               "import_environment {\n  USER = %{env:USER}\n  HOME = %{env:HOME}\n}\n"
+                               "mail_driver = maildir\nmail_path = " + home + "/Maildir\nlog_path = /dev/stderr\n"
+                               "mail_plugins {\n  virtual = yes\n}\n"
+                               "namespace inbox {\n  inbox = yes\n  separator = /\n}\n"
+                               "namespace virtual {\n  prefix = Virtual/\n  separator = /\n  mail_driver = virtual\n"
+                               "  mail_path = " + home + "/virtual\n  mailbox All {\n    special_use = \\All\n  }\n}\n")
+        # Only the folders of the scenario are counted: the view is not one of them
+        asked.assert_called_once_with(["INBOX", "Drafts"])
+        self.assertEqual(lab.R["phases"]["imap"]["all_mail"], "Virtual/All")
 
     def test_start_imap_fails_with_the_end_of_its_log_when_the_server_never_answers(self):
         self.put(lab.LOGS + "/imap.log", "socat: bind: Address already in use\n")
