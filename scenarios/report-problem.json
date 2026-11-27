@@ -1,0 +1,186 @@
+{
+  "name": "report-problem",
+  "description": "reportProblem saves what an assistant writes about a tool that misbehaved, for the user to send from the options page; the add-on sends nothing. A saveDraft call that fails (a draftId that names no draft) is followed by a report that names saveDraft: the report is saved (saved true, sent false, one waiting), the file commonpost-mcp-reports.json of the profile holds it with the versions the add-on added and the error saveDraft had just returned, and the mail address written in the details is replaced. The same report a second time, a tool name that is not a tool of the server and a summary over 120 characters are refused, and a suggestion without a tool is saved as the second report. Nothing is sent through SMTP. Not covered: the options page (its list, the prefilled GitHub issue, Copy, Delete), which no MCP call reaches, and the limit of 20 waiting reports.",
+  "inspect": {
+    "files": [
+      "commonpost-mcp-reports.json"
+    ]
+  },
+  "steps": [
+    {
+      "id": "failed-save",
+      "tool": "saveDraft",
+      "timeout": 60,
+      "arguments": {
+        "draftId": "<lab-no-such-draft@example.test>",
+        "body": "x"
+      },
+      "note": "An error of saveDraft for the add-on to remember."
+    },
+    {
+      "id": "report",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "bug",
+        "summary": "saveDraft with draftId keeps the old draft listed",
+        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "tool": "saveDraft"
+      }
+    },
+    {
+      "id": "again",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "bug",
+        "summary": "saveDraft with draftId keeps the old draft listed",
+        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "tool": "saveDraft"
+      }
+    },
+    {
+      "id": "unknown-tool",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "bug",
+        "summary": "another summary",
+        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "tool": "sendEverything"
+      }
+    },
+    {
+      "id": "long-summary",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "bug",
+        "summary": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+        "details": "Called saveDraft with draftId on an IMAP account, for a draft written to jane.doe@example.com.\nThe old version stayed listed in All Mail.",
+        "tool": "saveDraft"
+      }
+    },
+    {
+      "id": "suggestion",
+      "tool": "reportProblem",
+      "timeout": 30,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "saveDraft could name the attachment reminder words",
+        "details": "A draft without attachment whose text holds a reminder word opens a prompt when it is sent."
+      }
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "reportProblem",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "failed-save",
+      "contains": "raft",
+      "note": "Works on 0.26.3 too: saveDraft refuses a draftId that names no draft."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "report",
+      "contains": "\"saved\":true",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "report",
+      "contains": "\"sent\":false",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "report",
+      "contains": "\"waiting\":1",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "report",
+      "contains": "Do not say it was sent",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "again",
+      "contains": "This report is already saved.",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "unknown-tool",
+      "contains": "tool is not the name of a tool of this server: sendEverything",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_error_contains",
+      "step": "long-summary",
+      "contains": "summary is too long (121 characters, limit 120)",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "suggestion",
+      "contains": "\"waiting\":2",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "saveDraft with draftId keeps the old draft listed",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "for a draft written to <address>.",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "jane.doe",
+      "present": false,
+      "note": "On 0.26.3 the file does not exist, so this check cannot tell: it is marked like the others.",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"text\": \"Draft not found: ",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "\"thunderbird\": \"1",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "another summary",
+      "present": false,
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "saveDraft could name the attachment reminder words",
+      "xfail": "Until the release after 0.26.3: the reportProblem tool does not exist"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 0,
+      "note": "Nothing is sent, on any version."
+    }
+  ]
+}
