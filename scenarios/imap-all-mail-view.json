@@ -201,22 +201,19 @@
       "type": "tool_result_count",
       "step": "after-edit",
       "contains": "allmail1-first@example.test",
-      "equals": 0,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "equals": 0
     },
     {
       "type": "tool_result_count",
       "step": "after-edit",
       "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
       "equals": 3,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change",
       "note": "The received message, the second draft and the new version of the first."
     },
     {
       "type": "tool_result_contains",
       "step": "after-edit",
-      "contains": "\"totalMatches\":6",
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "contains": "\"totalMatches\":6"
     },
     {
       "type": "tool_result_contains",
@@ -227,21 +224,18 @@
       "type": "tool_result_count",
       "step": "after-delete",
       "contains": "allmail1-second@example.test",
-      "equals": 1,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "equals": 1
     },
     {
       "type": "tool_result_contains",
       "step": "after-delete",
-      "contains": "\"allmail1-second@example.test\",\"imap://tblab@127.0.0.1/Trash\"",
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "contains": "\"allmail1-second@example.test\",\"imap://tblab@127.0.0.1/Trash\""
     },
     {
       "type": "tool_result_count",
       "step": "after-delete",
       "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
-      "equals": 2,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "equals": 2
     },
     {
       "type": "tool_result_contains",
@@ -252,21 +246,18 @@
       "type": "tool_result_count",
       "step": "after-trash",
       "contains": "allmail1-received@example.com",
-      "equals": 1,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "equals": 1
     },
     {
       "type": "tool_result_contains",
       "step": "after-trash",
-      "contains": "\"allmail1-received@example.com\",\"imap://tblab@127.0.0.1/Trash\"",
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change"
+      "contains": "\"allmail1-received@example.com\",\"imap://tblab@127.0.0.1/Trash\""
     },
     {
       "type": "tool_result_count",
       "step": "after-trash",
       "contains": "\"imap://tblab@127.0.0.1/Virtual/All\"",
       "equals": 1,
-      "xfail": "Until the release after 0.26.2: the All Mail view was not updated after the change",
       "note": "Only the new version of the first draft is left in the view."
     }
   ]
