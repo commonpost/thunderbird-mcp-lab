@@ -1,0 +1,237 @@
+{
+  "name": "report-problem-send",
+  "description": "reportProblem when the user chose, in the options page, to let an assistant send a report once it has asked them (reportDelivery send), while the block of skipReview for mail keeps its default, on. A report with send true goes to the project's mailbox through the local SMTP sink, with no draft, and says that the user may not have read it; a report without send is a draft; the fourth send of the day is a draft with the reason, and the seventh message of the day is only listed. A mail address written in a report is replaced in what is sent.",
+  "prefs": {
+    "extensions.commonpost-mcp.reportDelivery": "send"
+  },
+  "inspect": {
+    "files": [
+      "commonpost-mcp-reports.json"
+    ]
+  },
+  "steps": [
+    {
+      "id": "r1",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 1",
+        "details": "Lab report number 1, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      }
+    },
+    {
+      "id": "r2",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 2",
+        "details": "Lab report number 2, written to jane.doe@example.com.",
+        "tool": "listFolders"
+      },
+      "note": "No send: the user's choice alone sends nothing."
+    },
+    {
+      "id": "r3",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 3",
+        "details": "Lab report number 3, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      }
+    },
+    {
+      "id": "r4",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 4",
+        "details": "Lab report number 4, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      }
+    },
+    {
+      "id": "r5",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 5",
+        "details": "Lab report number 5, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      },
+      "note": "The fourth send of the day: a draft."
+    },
+    {
+      "id": "r6",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 6",
+        "details": "Lab report number 6, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      }
+    },
+    {
+      "id": "r7",
+      "tool": "reportProblem",
+      "timeout": 120,
+      "arguments": {
+        "kind": "suggestion",
+        "summary": "lab send report 7",
+        "details": "Lab report number 7, written to jane.doe@example.com.",
+        "tool": "listFolders",
+        "send": true
+      },
+      "note": "The seventh message of the day: listed only."
+    }
+  ],
+  "checks": [
+    {
+      "type": "tools_list_has",
+      "tool": "reportProblem"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r1",
+      "contains": "\"saved\":true",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "mailpit_total",
+      "equals": 3,
+      "note": "Reports 1, 3 and 4; never more than three in a day.",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r1",
+      "contains": "\"sent\":true",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r1",
+      "contains": "Sent to the maintainers from the user's address",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "mailpit_header_contains",
+      "subject": "[report] Suggestion: lab send report 1",
+      "header": "To",
+      "contains": "commonpost.mcp@gmail.com",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[report] Suggestion: lab send report 1",
+      "contains": "They may not have read this text",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "mailpit_body_contains",
+      "subject": "[report] Suggestion: lab send report 1",
+      "contains": "written to <address>",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[report] Suggestion: lab send report 1",
+      "equals": 0,
+      "note": "A report that was sent leaves no draft."
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r2",
+      "contains": "\"sent\":false"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[report] Suggestion: lab send report 2",
+      "equals": 1,
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "draft_body_contains",
+      "subject": "[report] Suggestion: lab send report 2",
+      "contains": "sent by the user._",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r3",
+      "contains": "\"sent\":true",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r4",
+      "contains": "\"sent\":true",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r5",
+      "contains": "\"sent\":false",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r5",
+      "contains": "It was not sent: 3 reports were sent in the last 24 hours",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[report] Suggestion: lab send report 5",
+      "equals": 1,
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[report] Suggestion: lab send report 6",
+      "equals": 1,
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r7",
+      "contains": "No draft was made: 6 reports became messages in the last 24 hours",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "draft_count",
+      "subject": "[report] Suggestion: lab send report 7",
+      "equals": 0
+    },
+    {
+      "type": "tool_result_contains",
+      "step": "r7",
+      "contains": "\"saved\":true",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "lab send report 7",
+      "xfail": "Until the release after 0.27.1: a report was not saved as a draft, and send was not a parameter"
+    },
+    {
+      "type": "file_contains",
+      "file": "commonpost-mcp-reports.json",
+      "contains": "jane.doe",
+      "present": false
+    }
+  ]
+}
