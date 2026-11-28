@@ -10,7 +10,7 @@
 # Base images are pinned by digest (update them deliberately, e.g. through Dependabot).
 
 # --- Stage 1: the mailpit binary (SMTP + POP3 + HTTP API), copied from the official image.
-FROM axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce AS mailpit
+FROM axllent/mailpit:v1.34.0@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e AS mailpit
 
 # --- Stage 2: Debian with apt over https://. The slim image fetches packages from http:// sources and has no CA
 # certificates for https://; the CA bundle of the mailpit image (pinned above), named to apt (CAInfo), lets apt use
